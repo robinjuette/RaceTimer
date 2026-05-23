@@ -1,0 +1,27 @@
+@page "/"
+@inject RaceTimer.Shared.Http.RaceTimerApiClient Api
+
+<h3>Races</h3>
+
+@if (races is null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <ul>
+        @foreach (var r in races)
+        {
+            <li>@r.Name (@r.StartTime)</li>
+        }
+    </ul>
+}
+
+@code {
+    IEnumerable<RaceTimer.Shared.Models.Race>? races;
+
+    protected override async Task OnInitializedAsync()
+    {
+        races = await Api.GetRacesAsync();
+    }
+}
