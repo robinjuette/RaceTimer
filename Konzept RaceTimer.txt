@@ -1,0 +1,75 @@
+﻿Plan Timing-App
+
+Grundsätzlich:
+Für ein Biathlon-Event benötigen wir eine Anwendung zur Zeitnahme. Die Bedienung soll einfach sein und es soll sichergestellt sein, dass auch bei eventuellen Abstürzen einzelner Komponenten die Daten erhalten bleiben. Zusätzlich sollen mehrere Geräte zur Erfassung benutzt werden können, aufgrund des Ortes an dem das Event stattfindet ist aber keine Internetverbindung verfügbar.
+Entsprechend sollte die Anwendung standalone funktionieren, aber auch so eingestellt werden können dass sie auf eine zentrale Instanz oder einen Server zugreift.
+Entsprechend sollte es eine Server-Anwendung geben, welche die Logik und Datenspeicherung übernimmt und eine Client-Anwendung welche die Oberfläche hat. Die Client-Anwendung sollte als WebApp und .net MAUI-App implementiert werden um auf vielen Platformen benutzbar zu sein.
+
+Die Server-Anwendung soll als REST-API umgesetzt werden, die Daten sollen in einer Datenbank abgelegt werden. Der Datenbankzugriff soll über Entity Framework Core geschehen, standardmäßig soll eine lokale sql-Datenbank verwendet werden, die Datenbankverbindung soll aber konfigurierbar sein um bspw. einen SQL-Server nutzen zu können.
+
+Rennen:
+• Rennen anlegen
+• Frei Hand oder Kopie eines existierenden Rennens
+• Management der Timingpunkte & Rundenanzahl
+• Werden Strafzeiten direkt hinterlegt? Wäre für die Anzeige cool. 
+• Hinzufügen von Teilnehmern, auch nach Rennstart 
+• Nach Rennstart kann das Rennen nicht bearbeitet werden. 
+• Zeitnahme nur möglich bei laufenden Rennen
+• beliebig viele Rennen können gleichzeitig laufen
+• Rennen wird automatisch beendet wenn alle Teilnehmer fertig sind
+• Rennen kann manuell beendet werden, Warnung wenn noch nicht alle Teilnehmer durch sind
+
+Teilnehmer:
+• nur Anzeigename
+• optional email für Ergebnisse
+
+Zeitnahme:
+• Notwendig ist erstmal nur UTC-DateTime. 
+• Zuordnung zu: Rennen & Teilnehmer (Timingpunkt?) 
+• Zuordnung kann bei Zeitnahme oder später geschehen (großer Timing-Knopf) 
+
+Status & Zwischenstand:
+• Wird anhand der Zeitnahmen berechnet. 
+• Wie wird Abbruch gebucht? 
+
+Ausgabe von Rohdaten in csv/xlsx. 
+Verwendung eines persistenten Speichers weil wegen Abstürze. 
+Mehrere Erfassungsgeräte? Würde Server-Client-Struktur bedeuten. Also WebAPI
+
+Datenstruktur:
+• Race
+• int ID
+• string DisplayName
+• nullDT StartDateTimeUTC
+• nullDT EndDateTimeUTC
+• uint Rounds
+• Racepoint
+• int ID
+• int RaceID
+• uint IndexNo
+• string DisplayName
+• bool IsPenaltyTimeEnabled
+• Participant
+• int ID
+• string DisplayName
+• RaceParticipant
+• int ID
+• int RaceID
+• int ParticipantID
+• string RaceIdent
+• nullDT StartDateTimeUTC 
+• nullDT FinishDateTimeUTC
+• Timepoint
+• int ID
+• DT TimePointUTC
+• nullint RaceParticipantID
+• nullint RacepointID
+• nullTS PenaltyTime
+• nulluint Round
+
+Oberfläche:
+
+Wenn ein Rennen aktiv ist, wird immer unten ein großer Timing-Button und links eine Leiste der aktuellen offenen Timepoints angezeigt. 
+Durch Anklicken eines offenen Timepoints öffnet sich eine Liste der aktiven Rennteilnehmer (StartDateTimeUTC != null & EndDateTimeUTC == null) zur Zuordnung zum Teilnehmer. 
+
+

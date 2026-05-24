@@ -1,0 +1,306 @@
+@page "/races/{RaceId}"
+@using RaceTimerApp.Shared.Services
+@using RaceTimer.Shared.Models
+@inject RaceService RaceService
+@inject ParticipantService ParticipantService
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+@if (CurrentRace is null)
+{
+    <div class="alert alert-danger">Rennen nicht gefunden</div>
+    return;
+}
+
+<div class="page-header">
+    <h1>@CurrentRace.Name</h1>
+    @if (Status == RaceStatus.Running)
+    {
+        <a href="/overview/@RaceId" class="btn btn-primary">Zur Rennübersicht</a>
+    }
+    else
+    {
+        <button class="btn btn-secondary" @onclick="GoBack">Zurück</button>
+    }
+</div>
+
+<!-- Status Badge -->
+<div class="mb-3">
+    <span class="badge badge-lg @GetStatusBadgeClass()">@GetStatusText()</span>
+</div>
+
+<!-- Zeitpunkte & Zeitanzeige -->
+<div class="row mb-3">
+    <div class="col-md-6">
+        <p><strong>Start:</strong> @(CurrentRace.StartTimeUTC?.ToLocalTime().ToString("G") ?? "Nicht gestartet")</p>
+    </div>
+    <div class="col-md-6">
+        <p><strong>Ende:</strong> @(CurrentRace.FinishDateTimeUTC?.ToLocalTime().ToString("G") ?? "Nicht beendet")</p>
+    </div>
+</div>
+
+@if (Status == RaceStatus.Planned)
+{
+    <!-- Geplantes Rennen: Zeitpunkte & Teilnehmer hinzufügen -->
+    <div class="card mb-3">
+        <div class="card-header">
+            <h5>Rennzeitpunkte</h5>
+        </div>
+        <div class="card-body">
+            <div class="row mb-3">
+                <div class="col-md-9">
+                    <input type="text" class="form-control" placeholder="Name des Zeitpunkts" @bind="NewTimePointName" />
+                </div>
+                <div class="col-md-3">
+                    <button class="btn btn-success" @onclick="AddTimePoint">Hinzufügen</button>
+                </div>
+            </div>
+
+            @if (CurrentRace.RaceTimePoints.Any())
+            {
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Position</th>
+                            <th>Name</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var tp in CurrentRace.RaceTimePoints.OrderBy(x => x.Index))
+                        {
+                            <tr>
+                                <td>@tp.Index</td>
+                                <td>@tp.DisplayName</td>
+                                <td>
+                                    <button class="btn btn-danger btn-sm" @onclick="() => RemoveTimePoint(tp.Id)">Löschen</button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <div class="alert alert-info">Keine Zeitpunkte. Mindestens 2 sind erforderlich um zu starten.</div>
+            }
+        </div>
+    </div>
+
+    <!-- Teilnehmerverwaltung -->
+    <div class="card mb-3">
+        <div class="card-header">
+            <h5>Teilnehmer (@CurrentRace.RaceParticipants.Count)</h5>
+        </div>
+        <div class="card-body">
+            <div class="row mb-3">
+                <div class="col-md-8">
+                    <input type="text" class="form-control" placeholder="Teilnehmer suchen oder neu erstellen..." @bind="NewParticipantName" @oninput="SearchParticipants" />
+                    @if (SearchResults.Any())
+                    {
+                        <div class="list-group mt-2" style="max-height: 200px; overflow-y: auto;">
+                            @foreach (var p in SearchResults)
+                            {
+                                <button type="button" class="list-group-item list-group-item-action" @onclick="() => SelectExistingParticipant(p)">
+                                    @p.DisplayName
+                                </button>
+                            }
+                        </div>
+                    }
+                </div>
+                <div class="col-md-4">
+                    <button class="btn btn-success" @onclick="AddNewParticipant">Neuer Teilnehmer</button>
+                </div>
+            </div>
+
+            @if (CurrentRace.RaceParticipants.Any())
+            {
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Nr.</th>
+                            <th>Name</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var rp in CurrentRace.RaceParticipants.OrderBy(x => x.ParticipantNr))
+                        {
+                            <tr>
+                                <td>@rp.ParticipantNr</td>
+                                <td>@rp.Participant?.DisplayName</td>
+                                <td>
+                                    <button class="btn btn-danger btn-sm" @onclick="() => RemoveParticipant(rp.ParticipantID)">Entfernen</button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <div class="alert alert-info">Keine Teilnehmer. Mindestens 1 ist erforderlich.</div>
+            }
+        </div>
+    </div>
+
+    <!-- Start Button -->
+    <div class="d-grid">
+        <button class="btn btn-lg btn-primary" @onclick="PrepareStart" disabled="@(CurrentRace.RaceTimePoints.Count < 2 || !CurrentRace.RaceParticipants.Any())">
+            Rennen starten vorbereiten
+        </button>
+    </div>
+}
+else if (Status == RaceStatus.Running || Status == RaceStatus.Planned)
+{
+    <!-- Laufendes oder geplantes Rennen: Nur Teilnehmerverwaltung -->
+    <div class="card mb-3">
+        <div class="card-header">
+            <h5>Teilnehmer (@CurrentRace.RaceParticipants.Count)</h5>
+        </div>
+        <div class="card-body">
+            <div class="row mb-3">
+                <div class="col-md-8">
+                    <input type="text" class="form-control" placeholder="Teilnehmer suchen oder neu erstellen..." @bind="NewParticipantName" @oninput="SearchParticipants" />
+                    @if (SearchResults.Any())
+                    {
+                        <div class="list-group mt-2" style="max-height: 200px; overflow-y: auto;">
+                            @foreach (var p in SearchResults)
+                            {
+                                <button type="button" class="list-group-item list-group-item-action" @onclick="() => SelectExistingParticipant(p)">
+                                    @p.DisplayName
+                                </button>
+                            }
+                        </div>
+                    }
+                </div>
+                <div class="col-md-4">
+                    <button class="btn btn-success" @onclick="AddNewParticipant">Neuer Teilnehmer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public string? RaceId { get; set; }
+
+    private Race? CurrentRace;
+    private RaceStatus Status;
+    private string NewTimePointName = "";
+    private string NewParticipantName = "";
+    private List<Participant> SearchResults = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (RaceId == "new")
+        {
+            var newRace = await RaceService.CreateRaceAsync("Neues Rennen");
+            if (newRace is not null)
+            {
+                Navigation.NavigateTo($"/races/{newRace.Id}");
+                return;
+            }
+        }
+
+        if (Guid.TryParse(RaceId, out var raceId))
+        {
+            CurrentRace = await RaceService.GetRaceAsync(raceId);
+            if (CurrentRace is not null)
+            {
+                Status = RaceService.GetRaceStatus(CurrentRace);
+            }
+        }
+    }
+
+    private async Task AddTimePoint()
+    {
+        if (string.IsNullOrEmpty(NewTimePointName) || CurrentRace is null)
+            return;
+
+        await RaceService.AddRaceTimePointAsync(CurrentRace.Id, NewTimePointName);
+        CurrentRace = await RaceService.GetRaceAsync(CurrentRace.Id);
+        NewTimePointName = "";
+    }
+
+    private async Task RemoveTimePoint(Guid timePointId)
+    {
+        if (CurrentRace is null) return;
+        await RaceService.DeleteRaceTimePointAsync(CurrentRace.Id, timePointId);
+        CurrentRace = await RaceService.GetRaceAsync(CurrentRace.Id);
+    }
+
+    private async Task SearchParticipants()
+    {
+        if (string.IsNullOrEmpty(NewParticipantName))
+        {
+            SearchResults.Clear();
+            return;
+        }
+
+        var results = await ParticipantService.SearchParticipantsAsync(NewParticipantName);
+        if (CurrentRace is not null)
+        {
+            var assignedIds = CurrentRace.RaceParticipants.Select(rp => rp.ParticipantID).ToHashSet();
+            SearchResults = results.Where(p => !assignedIds.Contains(p.Id)).ToList();
+        }
+    }
+
+    private async Task SelectExistingParticipant(Participant p)
+    {
+        if (CurrentRace is null) return;
+        await ParticipantService.AddParticipantToRaceAsync(CurrentRace.Id, p.DisplayName, p);
+        CurrentRace = await RaceService.GetRaceAsync(CurrentRace.Id);
+        NewParticipantName = "";
+        SearchResults.Clear();
+    }
+
+    private async Task AddNewParticipant()
+    {
+        if (string.IsNullOrEmpty(NewParticipantName) || CurrentRace is null)
+            return;
+
+        await ParticipantService.AddParticipantToRaceAsync(CurrentRace.Id, NewParticipantName);
+        CurrentRace = await RaceService.GetRaceAsync(CurrentRace.Id);
+        NewParticipantName = "";
+    }
+
+    private async Task RemoveParticipant(Guid participantId)
+    {
+        if (CurrentRace is null) return;
+        await ParticipantService.RemoveParticipantFromRaceAsync(CurrentRace.Id, participantId);
+        CurrentRace = await RaceService.GetRaceAsync(CurrentRace.Id);
+    }
+
+    private async Task PrepareStart()
+    {
+        if (CurrentRace is null) return;
+        Navigation.NavigateTo($"/races/{CurrentRace.Id}/start");
+    }
+
+    private void GoBack()
+    {
+        Navigation.NavigateTo("/races");
+    }
+
+    private string GetStatusText()
+    {
+        return Status switch
+        {
+            RaceStatus.Running => "Läuft",
+            RaceStatus.Finished => "Beendet",
+            _ => "Geplant"
+        };
+    }
+
+    private string GetStatusBadgeClass()
+    {
+        return Status switch
+        {
+            RaceStatus.Running => "bg-danger",
+            RaceStatus.Finished => "bg-success",
+            _ => "bg-secondary"
+        };
+    }
+}

@@ -1,13 +1,19 @@
 <Solution>
   <Folder Name="/Projektmappenelemente/">
     <File Path=".gitignore" />
+    <File Path="Konzept RaceTimer.docx" />
     <File Path="Konzept RaceTimer.odt" />
+    <File Path="Konzept RaceTimer.rtf" />
+    <File Path="Konzept RaceTimer.txt" />
+    <File Path="UI-Beschreibung RaceTimer.docx" />
     <File Path="UI-Beschreibung RaceTimer.odt" />
+    <File Path="UI-Beschreibung RaceTimer.rtf" />
+    <File Path="UI-Beschreibung RaceTimer.txt" />
   </Folder>
-  <Project Path="RaceTimerClientApp/RaceTimerClientApp.Shared/RaceTimerClientApp.Shared.csproj" Id="e2dff4d7-26b1-49fb-91d7-bb70c4ca8177" />
-  <Project Path="RaceTimerClientApp/RaceTimerClientApp.Web.Client/RaceTimerClientApp.Web.Client.csproj" Id="61771a4a-483a-48f7-b61e-69905219d793" />
-  <Project Path="RaceTimerClientApp/RaceTimerClientApp.Web/RaceTimerClientApp.Web.csproj" Id="539a15ee-6881-414e-840d-350eed39c8e9" />
-  <Project Path="RaceTimerClientApp/RaceTimerClientApp/RaceTimerClientApp.csproj" Id="9e774d84-8a44-4362-a3a8-d2792dbe318f">
+  <Project Path="RaceTimerApp/RaceTimerApp.Shared/RaceTimerApp.Shared.csproj" Id="723cb0af-46bf-4f44-86c7-b60dc087f462" />
+  <Project Path="RaceTimerApp/RaceTimerApp.Web.Client/RaceTimerApp.Web.Client.csproj" Id="7954b435-1372-4b8f-a8cd-282b580c4555" />
+  <Project Path="RaceTimerApp/RaceTimerApp.Web/RaceTimerApp.Web.csproj" Id="3d520806-32e8-46eb-8a43-3b5a6c958b60" />
+  <Project Path="RaceTimerApp/RaceTimerApp/RaceTimerApp.csproj" Id="c279739e-3134-4935-b5b2-cc173434c994">
     <Deploy Solution="Debug|*" />
   </Project>
   <Project Path="RaceTimerServer/RaceTimerServer.csproj" />

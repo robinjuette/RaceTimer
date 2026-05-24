@@ -74,14 +74,21 @@ public class RacesController : ControllerBase
     }
 
     [HttpPost("{id}/participants/{participantId}")]
-    public async Task<ActionResult> AssignParticipant(Guid id, Guid participantId)
+    public async Task<ActionResult<RaceParticipant>> AssignParticipant(Guid id, Guid participantId)
     {
         var race = await _repo.GetAsync(id);
         if (race is null) return NotFound();
         var participant = await _repo.GetParticipantAsync(participantId);
         if (participant is null) return NotFound();
-        await _repo.AssignParticipantToRaceAsync(id, participantId);
-        return NoContent();
+        return await _repo.AssignParticipantToRaceAsync(id, participantId);
+    }
+
+    [HttpGet("{id}/participants/")]
+    public async Task<ActionResult<IEnumerable<RaceParticipant>>> GetParticipants(Guid id)
+    {
+        var race = await _repo.GetAsync(id);
+        if (race is null) return NotFound();
+        return await _repo.GetRaceParticipantsAsync(id);
     }
 
     [HttpDelete("{id}/participants/{participantId}")]
@@ -93,13 +100,26 @@ public class RacesController : ControllerBase
         return NoContent();
     }
 
-    // unassigned timepoints are now managed by /api/timepoints
-
-    [HttpPost("timepoints/{timePointId}/assign/{participantId}")]
-    public async Task<ActionResult> AssignTimePoint(Guid timePointId, Guid participantId)
+    [HttpPost("{id}/start/")]
+    public async Task<ActionResult> StartRace(Guid id, IEnumerable<Guid> participants)
     {
-        var tp = await _repo.GetAllAsync(); // ensure race exists via lookup
-        await _repo.AssignTimePointToParticipantAsync(timePointId, participantId);
-        return NoContent();
+        var race = await _repo.GetAsync(id);
+        if (race is null) return NotFound();
+        if (race.FinishDateTimeUTC != null) return BadRequest();
+        DateTime startDT = DateTime.UtcNow;
+
+        if (race.StartTimeUTC == null)
+        {
+            race.StartTimeUTC = startDT;
+            await _repo.UpdateAsync(race);
+        }
+
+        foreach(Guid guid in participants)
+        {
+            var tp = await _repo.AddUnassignedTimePointAsync(startDT);
+            await _repo.AssignTimePointToParticipantAsync(tp.Id, guid);
+        }
+
+        return Ok();
     }
 }

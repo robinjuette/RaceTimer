@@ -15,11 +15,19 @@ public class TimepointsController : ControllerBase
         _repo = repo;
     }
 
-    [HttpPost("unassigned")]
+    [HttpPost()]
     public async Task<ActionResult<RaceParticipantTimePoint>> CreateUnassigned([FromBody] DateTime timePointUtc)
     {
         var tp = await _repo.AddUnassignedTimePointAsync(timePointUtc);
         return CreatedAtAction(nameof(Get), new { id = tp.Id }, tp);
+    }
+
+    [HttpGet("unassigned")]
+    public async Task<ActionResult<IEnumerable<RaceParticipantTimePoint>>> GetUnassigned()
+    {
+        IEnumerable<RaceParticipantTimePoint>? tps = await _repo.GetUnassignedTimepointsAsync();
+        if (tps == null) return StatusCode(500);
+        return Ok(tps);
     }
 
     [HttpGet("{id}")]
@@ -30,17 +38,19 @@ public class TimepointsController : ControllerBase
         return Ok(tp);
     }
 
-    [HttpPost("{timePointId}/assign/participant/{participantId}")]
-    public async Task<ActionResult> AssignToParticipant(Guid timePointId, Guid participantId)
+
+    [HttpGet("race/{raceId}")]
+    public async Task<ActionResult<IEnumerable<RaceParticipantTimePoint>>> GetForRace(Guid raceId)
     {
-        await _repo.AssignTimePointToParticipantAsync(timePointId, participantId);
-        return NoContent();
+        IEnumerable<RaceParticipantTimePoint> tp = await _repo.GetTimePointsForRaceAsync(raceId);
+        if (tp is null) return NotFound();
+        return Ok(tp);
     }
 
-    [HttpPost("{timePointId}/assign/race/{raceId}")]
-    public async Task<ActionResult> AssignToRace(Guid timePointId, Guid raceId)
+    [HttpPost("{timePointId}/assign/{participantId}")]
+    public async Task<ActionResult> AssignTimepoint(Guid timePointId, Guid participantId)
     {
-        await _repo.AssignTimePointToRaceAsync(timePointId, raceId);
+        await _repo.AssignTimePointToParticipantAsync(timePointId, participantId);
         return NoContent();
     }
 }

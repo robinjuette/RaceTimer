@@ -1,0 +1,100 @@
+@page "/races/{RaceId}/start"
+@using RaceTimerApp.Shared.Services
+@using RaceTimer.Shared.Models
+@inject RaceService RaceService
+@inject NavigationManager Navigation
+
+@if (CurrentRace is null)
+{
+    <div class="alert alert-danger">Rennen nicht gefunden</div>
+    return;
+}
+
+<div class="start-preparation">
+    <div class="text-center mb-5">
+        <h1>@CurrentRace.Name</h1>
+        <h4 class="text-muted">Startvorbereitungen</h4>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Teilnehmer zum Starten (@SelectedParticipants.Count)</h5>
+        </div>
+        <div class="card-body">
+            @if (SelectedParticipants.Any())
+            {
+                <div class="list-group">
+                    @foreach (var p in SelectedParticipants.OrderBy(x => x.ParticipantNr))
+                    {
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <span>
+                                <strong>#@p.ParticipantNr</strong>
+                                @p.Participant?.DisplayName
+                            </span>
+                            <button class="btn btn-danger btn-sm" @onclick="() => DeselectParticipant(p)">Abwählen</button>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info">Keine Teilnehmer ausgewählt</div>
+            }
+        </div>
+    </div>
+
+    <!-- Buttons -->
+    <div class="row">
+        <div class="col-md-6">
+            <button class="btn btn-secondary w-100" @onclick="Cancel">Abbrechen</button>
+        </div>
+        <div class="col-md-6">
+            <button class="btn btn-success btn-lg w-100" @onclick="StartRace" disabled="@(!SelectedParticipants.Any())">
+                <span class="oi oi-play-circle"></span> RENNEN STARTEN
+            </button>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public string? RaceId { get; set; }
+
+    private Race? CurrentRace;
+    private List<RaceParticipant> SelectedParticipants = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Guid.TryParse(RaceId, out var raceId))
+        {
+            CurrentRace = await RaceService.GetRaceAsync(raceId);
+            if (CurrentRace is not null)
+            {
+                // Alle Teilnehmer sind initial ausgewählt
+                SelectedParticipants = CurrentRace.RaceParticipants.ToList();
+            }
+        }
+    }
+
+    private void DeselectParticipant(RaceParticipant p)
+    {
+        SelectedParticipants.Remove(p);
+    }
+
+    private async Task StartRace()
+    {
+        if (CurrentRace is null) return;
+
+        var participantIds = SelectedParticipants.Select(p => p.ParticipantID);
+        await RaceService.StartRaceAsync(CurrentRace.Id, participantIds);
+        Navigation.NavigateTo($"/overview/{CurrentRace.Id}");
+    }
+
+    private void Cancel()
+    {
+        if (CurrentRace is null)
+            Navigation.NavigateTo("/races");
+        else
+            Navigation.NavigateTo($"/races/{CurrentRace.Id}");
+    }
+}

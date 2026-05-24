@@ -1,0 +1,171 @@
+@page "/penalty"
+@using RaceTimerApp.Shared.Services
+@using RaceTimer.Shared.Models
+@inject RaceService RaceService
+@inject TimingService TimingService
+@inject IJSRuntime JS
+
+<div class="page-header">
+    <h1>Strafzeiterfassung</h1>
+</div>
+
+<div class="row">
+    <!-- Offene Strafzeiten -->
+    <div class="col-md-6">
+        <div class="card mb-3">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0">Offene Strafzeiten <span class="badge bg-warning">@OpenPenalties.Count</span></h5>
+            </div>
+            <div class="card-body">
+                @if (OpenPenalties.Any())
+                {
+                    <div class="list-group">
+                        @foreach (var penalty in OpenPenalties)
+                        {
+                            <div class="list-group-item list-group-item-action" @onclick="() => SelectPenalty(penalty)">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">@penalty.Participant?.DisplayName</h6>
+                                    <small>@penalty.TimePointUTC.ToLocalTime().ToString("HH:mm:ss")</small>
+                                </div>
+                                <small class="text-muted">
+                                    @penalty.RaceTimePoint?.DisplayName
+                                </small>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="alert alert-info">Keine offenen Strafzeiten</div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Strafzeit Input -->
+    <div class="col-md-6">
+        @if (SelectedPenalty is not null)
+        {
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">@SelectedPenalty.Participant?.DisplayName - Strafzeit eingeben</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Strafzeit (Minuten:Sekunden)</label>
+                        <input type="text" class="form-control form-control-lg" placeholder="5:30" @bind="PenaltyInput" />
+                        <small class="text-muted">Beispiel: 5:30 für 5 Minuten 30 Sekunden</small>
+                    </div>
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-primary btn-lg" @onclick="SavePenalty">Speichern</button>
+                        <button class="btn btn-secondary" @onclick="() => SelectedPenalty = null">Abbrechen</button>
+                    </div>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="alert alert-secondary">Wählen Sie eine Strafzeit aus um sie zu bearbeiten</div>
+        }
+    </div>
+</div>
+
+<!-- Alle Strafzeiten -->
+<div class="mt-4">
+    <h4>Alle Strafzeiten</h4>
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Teilnehmer</th>
+                    <th>Zeitpunkt</th>
+                    <th>Erfassungszeit</th>
+                    <th>Strafzeit</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var penalty in AllPenalties)
+                {
+                    <tr>
+                        <td>@penalty.Participant?.DisplayName</td>
+                        <td>@penalty.RaceTimePoint?.DisplayName</td>
+                        <td>@penalty.TimePointUTC.ToLocalTime().ToString("HH:mm:ss")</td>
+                        <td>@(penalty.PenaltyTime?.ToString(@"hh\:mm\:ss") ?? "-")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@code {
+    private List<RaceParticipantTimePoint> OpenPenalties = [];
+    private List<RaceParticipantTimePoint> AllPenalties = [];
+    private RaceParticipantTimePoint? SelectedPenalty;
+    private string PenaltyInput = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadPenalties();
+        _ = AutoRefresh();
+    }
+
+    private async Task LoadPenalties()
+    {
+        var runningRaces = (await RaceService.GetRunningRacesAsync()).ToList();
+
+        AllPenalties.Clear();
+        OpenPenalties.Clear();
+
+        // Sammle alle Strafzeiten
+        foreach (var race in runningRaces)
+        {
+            // Vereinfacht: alle TimePoints mit Strafzeiten prüfen
+            foreach (var rptp in race.RaceParticipantTimePoints)
+            {
+                AllPenalties.Add(rptp);
+                if (!rptp.PenaltyTime.HasValue)
+                {
+                    OpenPenalties.Add(rptp);
+                }
+            }
+        }
+
+        OpenPenalties = OpenPenalties.OrderBy(p => p.TimePointUTC).ToList();
+    }
+
+    private async Task AutoRefresh()
+    {
+        while (true)
+        {
+            await Task.Delay(3000);
+            await LoadPenalties();
+            StateHasChanged();
+        }
+    }
+
+    private void SelectPenalty(RaceParticipantTimePoint penalty)
+    {
+        SelectedPenalty = penalty;
+        PenaltyInput = "";
+    }
+
+    private async Task SavePenalty()
+    {
+        if (SelectedPenalty is null || string.IsNullOrEmpty(PenaltyInput))
+            return;
+
+        // Parse Strafzeit (MM:SS Format)
+        if (TimeSpan.TryParse(PenaltyInput, out var penalty))
+        {
+            await TimingService.UpdatePenaltyTimeAsync(SelectedPenalty.Id, penalty);
+            await LoadPenalties();
+            SelectedPenalty = null;
+            PenaltyInput = "";
+        }
+        else
+        {
+            // Error handling könnte hier implementiert werden
+        }
+    }
+}

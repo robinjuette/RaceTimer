@@ -1,0 +1,76 @@
+﻿Wichtig: Wenn ein laufendes Rennen existiert muss ein großer Knopf sichtbar sein mit dem ein TimePoint erfasst und beim konfigurierten Server registriert werden kann. Dieser muss immer sichtbar sein, damit immer die Möglichkeit besteht einen Zeitpunkt zu erfassen. Er muss außerdem die Möglichkeit bieten in die Zuordnung des Erfassten Zeitpunkts zu springen wenn ein offener Zeitpunkt existiert.
+Beim Start wird geprüft ob Rennen laufen, wenn ja wird die Rennübersicht geöffnet, sonst die Rennverwaltung.
+Benötigte UI-Komponenten:
+Einstellungsseite:
+- Konfiguration des Modus
+o Standalone/Server-> Standardmäßig muss der Client selber einen internen Server hosten, für diesen sollten hier auch Verbindungsparameter (also Port und etwaige weitere nötige Parameter) gesetzt werden können.
+o Client -> Serververbindung muss konfiguriert und getestet werden können
+- Konfiguration der Datenbankverbindung des Servers
+o Nur verfügbar wenn im Modus Standalone/Server
+o Standardmäßig lokale db, optionale SQL-DB-Verbindung muss hier eingerichtet und getestet werden können. Hier muss angezeigt werden falls die SQL-DB migriert werden muss; diese Migration muss hier ausgelöst werden können.
+- Konfiguration des Zwischenstands-Update-Intervalls
+o Standardmäßig 1 min.
+Rennverwaltung:
+- Reiter für laufende, geplante, beendete und alle Rennen
+- Wenn irgendein Rennen läuft dann wird der Reiter laufende Rennen standardmäßig ausgewählt, sonst der Reiter mit geplanten Rennen
+- Zeigt Namen, Start- und Endzeit (falls vorhanden und in lokaler Zeit) und Status (in farbig).
+- Ermöglicht Sprung in Verwaltung der einzelnen Rennen
+- Ermöglicht das Erstellen eines neuen Rennens
+o Sollte dann in die Einzel-Rennverwaltung des neuen Rennens springen
+o Auch als Kopie eines anderen Rennes, in diesem Fall sollen die RaceTimePoints übernommen werden und das neue Rennen den DisplayName des alten + „-Kopie“ als seinen DisplayName erhalten.
+Einzel-Rennverwaltung:
+- Unterschiedlich je nach Rennstatus. Vielleicht als verschiedene Seiten umsetzen?
+- Für alle:
+o Anzeige von Start- und Endzeit (falls vorhanden und in lokaler Zeit)
+- Wenn geplant:
+o Anlegen von RaceTimePoints
+• Auch durch Kopie-Import der RaceTimePoints eines anderen Rennens
+• Ein Start-RaceTimePoint ist obligatorisch und immer vorhanden.
+o Ändern des Anzeigenamens
+o Starten des Rennens:
+• Nur möglich wenn mindestens 2 RaceTimePoints existieren
+• Auswahl von einem/mehreren/allen Rennteilnehmern -> Button „Start vorbereiten“ -> Seite die die ausgewählten Teilnehmer, den Namen des Rennens und einen großen Startknopf zeigt.
+• Bei Drücken auf den Startknopf wird DateTime.UtcNow erfasst, Race.StartTimeUTC darauf gesetzt und für jeden der ausgewählten  Teilnehmer der erste RaceParticipantTimePoint für den Start damit erstellt.
+• Spring anschließend in die Rennübersicht
+- Wenn geplant oder laufend:
+o Anlegen bzw. Hinzufügen von Teilnehmern
+• Hierzu muss ein Textfeld existieren in dem der Anzeigename eingegeben wird. Bei der Eingabe werden die existierenden Participants die diesem Rennen nicht zugeordnet sind durchsucht und zur Auswahl angeboten. Wird einer ausgewählt dann wird einfach ein neuer RaceParticipant angelegt. Zusätzlich existiert ein Button mit dem der Text als neuer PArticipant angelegt und dem Rennen als RaceParticipant zugeordnet wird.
+- Wenn laufend:
+o Sprung in die Rennübersicht für das Rennen
+Rennübersicht:
+- Zeigt die Daten für alle laufenden Rennen an, ermöglicht aber auch die Auswahl eines laufenden Rennens und zeigt dann nur die Daten für das Rennen an.
+- Wenn nur ein Rennen läuft wird automatisch das ausgewählt
+- Wenn mehrere Rennen angezeigt werden dann wird an jeder Stelle wo ein Teilnehmer angezeigt wird auch der Namen des Rennens mitangezeigt, wenn nur ein Rennen ausgewählt ist entfällt diese Anzeige.
+- Bei den Rennteilnehmern wird immer Nummer + Anzeigename angezeigt
+- Wenn es noch Rennteilnehmer gibt die nicht gestartet sind dann wird links eine Leiste mit ihnen angezeigt. Jeder hat einen Bereich mit 2 Buttons: Einen Vorbereiten- und einen Start-Button
+o Der Vorbereiten-Button ist nur dazu da den Start-Button zu entsperren um eine versehentliche Start-Erfassung weniger wahrscheinlich zu machen. Wenn der Vorbereiten-Button gedrückt wurde wird er zu einem „Abbrechen“-Button um den Start-Button wieder zu sperren.
+o Durch den Start wird entsprechend der erste RaceTimePoint für den Teilnehmer erfasst.
+- In der Mitte werden groß die laufenden Rennteilnehmer angezeigt.
+o Unter jedem Rennteilnehmer ist eine Fortschrittsleiste mit Punkten in der Anzahl der RaceTimePoints die das Rennen hat. Erreichte RaceTimePoints werden Grün, offene Grau dargestellt. Die Leiste ist entsprechend grün bis zum letzten erreichten Punkt und grau danach. Siehe Skizze:
+o Beim Hovern über die einzelnen Punkte wäre es schön wenn der Zeitpunkt angezeigt werden würde, also Anzeigename des RaceTimePoints + erfasste Uhrzeit in lokaler Zeit.
+o Die Teilnehmer sind nach ihrer Teilnehmernummer sortiert angezeigt
+- Wenn Rennteilnehmer schon fertig sind gibt es rechts eine Leiste mit deren Namen
+Zwischenstands/Endstands-Übersicht:
+- Gedacht für einen Fernseher oder zusätzlichen Client der nur den Rennzwischenstand anzeigt. 
+- Sollte zusätzlich zu den normalen Updates noch entsprechend der eingestellten Zwischenstands-Update-Intervalls komplett neu laden.
+- Zeigt die laufenden Rennen als einzelne Listen an.
+o Bei 2 Rennen werden 2 Rennen nebeinander angezeigt
+o Bei 3 oder 4 Rennen werden 2 Rennen neben- und 2 übereinander angezeigt 
+o Bei mehr Rennen werden nur 4 Rennen angezeigt, immer die 4 die zuletzt aktualisiert wurden. Das aktuellste oben links, zweitaktuellste oben rechts etc.
+- Zeigt die laufenden und fertigen Teilnehmer so an wie die laufenden Teilnehmer in der Mitte der Rennübersicht angezeigt werden, allerdings sortiert nach ihren Zwischenzeiten. 
+o Die Sortierung nach den Zwischenzeiten funktioniert folgendermaßen:
+• Die fertigen Teilnehmer werden zuerst in eine Liste sortiert nach ihrer Gesamtzeit, also Finish – Start + alle Strafzeiten.
+• Dann werden die laufenden Teilnehmer hinzusortiert, die mit dem größten Rennfortschritt zuerst.
+• Dafür wird die Zeit berechnet von Start zum letzten erfassten RaceTimePoint. Diese wird verglichen mit den Zeiten die die Teilnehmer in der Liste für dieselbe Distanz benötigt haben. Dann wird der Teilnehmer so einsortiert dass er vor dem vordersten Teilnehmer ist der länger gebraucht hat als er.
+• Beispiel: Thomas ist fertig in 1 Stunde. Zum ersten TimePoint hat er 10 min. gebraucht. Martin ist fertig in 2 Stunden und hat zum ersten TimePoint 15 min. gebraucht. Also ist Thomas an 1 und Martin an 2. Richard läuft noch und hat erst den ersten TimePoint erreicht, hat dafür 7 min. gebraucht. Also steht er in der Liste auf 1! Miriam ist genausoweit wie Richard, hat dafür aber 12 Minuten gebraucht. Sie wird also hinter Richard und Thomas aber vor Martin einsortiert.
+• Auch hier müssen die Strafzeiten miteinberechnet werden.
+Zeiterfassungs-Seite:
+- Zeigt alle laufenden Teilnehmer aller offenen Rennen.
+o Nur Nummer, Name und bei mehr als einem laufenden Rennen, Name des Rennens
+- Zeigt alle erfassten aber nicht zugeordneten TimePoints.
+- Durch Auswahl eines offenen TimePoints und eines Teilnehmers wird ein „zuordnen“-Button freigeschaltet. Dieser Button aktualisiert den offenen TimePoint dann so dass der TimePoint dem Teilnehmer, Rennen und nächsten offenen RaceTimePoint des Teilnehmers zugeordnet wird.
+- Die offenen TimePoints können hier auch gelöscht werden, das muss aber vom Benutzer rückbestätigt werden.
+Straftzeiterfassungs-Seite:
+- Zeigt RaceParticipantTimePoints aller laufenden Rennen bei denen der RaceTimePoint eine Strafzeit vorgibt.
+- In einer Liste werden die Punkte angezeigt bei denen noch keine Strafzeit erfasst wurde, eine weitere Liste zeigt alle an.
+- Hier muss die Strafzeit eingegeben werden können.

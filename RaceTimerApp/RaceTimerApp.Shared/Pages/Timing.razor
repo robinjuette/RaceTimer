@@ -1,0 +1,185 @@
+@page "/timing"
+@using RaceTimerApp.Shared.Services
+@using RaceTimer.Shared.Models
+@inject RaceService RaceService
+@inject TimingService TimingService
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<div class="page-header">
+    <h1>Zeiterfassung</h1>
+    <button class="btn btn-primary btn-lg" @onclick="RecordNewTimePoint" title="Zeitpunkt jetzt erfassen">
+        <span class="oi oi-clock"></span> Zeitpunkt erfassen
+    </button>
+</div>
+
+<div class="row">
+    <!-- Offene Zeitpunkte -->
+    <div class="col-md-6">
+        <div class="card mb-3">
+            <div class="card-header bg-warning">
+                <h5 class="mb-0">Offene Zeitpunkte <span class="badge bg-danger">@UnassignedTimePoints.Count</span></h5>
+            </div>
+            <div class="card-body">
+                @if (UnassignedTimePoints.Any())
+                {
+                    <div class="list-group">
+                        @foreach (var tp in UnassignedTimePoints)
+                        {
+                            <div class="list-group-item d-flex justify-content-between align-items-center"
+                                 @onclick="() => SelectTimePoint(tp)" 
+                                 style="cursor: pointer; background-color: @(SelectedTimePoint?.Id == tp.Id ? "#e7f3ff" : "")">
+                                <div>
+                                    <strong>@tp.TimePointUTC.ToLocalTime().ToString("HH:mm:ss")</strong>
+                                    <br />
+                                    <small class="text-muted">@((DateTime.UtcNow - tp.TimePointUTC).TotalSeconds) Sekunden alt</small>
+                                </div>
+                                <button class="btn btn-danger btn-sm" @onclick="() => DeleteTimePoint(tp.Id)">Löschen</button>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="alert alert-info">Keine offenen Zeitpunkte</div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Teilnehmer zur Zuordnung -->
+    <div class="col-md-6">
+        <div class="card mb-3">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">Aktive Teilnehmer</h5>
+            </div>
+            <div class="card-body">
+                @if (ActiveParticipants.Any())
+                {
+                    <div class="list-group">
+                        @foreach (var (race, participant) in ActiveParticipants)
+                        {
+                            <div class="list-group-item d-flex justify-content-between align-items-center"
+                                 @onclick="() => SelectParticipant((race, participant))"
+                                 style="cursor: pointer; background-color: @(SelectedParticipant?.Item1.Id == race.Id && SelectedParticipant?.Item2.ParticipantID == participant.ParticipantID ? "#e7f3ff" : "")">
+                                <div>
+                                    <strong>#@participant.ParticipantNr - @participant.Participant?.DisplayName</strong>
+                                    @if (ActiveParticipants.Where(p => p.race.Id == race.Id).Count() > 1)
+                                    {
+                                        <br />
+                                        <small class="text-muted">@race.Name</small>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="alert alert-info">Keine aktiven Teilnehmer</div>
+                }
+            </div>
+        </div>
+
+        @if (SelectedTimePoint is not null && SelectedParticipant is not null)
+        {
+            <div class="card">
+                <div class="card-body">
+                    <button class="btn btn-success w-100 btn-lg" @onclick="AssignTimePoint">
+                        <span class="oi oi-check"></span> Zeitpunkt zuordnen
+                    </button>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private List<RaceParticipantTimePoint> UnassignedTimePoints = [];
+    private RaceParticipantTimePoint? SelectedTimePoint;
+    private (Race, RaceParticipant)? SelectedParticipant;
+    private List<(Race race, RaceParticipant participant)> ActiveParticipants = [];
+    private List<Race> RunningRaces = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+        _ = AutoRefresh();
+    }
+
+    private async Task LoadData()
+    {
+        RunningRaces = (await RaceService.GetRunningRacesAsync()).ToList();
+
+        ActiveParticipants.Clear();
+        foreach (var race in RunningRaces)
+        {
+            foreach (var participant in race.RaceParticipants.Where(rp => rp.StartTime.HasValue && !rp.FinishDateTimeUTC.HasValue))
+            {
+                ActiveParticipants.Add((race, participant));
+            }
+        }
+
+        UnassignedTimePoints = TimingService.GetUnassignedTimePoints().ToList();
+    }
+
+    private async Task AutoRefresh()
+    {
+        while (true)
+        {
+            await Task.Delay(2000); // Alle 2 Sekunden refresh
+            await LoadData();
+            StateHasChanged();
+        }
+    }
+
+    private void SelectTimePoint(RaceParticipantTimePoint tp)
+    {
+        SelectedTimePoint = tp.Id == SelectedTimePoint?.Id ? null : tp;
+    }
+
+    private void SelectParticipant((Race, RaceParticipant) p)
+    {
+        SelectedParticipant = p.Item2.ParticipantID == SelectedParticipant?.Item2.ParticipantID ? null : p;
+    }
+
+    private async Task RecordNewTimePoint()
+    {
+        var recorded = await TimingService.RecordTimePointAsync();
+        if (recorded is not null)
+        {
+            UnassignedTimePoints.Add(recorded);
+        }
+    }
+
+    private async Task AssignTimePoint()
+    {
+        if (SelectedTimePoint is null || SelectedParticipant is null)
+            return;
+
+        Race race = SelectedParticipant.Value.Item1;
+        RaceParticipant participant = SelectedParticipant.Value.Item2;
+
+        if (nextTimePoint is not null)
+        {
+            await TimingService.AssignTimePointAsync(
+                SelectedTimePoint.Id,
+                race.Id,
+                participant.ParticipantID,
+                nextTimePoint.Id);
+        }
+
+        await LoadData();
+        SelectedTimePoint = null;
+        SelectedParticipant = null;
+    }
+
+    private async Task DeleteTimePoint(Guid id)
+    {
+        if (await JS.InvokeAsync<bool>("confirm", "Wirklich löschen?"))
+        {
+            await TimingService.DeleteTimePointAsync(id);
+            await LoadData();
+        }
+    }
+}

@@ -36,7 +36,7 @@ public class RaceTimerDbContext : DbContext
         modelBuilder.Entity<RaceParticipant>(b =>
         {
             b.HasKey(rp => new { rp.ParticipantID, rp.RaceID });
-            b.HasOne(rp => rp.Participant).WithMany();
+            b.HasOne(rp => rp.Participant).WithMany(p => p.RaceParticipations);
         });
 
         modelBuilder.Entity<RaceTimePoint>(b =>
@@ -49,6 +49,7 @@ public class RaceTimerDbContext : DbContext
         {
             b.HasKey(rptp => rptp.Id);
             b.HasOne(rptp => rptp.Participant).WithMany();
+            b.HasOne(rptp => rptp.RaceParticipant).WithMany(rp => rp.RaceParticipantTimePoints).HasForeignKey(rptp => new { rptp.ParticipantID, rptp.RaceID });
             b.HasOne(rptp => rptp.Race).WithMany(r => r.RaceParticipantTimePoints).HasForeignKey(rptp => rptp.RaceID);
         });
     }

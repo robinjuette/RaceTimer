@@ -1,0 +1,84 @@
+﻿@inherits LayoutComponentBase
+@using RaceTimerApp.Shared.Services
+@inject NavigationManager Navigation
+@inject RaceService RaceService
+
+<div class="main-container">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">
+                <span class="badge badge-primary">RaceTimer</span>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/races" aria-current="page">Rennen</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/overview">Übersicht</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/timing">Zeiterfassung</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/penalty">Strafzeiten</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/settings">Einstellungen</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid main-content">
+        @Body
+    </div>
+
+    <!-- Timing Button - immer sichtbar wenn Rennen läuft -->
+    @if (_hasRunningRace)
+    {
+        <div class="timing-button-container">
+            <button class="btn btn-primary btn-lg timing-button" @onclick="RecordTimePoint" title="Zeitpunkt erfassen">
+                <span class="oi oi-clock"></span> Zeit erfassen
+            </button>
+            @if (_hasUnassignedPoints)
+            {
+                <a href="/timing" class="btn btn-warning btn-lg timing-secondary" title="Offene Zeitpunkte zuordnen">
+                    <span class="badge badge-danger">!</span>
+                </a>
+            }
+        </div>
+    }
+</div>
+
+<div id="blazor-error-ui" data-nosnippet>
+    An unhandled error has occurred.
+    <a href="." class="reload">Reload</a>
+    <span class="dismiss">🗙</span>
+</div>
+
+@code {
+    private bool _hasRunningRace = false;
+    private bool _hasUnassignedPoints = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CheckRunningRaces();
+    }
+
+    private async Task CheckRunningRaces()
+    {
+        var running = await RaceService.GetRunningRacesAsync();
+        _hasRunningRace = running.Any();
+    }
+
+    private async Task RecordTimePoint()
+    {
+        // Wird von der TimingService implementiert
+        Navigation.NavigateTo("/timing");
+    }
+}

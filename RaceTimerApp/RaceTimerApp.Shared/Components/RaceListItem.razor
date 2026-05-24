@@ -1,0 +1,61 @@
+@using RaceTimer.Shared.Models
+@using RaceTimerApp.Shared.Services
+
+<div class="card race-card mb-3">
+    <div class="card-body">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <h5 class="card-title">@Race.Name</h5>
+                <p class="card-text text-muted">
+                    @if (Race.StartTimeUTC.HasValue)
+                    {
+                        <span>Start: @Race.StartTimeUTC.Value.ToLocalTime():G</span>
+                    }
+                    @if (Race.FinishDateTimeUTC.HasValue)
+                    {
+                        <span class="ms-3">Ende: @Race.FinishDateTimeUTC.Value.ToLocalTime():G</span>
+                    }
+                </p>
+            </div>
+            <div class="col-md-4">
+                <span class="badge badge-lg @GetStatusBadgeClass()">
+                    @GetStatusText()
+                </span>
+            </div>
+            <div class="col-md-2 text-end">
+                <button class="btn btn-primary btn-sm" @onclick="OnManage">Verwalten</button>
+                <button class="btn btn-danger btn-sm" @onclick="OnDelete">Löschen</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public Race Race { get; set; } = new();
+
+    [Parameter]
+    public EventCallback OnManage { get; set; }
+
+    [Parameter]
+    public EventCallback OnDelete { get; set; }
+
+    private string GetStatusText()
+    {
+        if (Race.FinishDateTimeUTC.HasValue)
+            return "Beendet";
+        if (Race.StartTimeUTC.HasValue)
+            return "Läuft";
+        return "Geplant";
+    }
+
+    private string GetStatusBadgeClass()
+    {
+        return GetStatusText() switch
+        {
+            "Beendet" => "bg-success",
+            "Läuft" => "bg-danger",
+            _ => "bg-secondary"
+        };
+    }
+}

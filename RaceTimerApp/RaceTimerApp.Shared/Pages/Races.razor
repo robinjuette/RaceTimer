@@ -1,0 +1,129 @@
+@page "/races"
+@using RaceTimerApp.Shared.Services
+@using RaceTimer.Shared.Models
+@inject RaceService RaceService
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<div class="page-header">
+    <h1>Rennverwaltung</h1>
+    <button class="btn btn-success" @onclick="CreateNewRace">
+        <span class="oi oi-plus"></span> Neues Rennen
+    </button>
+</div>
+
+<!-- Reiter -->
+<ul class="nav nav-tabs mb-3" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link @(CurrentTab == RUNNING_TAB ? "active" : "")" @onclick="() => SwitchTab(RUNNING_TAB)">
+            Laufende Rennen <span class="badge bg-info">@RunningRaces.Count()</span>
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link @(CurrentTab == PLANNED_TAB ? "active" : "")" @onclick="() => SwitchTab(PLANNED_TAB)">
+            Geplante Rennen <span class="badge bg-secondary">@PlannedRaces.Count()</span>
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link @(CurrentTab == COMPLETED_TAB ? "active" : "")" @onclick="() => SwitchTab(COMPLETED_TAB)">
+            Beendete Rennen <span class="badge bg-success">@FinishedRaces.Count()</span>
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link @(CurrentTab == ALL_TAB ? "active" : "")" @onclick="() => SwitchTab(ALL_TAB)">
+            Alle Rennen <span class="badge bg-dark">@AllRaces.Count()</span>
+        </button>
+    </li>
+</ul>
+
+<!-- Race List -->
+<div class="race-list">
+    @if (CurrentTab == RUNNING_TAB && RunningRaces.Any())
+    {
+        @foreach (var race in RunningRaces)
+        {
+            <RaceListItem Race="race" OnManage="() => ManageRace(race.Id)" OnDelete="() => DeleteRace(race.Id)" />
+        }
+    }
+    else if (CurrentTab == PLANNED_TAB && PlannedRaces.Any())
+    {
+        @foreach (var race in PlannedRaces)
+        {
+            <RaceListItem Race="race" OnManage="() => ManageRace(race.Id)" OnDelete="() => DeleteRace(race.Id)" />
+        }
+    }
+    else if (CurrentTab == COMPLETED_TAB && FinishedRaces.Any())
+    {
+        @foreach (var race in FinishedRaces)
+        {
+            <RaceListItem Race="race" OnManage="() => ManageRace(race.Id)" OnDelete="() => DeleteRace(race.Id)" />
+        }
+    }
+    else if (CurrentTab == ALL_TAB && AllRaces.Any())
+    {
+        @foreach (var race in AllRaces)
+        {
+            <RaceListItem Race="race" OnManage="() => ManageRace(race.Id)" OnDelete="() => DeleteRace(race.Id)" />
+        }
+    }
+    else
+    {
+        <div class="alert alert-info">Keine Rennen in dieser Kategorie</div>
+    }
+</div>
+
+@code {
+    private List<Race> AllRaces = [];
+    private List<Race> RunningRaces = [];
+    private List<Race> PlannedRaces = [];
+    private List<Race> FinishedRaces = [];
+    private string CurrentTab = RUNNING_TAB;
+    private bool Loading = true;
+
+    private static string RUNNING_TAB = "running";
+    private static string PLANNED_TAB = "planned";
+    private static string COMPLETED_TAB = "completed";
+    private static string ALL_TAB = "all";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadRaces();
+        // Prüfe ob laufende Rennen existieren, sonst zeige geplante
+        if (!RunningRaces.Any())
+            CurrentTab = PLANNED_TAB;
+    }
+
+    private async Task LoadRaces()
+    {
+        Loading = true;
+        AllRaces = (await RaceService.GetAllRacesAsync()).ToList();
+        RunningRaces = (await RaceService.GetRunningRacesAsync()).ToList();
+        PlannedRaces = (await RaceService.GetPlannedRacesAsync()).ToList();
+        FinishedRaces = (await RaceService.GetFinishedRacesAsync()).ToList();
+        Loading = false;
+    }
+
+    private void SwitchTab(string tab)
+    {
+        CurrentTab = tab;
+    }
+
+    private void ManageRace(Guid raceId)
+    {
+        Navigation.NavigateTo($"/races/{raceId}");
+    }
+
+    private async Task DeleteRace(Guid raceId)
+    {
+        if (await JS.InvokeAsync<bool>("confirm", "Möchten Sie dieses Rennen wirklich löschen?"))
+        {
+            await RaceService.DeleteRaceAsync(raceId);
+            await LoadRaces();
+        }
+    }
+
+    private void CreateNewRace()
+    {
+        Navigation.NavigateTo("/races/new");
+    }
+}

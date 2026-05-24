@@ -1,0 +1,208 @@
+@page "/settings"
+@using RaceTimerApp.Shared.Services
+@using RaceTimerApp.Shared.Models
+@inject SettingsService SettingsService
+
+<div class="page-header">
+    <h1>Einstellungen</h1>
+</div>
+
+<div class="settings-container">
+    <!-- Betriebsmodus -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5>Betriebsmodus</h5>
+        </div>
+        <div class="card-body">
+            <div class="mb-3">
+                <label class="form-label">Modus:</label>
+                <select class="form-select" @bind="AppSettings.Mode" @onchange-mode="OnModeChanged">
+                    <option value="StandaloneServer">Standalone-Server (lokal)</option>
+                    <option value="RemoteServer">Remote-Server</option>
+                </select>
+                <small class="form-text text-muted">
+                    Standalone: Server läuft lokal auf diesem Gerät<br/>
+                    Remote: Verbindung zu einem externen Server
+                </small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Standalone Server Einstellungen -->
+    @if (AppSettings.Mode == "StandaloneServer")
+    {
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5>Server-Konfiguration</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label">Server-Port:</label>
+                    <input type="number" class="form-control" @bind="AppSettings.ServerPort" />
+                    <small class="form-text text-muted">Standard: 5000</small>
+                </div>
+
+                <button class="btn btn-secondary" @onclick="TestServerConnection">Server testen</button>
+                @if (ServerTestResult is not null)
+                {
+                    <div class="alert alert-@(ServerTestResult.Value ? "success" : "danger") mt-2">
+                        @(ServerTestResult.Value ? "✓ Server erreichbar" : "✗ Server nicht erreichbar")
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Datenbankverbindung -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5>Datenbankverbindung</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label">Datenbanktyp:</label>
+                    <select class="form-select" @bind="AppSettings.DatabaseType">
+                        <option value="Sqlite">SQLite (lokal)</option>
+                        <option value="SqlServer">SQL Server</option>
+                    </select>
+                </div>
+
+                @if (AppSettings.DatabaseType == "Sqlite")
+                {
+                    <div class="mb-3">
+                        <label class="form-label">Datenbankpfad:</label>
+                        <input type="text" class="form-control" @bind="AppSettings.DatabasePath" />
+                        <small class="form-text text-muted">Standard: Data/racetimer.db</small>
+                    </div>
+                }
+                else
+                {
+                    <div class="mb-3">
+                        <label class="form-label">SQL Server Verbindungsstring:</label>
+                        <textarea class="form-control" rows="3" @bind="AppSettings.SqlServerConnectionString" placeholder="Server=localhost;Database=RaceTimer;..."></textarea>
+                    </div>
+                }
+
+                <div class="d-grid gap-2">
+                    <button class="btn btn-secondary" @onclick="TestDatabaseConnection">Verbindung testen</button>
+                    @if (DatabaseTestResult is not null)
+                    {
+                        <div class="alert alert-@(DatabaseTestResult.Value ? "success" : "danger")">
+                            @(DatabaseTestResult.Value ? "✓ Datenbankverbindung erfolgreich" : "✗ Datenbankverbindung fehlgeschlagen")
+                        </div>
+                    }
+                    @if (AppSettings.IsDatabaseMigrationNeeded)
+                    {
+                        <button class="btn btn-warning" @onclick="RunDatabaseMigration">Datenbank migrieren</button>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <!-- Remote Server Einstellungen -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5>Server-Verbindung</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label">Server-URL:</label>
+                    <input type="url" class="form-control" @bind="AppSettings.ServerUrl" placeholder="http://localhost:5000" />
+                </div>
+
+                <button class="btn btn-secondary" @onclick="TestServerConnection">Verbindung testen</button>
+                @if (ServerTestResult is not null)
+                {
+                    <div class="alert alert-@(ServerTestResult.Value ? "success" : "danger") mt-2">
+                        @(ServerTestResult.Value ? "✓ Server erreichbar" : "✗ Server nicht erreichbar")
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+    <!-- Allgemeine Einstellungen -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5>Allgemeine Einstellungen</h5>
+        </div>
+        <div class="card-body">
+            <div class="mb-3">
+                <label class="form-label">Zwischenstand-Update-Intervall (Sekunden):</label>
+                <input type="number" class="form-control" @bind="AppSettings.StatusUpdateIntervalSeconds" min="10" />
+                <small class="form-text text-muted">Intervall für Aktualisierung der Übersichtsseite. Standard: 60 Sekunden</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Save Button -->
+    <div class="d-grid">
+        <button class="btn btn-primary btn-lg" @onclick="SaveSettings">Einstellungen speichern</button>
+    </div>
+
+    @if (SaveMessage is not null)
+    {
+        <div class="alert alert-@(SaveMessage.Value.IsSuccess ? "success" : "danger") mt-3">
+            @SaveMessage.Value.Message
+        </div>
+    }
+</div>
+
+@code {
+    private AppSettings AppSettings = new();
+    private bool? ServerTestResult;
+    private bool? DatabaseTestResult;
+    private (bool IsSuccess, string Message)? SaveMessage;
+
+    protected override void OnInitialized()
+    {
+        AppSettings = SettingsService.GetSettings();
+    }
+
+    private void OnModeChanged(ChangeEventArgs e)
+    {
+        AppSettings.Mode = e.Value?.ToString() ?? "StandaloneServer";
+    }
+
+    private async Task TestServerConnection()
+    {
+        var url = AppSettings.Mode == "StandaloneServer" 
+            ? $"http://localhost:{AppSettings.ServerPort}"
+            : AppSettings.ServerUrl;
+
+        ServerTestResult = await SettingsService.TestServerConnectionAsync(url);
+    }
+
+    private async Task TestDatabaseConnection()
+    {
+        DatabaseTestResult = await SettingsService.TestDatabaseConnectionAsync(AppSettings);
+    }
+
+    private async Task RunDatabaseMigration()
+    {
+        var success = await SettingsService.RunDatabaseMigrationAsync(AppSettings);
+        if (success)
+        {
+            AppSettings.IsDatabaseMigrationNeeded = false;
+            SaveMessage = (true, "Datenbankmigrationen erfolgreich durchgeführt");
+        }
+        else
+        {
+            SaveMessage = (false, "Migration fehlgeschlagen");
+        }
+    }
+
+    private async Task SaveSettings()
+    {
+        try
+        {
+            await SettingsService.SaveSettingsAsync(AppSettings);
+            SaveMessage = (true, "Einstellungen gespeichert");
+        }
+        catch (Exception ex)
+        {
+            SaveMessage = (false, $"Fehler beim Speichern: {ex.Message}");
+        }
+    }
+}

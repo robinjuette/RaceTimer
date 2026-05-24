@@ -1,0 +1,124 @@
+@page "/standings"
+@using RaceTimerApp.Shared.Services
+@using RaceTimer.Shared.Models
+@inject RaceService RaceService
+@inject RankingService RankingService
+
+<div class="page-header">
+    <h1>Zwischenstand</h1>
+</div>
+
+<div class="standings-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(500px, 1fr)); gap: 20px;">
+    @foreach (var race in DisplayedRaces)
+    {
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">@race.Name</h5>
+            </div>
+            <div class="card-body">
+                @if (race.RaceParticipants.Any())
+                {
+                    <ol class="standings-list">
+                        @foreach (var (participant, time) in GetSortedParticipants(race))
+                        {
+                            <li class="standing-item @(participant.FinishDateTimeUTC.HasValue ? "finished" : "active")">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span>
+                                        <strong>#@participant.ParticipantNr</strong>
+                                        @participant.Participant?.DisplayName
+                                    </span>
+                                    <span class="badge badge-lg @(participant.FinishDateTimeUTC.HasValue ? "bg-success" : "bg-info")">
+                                        @if (time.HasValue)
+                                        {
+                                            @time.Value.ToString(@"hh\:mm\:ss")
+                                        }
+                                        else
+                                        {
+                                            <span>Läuft</span>
+                                        }
+                                    </span>
+                                </div>
+
+                                <!-- Progress Bar (nur für aktive) -->
+                                @if (!participant.FinishDateTimeUTC.HasValue)
+                                {
+                                    <div class="progress mt-2">
+                                        <div class="progress-bar" style="width: @GetProgressPercentage(participant, race)%"></div>
+                                    </div>
+                                }
+                            </li>
+                        }
+                    </ol>
+                }
+                else
+                {
+                    <div class="text-muted">Keine Teilnehmer</div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private List<Race> RunningRaces = [];
+
+    private IEnumerable<Race> DisplayedRaces
+    {
+        get
+        {
+            return RunningRaces.Take(4);
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadRaces();
+        _ = AutoRefresh();
+    }
+
+    private async Task LoadRaces()
+    {
+        RunningRaces = (await RaceService.GetRunningRacesAsync()).ToList();
+    }
+
+    private async Task AutoRefresh()
+    {
+        while (true)
+        {
+            await Task.Delay(TimeSpan.FromSeconds(60)); // Update alle 60 Sekunden
+            await LoadRaces();
+            StateHasChanged();
+        }
+    }
+
+    private IEnumerable<(RaceParticipant, TimeSpan?)> GetSortedParticipants(Race race)
+    {
+        // Vereinfachte Sortierung: beendete zuerst, dann aktive nach Zeit
+        var finished = race.RaceParticipants
+            .Where(rp => rp.FinishDateTimeUTC.HasValue)
+            .OrderBy(rp => rp.FinishDateTimeUTC.Value - rp.StartTime.Value)
+            .Select(rp => (rp, (TimeSpan?)(rp.FinishDateTimeUTC.Value - rp.StartTime.Value)));
+
+        var active = race.RaceParticipants
+            .Where(rp => rp.StartTime.HasValue && !rp.FinishDateTimeUTC.HasValue)
+            .OrderBy(rp => DateTime.UtcNow - rp.StartTime.Value)
+            .Select(rp => (rp, (TimeSpan?)(DateTime.UtcNow - rp.StartTime.Value)));
+
+        return finished.Concat(active);
+    }
+
+    private double GetProgressPercentage(RaceParticipant participant, Race race)
+    {
+        if (!participant.StartTime.HasValue)
+            return 0;
+
+        var completedTimePoints = race.RaceParticipantTimePoints
+            .Where(rptp => rptp.ParticipantID == participant.ParticipantID)
+            .Count();
+
+        var totalTimePoints = race.RaceTimePoints.Count;
+        if (totalTimePoints == 0) return 0;
+
+        return (double)completedTimePoints / totalTimePoints * 100;
+    }
+}
