@@ -1,0 +1,36 @@
+@using RaceTimer.Shared.Models
+@inject RaceTimerClientApp.Web.Client.Services.RaceStateService State
+@code {
+    [Parameter]
+    public Guid RaceId { get; set; }
+
+    private Race? race;
+
+    protected override void OnParametersSet()
+    {
+        if (State.Races.TryGetValue(RaceId, out var r))
+        {
+            race = r;
+        }
+    }
+}
+
+<div>
+    @if (race is null)
+    {
+        <p>Race not loaded</p>
+    }
+    else
+    {
+        <h3>@race.Name</h3>
+        <p>Start: @race.StartTimeUTC</p>
+        <p>Finish: @race.FinishDateTimeUTC</p>
+        <h4>Participants</h4>
+        <ul>
+            @foreach(var p in race.RaceParticipants)
+            {
+                <li>@p.Participant.DisplayName - Finish: @p.FinishDateTimeUTC</li>
+            }
+        </ul>
+    }
+</div>

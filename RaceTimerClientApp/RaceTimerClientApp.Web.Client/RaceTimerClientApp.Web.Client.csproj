@@ -10,10 +10,12 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.8" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\RaceTimerClientApp.Shared\RaceTimerClientApp.Shared.csproj" />
+    <ProjectReference Include="..\..\RaceTimerShared\RaceTimerShared.csproj" />
   </ItemGroup>
 
 </Project>

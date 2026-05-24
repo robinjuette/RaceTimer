@@ -52,4 +52,29 @@ public class RaceTimerDbContext : DbContext
             b.HasOne(rptp => rptp.Race).WithMany(r => r.RaceParticipantTimePoints).HasForeignKey(rptp => rptp.RaceID);
         });
     }
+
+    public override int SaveChanges()
+    {
+        UpdateTimestamps();
+        return base.SaveChanges();
+    }
+
+    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        UpdateTimestamps();
+        return base.SaveChangesAsync(cancellationToken);
+    }
+
+    private void UpdateTimestamps()
+    {
+        var entries = ChangeTracker.Entries().Where(e => e.State == EntityState.Added || e.State == EntityState.Modified);
+        foreach (var e in entries)
+        {
+            var prop = e.Properties.FirstOrDefault(p => p.Metadata.Name == "LastModifiedUtc");
+            if (prop != null)
+            {
+                prop.CurrentValue = DateTime.UtcNow;
+            }
+        }
+    }
 }

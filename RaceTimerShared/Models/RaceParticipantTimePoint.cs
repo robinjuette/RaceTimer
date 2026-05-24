@@ -15,5 +15,6 @@ namespace RaceTimer.Shared.Models
         public Participant? Participant { get; set; }
         public int? RTPIndex { get; set; }
         public RaceTimePoint? RaceTimePoint { get; set; }
+        public DateTime? LastModifiedUtc { get; set; }
     }
 }

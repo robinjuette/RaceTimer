@@ -18,6 +18,20 @@ public class RacesController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<IEnumerable<Race>>> GetAll() => Ok(await _repo.GetAllAsync());
 
+    [HttpGet("status/{status}")]
+    public async Task<ActionResult<IEnumerable<Race>>> GetByStatus(string status)
+    {
+        var list = await _repo.GetRacesByStatusAsync(status);
+        return Ok(list);
+    }
+
+    [HttpGet("{id}/changes")]
+    public async Task<ActionResult> GetChanges(Guid id, [FromQuery] DateTime sinceUtc)
+    {
+        var changes = await _repo.GetChangesSinceAsync(id, sinceUtc);
+        return Ok(changes);
+    }
+
     [HttpGet("{id}")]
     public async Task<ActionResult<Race>> Get(Guid id)
     {
@@ -76,6 +90,16 @@ public class RacesController : ControllerBase
         var race = await _repo.GetAsync(id);
         if (race is null) return NotFound();
         await _repo.RemoveParticipantFromRaceAsync(id, participantId);
+        return NoContent();
+    }
+
+    // unassigned timepoints are now managed by /api/timepoints
+
+    [HttpPost("timepoints/{timePointId}/assign/{participantId}")]
+    public async Task<ActionResult> AssignTimePoint(Guid timePointId, Guid participantId)
+    {
+        var tp = await _repo.GetAllAsync(); // ensure race exists via lookup
+        await _repo.AssignTimePointToParticipantAsync(timePointId, participantId);
         return NoContent();
     }
 }

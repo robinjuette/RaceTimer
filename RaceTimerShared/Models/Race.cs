@@ -11,4 +11,6 @@ public class Race
 
     // Concurrency token for optimistic concurrency
     public byte[]? RowVersion { get; set; }
+    public DateTime? FinishDateTimeUTC { get; set; }
+    public DateTime? LastModifiedUtc { get; set; }
 }

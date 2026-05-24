@@ -1,0 +1,18 @@
+@inject RaceTimerClientApp.Web.Client.Services.RaceSignalRService SignalR
+
+@code {
+    [Parameter]
+    public Guid RaceId { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await SignalR.StartAsync();
+        await SignalR.SubscribeRaceAsync(RaceId);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await SignalR.UnsubscribeRaceAsync(RaceId);
+        await SignalR.StopAsync();
+    }
+}

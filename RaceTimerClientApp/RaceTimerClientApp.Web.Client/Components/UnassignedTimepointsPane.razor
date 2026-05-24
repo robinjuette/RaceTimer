@@ -1,0 +1,12 @@
+@using RaceTimer.Shared.Models
+@inject RaceTimerClientApp.Web.Client.Services.RaceStateService State
+
+<div>
+    <h4>Unassigned Timepoints</h4>
+    <ul>
+        @foreach (var tp in State.UnassignedTimePoints)
+        {
+            <li>@tp.TimePointUTC - Id: @tp.Id</li>
+        }
+    </ul>
+</div>

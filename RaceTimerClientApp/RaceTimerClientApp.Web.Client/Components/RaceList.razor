@@ -1,0 +1,12 @@
+@using RaceTimer.Shared.Models
+@inject RaceTimerClientApp.Web.Client.Services.RaceStateService State
+
+<div>
+    <h3>Subscribed Races</h3>
+    <ul>
+        @foreach(var r in State.Races.Values)
+        {
+            <li>@r.Name (@(r.StartTimeUTC is null ? "prepared" : r.FinishDateTimeUTC is null ? "running" : "finished"))</li>
+        }
+    </ul>
+</div>

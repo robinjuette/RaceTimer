@@ -11,5 +11,6 @@ namespace RaceTimer.Shared.Models
         public uint Index { get; set; }
         public Guid RaceID { get; set; }
         public Race Race { get; set; }
+        public DateTime? LastModifiedUtc { get; set; }
     }
 }
