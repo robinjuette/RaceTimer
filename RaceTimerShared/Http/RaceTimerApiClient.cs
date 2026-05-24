@@ -78,17 +78,29 @@ public class RaceTimerApiClient
 
     public async Task<IEnumerable<RaceTimePoint>> GetRaceTimePointsAsync(Guid raceId)
     {
-         
+        var res = await _http.GetAsync($"api/races/{raceId}/timepoints");
+        if (!res.IsSuccessStatusCode) return [];
+        return await res.Content.ReadFromJsonAsync<IEnumerable<RaceTimePoint>>() ?? [];
     }
 
     public async Task<RaceTimePoint?> CreateRaceTimePointAsync(Guid raceId, RaceTimePoint timePoint)
     {
-
+        var res = await _http.PostAsJsonAsync($"api/races/{raceId}/timepoint", timePoint);
+        if (!res.IsSuccessStatusCode) return null;
+        return await res.Content.ReadFromJsonAsync<RaceTimePoint>();
     }
 
     public async Task<bool> DeleteRaceTimePointAsync(Guid raceId, Guid timePointId)
     {
+        var res = await _http.DeleteAsync($"api/races/{raceId}/timepoints/{timePointId}");
+        return res.IsSuccessStatusCode;
+    }
 
+    public async Task<bool> SetPenaltyTime(Guid timePointId, TimeSpan penaltyTime)
+    {
+        var res = await _http.PostAsJsonAsync($"api/timepoints/{timePointId}/penalty", penaltyTime);
+        if (!res.IsSuccessStatusCode) return false;
+        return true;
     }
 
     public async Task<RaceParticipantTimePoint?> CreateRaceParticipantTimePointAsync(DateTime dateTimeUTC)
@@ -131,5 +143,26 @@ public class RaceTimerApiClient
         var res = await _http.PostAsJsonAsync($"api/races/{raceId}/start/", participantIds);
         if (!res.IsSuccessStatusCode) return false;
         return true;
+    }
+
+    public async Task<bool> FinishRaceAsync(Guid raceId)
+    {
+        var res = await _http.PostAsync($"api/races/{raceId}/finish", null);
+        if (!res.IsSuccessStatusCode) return false;
+        return true;
+    }
+
+    public async Task<IEnumerable<Race>?> GetRunningRacesAsync()
+    {
+        var res = await _http.GetAsync("api/races/status/running");
+        if (!res.IsSuccessStatusCode) return null;
+        return await res.Content.ReadFromJsonAsync<IEnumerable<Race>>();
+    }
+
+    public async Task<IEnumerable<Race>?> GetRacesByStatusAsync(string status)
+    {
+        var res = await _http.GetAsync($"api/races/status/{status}");
+        if (!res.IsSuccessStatusCode) return null;
+        return await res.Content.ReadFromJsonAsync<IEnumerable<Race>>();
     }
 }

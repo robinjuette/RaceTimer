@@ -1,8 +1,9 @@
-using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
 using RaceTimer.Shared.Models;
 using RaceTimerServer.Data;
-using Microsoft.AspNetCore.Mvc;
+using System.Diagnostics;
 
 namespace RaceTimerServer.Services;
 
@@ -246,7 +247,7 @@ public class RaceRepository
         await _hub.Clients.Group(RaceTimerServer.Hubs.RaceHub.GetGroupName(raceId.ToString())).SendCoreAsync("RaceFinished", new object?[] { raceId, race.FinishDateTimeUTC });
     }
 
-    internal async Task<ActionResult<IEnumerable<RaceParticipant>>> GetRaceParticipantsAsync(Guid id)
+    internal async Task<IEnumerable<RaceParticipant>> GetRaceParticipantsAsync(Guid id)
     {
         return await _db.RaceParticipants.Where(rp => rp.RaceID == id).ToListAsync();
     }
@@ -259,5 +260,66 @@ public class RaceRepository
     internal async Task<IEnumerable<RaceParticipantTimePoint>> GetTimePointsForRaceAsync(Guid raceId)
     {
         return await _db.RaceParticipantTimePoints.Where(rp => rp.RaceID == raceId).ToListAsync();
+    }
+
+    internal async Task<bool> SetTimePointPenaltyTime(Guid timePointId, TimeSpan penaltyTime)
+    {
+        RaceParticipantTimePoint? timePoint = await _db.RaceParticipantTimePoints.FindAsync(timePointId);
+
+        if (timePoint is null) return false;
+
+        timePoint.PenaltyTime = penaltyTime;
+
+        await _db.SaveChangesAsync();
+        await _hub.Clients.Group(RaceTimerServer.Hubs.RaceHub.GetGroupName(timePoint.RaceID.ToString())).SendCoreAsync("PenaltyTimeSet", new object?[] { timePointId, timePoint.PenaltyTime });
+
+        return true;
+    }
+
+    internal async Task<RaceTimePoint?> AddTimePointAsync(Guid raceId, RaceTimePoint timePoint)
+    {
+        var race = await _db.Races.FindAsync(raceId);
+        if (race is null) return null;
+
+        // Determine next index
+        var maxIndex = race.RaceTimePoints.Any() ? race.RaceTimePoints.Max(tp => tp.Index) : 0;
+        timePoint.Index = maxIndex + 1;
+        timePoint.Id = Guid.NewGuid();
+        timePoint.RaceID = raceId;
+
+        _db.RaceTimePoints.Add(timePoint);
+        await _db.SaveChangesAsync();
+        await _hub.Clients.Group(RaceTimerServer.Hubs.RaceHub.GetGroupName(raceId.ToString())).SendCoreAsync("TimePointAdded", new object?[] { timePoint });
+        return timePoint;
+    }
+
+    internal async Task RemoveTimePointAsync(Guid raceId, Guid timePointId)
+    {
+        var timePoint = await _db.RaceTimePoints.FindAsync(timePointId);
+        if (timePoint is null) return;
+
+        _db.RaceTimePoints.Remove(timePoint);
+        await _db.SaveChangesAsync();
+        await _hub.Clients.Group(RaceTimerServer.Hubs.RaceHub.GetGroupName(raceId.ToString())).SendCoreAsync("TimePointRemoved", new object?[] { timePointId });
+    }
+
+    internal async Task<RaceTimePoint?> UpdateTimePointAsync(Guid raceId, RaceTimePoint timePoint)
+    {
+        var existing = await _db.RaceTimePoints.FindAsync(timePoint.Id);
+        if (existing is null) return null;
+
+        existing.DisplayName = timePoint.DisplayName;
+        await _db.SaveChangesAsync();
+        await _hub.Clients.Group(RaceTimerServer.Hubs.RaceHub.GetGroupName(raceId.ToString())).SendCoreAsync("TimePointUpdated", new object?[] { existing });
+        return existing;
+    }
+
+    internal void DeleteTimePointAsync(Guid timePointId)
+    {
+        var timePoint = _db.RaceParticipantTimePoints.Find(timePointId);
+        if (timePoint is null) return;
+
+        _db.RaceParticipantTimePoints.Remove(timePoint);
+        _db.SaveChanges();
     }
 }

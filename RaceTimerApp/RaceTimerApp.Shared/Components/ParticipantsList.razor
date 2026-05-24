@@ -1,0 +1,73 @@
+@using RaceTimerApp.Shared.Services
+@using RaceTimer.Shared.Models
+@inject ParticipantService ParticipantService
+
+<div class="participants-list">
+    <h3>Teilnehmer</h3>
+
+    @if (Participants == null)
+    {
+        <p>Lädt...</p>
+    }
+    else if (!Participants.Any())
+    {
+        <p class="text-muted">Keine Teilnehmer</p>
+    }
+    else
+    {
+        <div class="list-group">
+            @foreach (var participant in Participants)
+            {
+                <div class="list-group-item">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h5 class="mb-1">@participant.DisplayName</h5>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+<style>
+    .participants-list {
+        margin: 20px 0;
+    }
+
+    .participants-list h3 {
+        margin-bottom: 15px;
+        font-weight: 600;
+    }
+
+    .list-group-item {
+        padding: 12px 15px;
+        border: 1px solid #dee2e6;
+        margin-bottom: 8px;
+        border-radius: 4px;
+        background: #fff;
+    }
+
+    .list-group-item:hover {
+        background: #f8f9fa;
+    }
+
+    .list-group-item h5 {
+        margin: 0;
+        font-size: 1rem;
+    }
+
+    .list-group-item p {
+        margin: 5px 0 0 0;
+        font-size: 0.875rem;
+        color: #6c757d;
+    }
+
+    .list-group-item small {
+        font-weight: 600;
+        color: #0d6efd;
+    }
+</style>
+
+@code {
+    [Parameter]
+    public IEnumerable<Participant>? Participants { get; set; }
+}

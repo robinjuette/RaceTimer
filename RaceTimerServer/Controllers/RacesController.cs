@@ -25,6 +25,13 @@ public class RacesController : ControllerBase
         return Ok(list);
     }
 
+    [HttpGet("running")]
+    public async Task<ActionResult<IEnumerable<Race>>> GetRunning()
+    {
+        var list = await _repo.GetRacesByStatusAsync("running");
+        return Ok(list);
+    }
+
     [HttpGet("{id}/changes")]
     public async Task<ActionResult> GetChanges(Guid id, [FromQuery] DateTime sinceUtc)
     {
@@ -88,7 +95,7 @@ public class RacesController : ControllerBase
     {
         var race = await _repo.GetAsync(id);
         if (race is null) return NotFound();
-        return await _repo.GetRaceParticipantsAsync(id);
+        return Ok(await _repo.GetRaceParticipantsAsync(id));
     }
 
     [HttpDelete("{id}/participants/{participantId}")]
@@ -100,7 +107,7 @@ public class RacesController : ControllerBase
         return NoContent();
     }
 
-    [HttpPost("{id}/start/")]
+    [HttpPost("{id}/start")]
     public async Task<ActionResult> StartRace(Guid id, IEnumerable<Guid> participants)
     {
         var race = await _repo.GetAsync(id);
@@ -121,5 +128,61 @@ public class RacesController : ControllerBase
         }
 
         return Ok();
+    }
+
+    [HttpPost("{id}/finish")]
+    public async Task<ActionResult> FinishRace(Guid id)
+    {
+        var race = await _repo.GetAsync(id);
+        if (race is null) return NotFound();
+        if (race.StartTimeUTC is null) return BadRequest("Race not started");
+        if (race.FinishDateTimeUTC is not null) return BadRequest("Race already finished");
+
+        race.FinishDateTimeUTC = DateTime.UtcNow;
+        await _repo.UpdateAsync(race);
+        return Ok();
+    }
+    [HttpGet("{id}/timepoints")]
+    public async Task<ActionResult<IEnumerable<RaceTimePoint>>> GetRaceTimePoints(Guid id)
+    {
+        var race = await _repo.GetAsync(id);
+        if (race is null) return NotFound();
+        return Ok(race.RaceTimePoints.OrderBy(tp => tp.Index));
+    }
+
+    [HttpPost("{id}/timepoint")]
+    public async Task<ActionResult<RaceTimePoint>> AddRaceTimePoint(Guid id, [FromBody] RaceTimePoint timePoint)
+    {
+        var race = await _repo.GetAsync(id);
+        if (race is null) return NotFound();
+
+        timePoint.Id = Guid.NewGuid();
+        timePoint.RaceID = id;
+
+        var result = await _repo.AddTimePointAsync(id, timePoint);
+        return CreatedAtAction(nameof(GetRaceTimePoints), new { id }, result);
+    }
+
+    [HttpDelete("{id}/timepoints/{timePointId}")]
+    public async Task<ActionResult> DeleteRaceTimePoint(Guid id, Guid timePointId)
+    {
+        var race = await _repo.GetAsync(id);
+        if (race is null) return NotFound();
+
+        await _repo.RemoveTimePointAsync(id, timePointId);
+        return NoContent();
+    }
+
+    [HttpPatch("{id}/timepoint/{timePointID}")]
+    public async Task<ActionResult<RaceTimePoint>> UpdateRaceTimePoint(Guid id, Guid timePointID, RaceTimePoint raceTimePoint)
+    {
+        var race = await _repo.GetAsync(id);
+        if (race is null) return NotFound();
+
+        raceTimePoint.Id = timePointID;
+        raceTimePoint.RaceID = id;
+
+        var result = await _repo.UpdateTimePointAsync(id, raceTimePoint);
+        return Ok(result);
     }
 }

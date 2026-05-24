@@ -53,4 +53,23 @@ public class TimepointsController : ControllerBase
         await _repo.AssignTimePointToParticipantAsync(timePointId, participantId);
         return NoContent();
     }
+
+    [HttpPost("{timePointId}/penalty")]
+    public async Task<ActionResult> SetPenaltyTime(Guid timePointId, [FromBody] TimeSpan penaltyTime)
+    {
+        var success = await _repo.SetTimePointPenaltyTime(timePointId, penaltyTime);
+        if (!success) return NotFound();
+        return NoContent();
+    }
+
+    [HttpDelete("{timePointId}")]
+    public async Task<ActionResult> DeleteTimePoint(Guid timePointId)
+    {
+        var tp = await _repo.GetTimePointAsync(timePointId);
+        if (tp is null) return NotFound();
+
+        // Remove the timepoint
+        _repo.DeleteTimePointAsync(timePointId);
+        return NoContent();
+    }
 }

@@ -157,17 +157,9 @@
         if (SelectedTimePoint is null || SelectedParticipant is null)
             return;
 
-        Race race = SelectedParticipant.Value.Item1;
-        RaceParticipant participant = SelectedParticipant.Value.Item2;
-
-        if (nextTimePoint is not null)
-        {
-            await TimingService.AssignTimePointAsync(
-                SelectedTimePoint.Id,
-                race.Id,
-                participant.ParticipantID,
-                nextTimePoint.Id);
-        }
+        await TimingService.AssignTimePointAsync(
+            SelectedTimePoint.Id,
+            SelectedParticipant.Value.Item2.ParticipantID);
 
         await LoadData();
         SelectedTimePoint = null;

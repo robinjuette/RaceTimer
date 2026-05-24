@@ -1,0 +1,109 @@
+@using RaceTimer.Shared.Models
+
+<div class="status-card">
+    <div class="status-header">
+        <h4>@Race?.Name</h4>
+        <div class="status-badge">
+            @if (Race?.FinishDateTimeUTC != null)
+            {
+                <span class="badge badge-danger">Beendet</span>
+            }
+            else if (Race?.StartTimeUTC != null)
+            {
+                <span class="badge badge-success">Läuft</span>
+            }
+            else
+            {
+                <span class="badge badge-secondary">Vorbereitet</span>
+            }
+        </div>
+    </div>
+
+    <div class="status-details">
+        <div class="detail-row">
+            <label>Start:</label>
+            <span>
+                @if (Race?.StartTimeUTC.HasValue == true)
+                {
+                    @Race.StartTimeUTC.Value.ToString("HH:mm:ss")
+                }
+                else
+                {
+                    <span class="text-muted">Noch nicht gestartet</span>
+                }
+            </span>
+        </div>
+        <div class="detail-row">
+            <label>Ende:</label>
+            <span>
+                @if (Race?.FinishDateTimeUTC.HasValue == true)
+                {
+                    @Race.FinishDateTimeUTC.Value.ToString("HH:mm:ss")
+                }
+                else
+                {
+                    <span class="text-muted">Noch nicht beendet</span>
+                }
+            </span>
+        </div>
+    </div>
+</div>
+
+<style>
+    .status-card {
+        background: white;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    .status-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    .status-header h4 {
+        margin: 0;
+        font-weight: 600;
+        font-size: 1.25rem;
+    }
+
+    .status-details {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+    }
+
+    .detail-row {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .detail-row label {
+        font-weight: 600;
+        color: #495057;
+        font-size: 0.875rem;
+        margin-bottom: 5px;
+    }
+
+    .detail-row span {
+        color: #212529;
+        font-size: 1rem;
+    }
+
+    .badge {
+        font-size: 0.75rem;
+        padding: 0.4em 0.7em;
+    }
+</style>
+
+@code {
+    [Parameter]
+    public Race? Race { get; set; }
+}

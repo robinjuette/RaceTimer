@@ -1,7 +1,140 @@
-﻿@page "/"
+@page "/"
+@using RaceTimerApp.Shared.Services
+@inject RaceService RaceService
+@inject NavigationManager Navigation
 
-<PageTitle>Home</PageTitle>
+<PageTitle>RaceTimer - Home</PageTitle>
 
-<h1>Hello, world!</h1>
+<div class="home-container">
+    <div class="hero-section">
+        <h1>
+            <span class="badge badge-primary">RaceTimer</span>
+        </h1>
+        <p class="lead">Professionelle Zeiterfassung für Biathlon-Events</p>
+    </div>
 
-Welcome to your new app.
+    <div class="row mt-5">
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <h5 class="card-title">
+                        <span class="oi oi-play-circle" style="font-size: 2rem; color: #dc3545;"></span>
+                    </h5>
+                    <h4>Laufende Rennen</h4>
+                    <p class="card-text">Lädt...</p>
+                    <button class="btn btn-danger" @onclick="GoToOverview">
+                        Zur Rennübersicht
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <h5 class="card-title">
+                        <span class="oi oi-list" style="font-size: 2rem; color: #0d6efd;"></span>
+                    </h5>
+                    <h4>Rennverwaltung</h4>
+                    <p class="card-text">Verwaltung aller Rennen</p>
+                    <button class="btn btn-primary" @onclick="GoToRaces">
+                        Zur Rennverwaltung
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-3">
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <h5 class="card-title">
+                        <span class="oi oi-clock" style="font-size: 2rem; color: #198754;"></span>
+                    </h5>
+                    <h4>Zeiterfassung</h4>
+                    <p class="card-text">Erfasse Zeitpunkte</p>
+                    <button class="btn btn-success" @onclick="GoToTiming">
+                        Zur Zeiterfassung
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <h5 class="card-title">
+                        <span class="oi oi-bar-chart" style="font-size: 2rem; color: #ffc107;"></span>
+                    </h5>
+                    <h4>Einstellungen</h4>
+                    <p class="card-text">App konfigurieren</p>
+                    <button class="btn btn-warning" @onclick="GoToSettings">
+                        Zu den Einstellungen
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .home-container {
+        padding: 40px 0;
+    }
+
+    .hero-section {
+        text-align: center;
+        margin-bottom: 50px;
+        padding: 40px 0;
+        background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+        color: white;
+        border-radius: 8px;
+    }
+
+    .hero-section h1 {
+        font-size: 2.5rem;
+        margin-bottom: 10px;
+    }
+
+    .hero-section .lead {
+        font-size: 1.3rem;
+        margin: 0;
+    }
+
+    .card {
+        border: none;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+    }
+
+    .card-title {
+        margin-bottom: 15px;
+    }
+
+    .card h4 {
+        font-weight: 600;
+        margin-bottom: 15px;
+    }
+</style>
+
+@code {
+    private void GoToOverview() => Navigation.NavigateTo("/overview");
+    private void GoToRaces() => Navigation.NavigateTo("/races");
+    private void GoToTiming() => Navigation.NavigateTo("/timing");
+    private void GoToSettings() => Navigation.NavigateTo("/settings");
+
+    protected override async Task OnInitializedAsync()
+    {
+        var running = await RaceService.GetRunningRacesAsync();
+        if (running.Any())
+        {
+            Navigation.NavigateTo("/overview");
+        }
+    }
+}

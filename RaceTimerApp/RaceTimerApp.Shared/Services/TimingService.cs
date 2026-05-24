@@ -62,13 +62,9 @@ public class TimingService
     }
 
     // Strafzeit aktualisieren
-    public async Task<bool> UpdatePenaltyTimeAsync(Guid timePointId, TimeSpan? penaltyTime)
+    public async Task<bool> UpdatePenaltyTimeAsync(Guid timePointId, TimeSpan penaltyTime)
     {
-        var timePoint = await GetTimePointAsync(timePointId);
-        if (timePoint is null) return false;
-
-        timePoint.PenaltyTime = penaltyTime;
-        return await _apiClient.UpdateRaceParticipantTimePointAsync(timePoint);
+        return await _apiClient.SetPenaltyTime(timePointId, penaltyTime);
     }
 
     // Zeitpunkt abrufen
