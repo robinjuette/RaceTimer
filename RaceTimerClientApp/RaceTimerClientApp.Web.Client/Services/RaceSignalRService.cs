@@ -6,7 +6,7 @@ namespace RaceTimerClientApp.Web.Client.Services;
 
 public class RaceSignalRService : IAsyncDisposable
 {
-    private readonly HubConnection _connection;
+    private HubConnection _connection;
 
     public event Func<Guid, Task>? RaceDeleted;
     public event Func<object, Task>? RaceUpdated;
@@ -15,15 +15,27 @@ public class RaceSignalRService : IAsyncDisposable
     public event Func<object, Task>? ParticipantCreated;
     public event Func<object, Task>? UnassignedTimePointAdded;
     public event Func<object, Task>? TimePointAssigned;
+    public event Func<bool, Task>? ConnectionStateChanged;
+
+    public bool IsConnected { get; private set; }
     public event Func<string, Task>? Reconnected;
 
     public RaceSignalRService(NavigationManager navigation)
     {
         var uri = navigation.ToAbsoluteUri("/raceHub");
-        _connection = new HubConnectionBuilder()
-            .WithUrl(uri)
-            .WithAutomaticReconnect()
-            .Build();
+        InitConnection(new HubConnectionBuilder().WithUrl(uri).WithAutomaticReconnect().Build());
+    }
+
+    // constructor that accepts full hub url (for platforms without NavigationManager)
+    public RaceSignalRService(string hubUrl)
+    {
+        var conn = new HubConnectionBuilder().WithUrl(hubUrl).WithAutomaticReconnect().Build();
+        InitConnection(conn);
+    }
+
+    private void InitConnection(HubConnection connection)
+    {
+        _connection = connection;
 
         _connection.On<Guid>("RaceDeleted", async (id) => { if (RaceDeleted != null) await RaceDeleted(id); });
         _connection.On<JsonElement>("RaceUpdated", async (payload) => { if (RaceUpdated != null) await RaceUpdated(payload); });
@@ -35,7 +47,21 @@ public class RaceSignalRService : IAsyncDisposable
 
         _connection.Reconnected += async (connectionId) =>
         {
+            IsConnected = true;
+            if (ConnectionStateChanged != null) await ConnectionStateChanged(true);
             if (Reconnected != null) await Reconnected(connectionId);
+        };
+
+        _connection.Reconnecting += async (ex) =>
+        {
+            IsConnected = false;
+            if (ConnectionStateChanged != null) await ConnectionStateChanged(false);
+        };
+
+        _connection.Closed += async (ex) =>
+        {
+            IsConnected = false;
+            if (ConnectionStateChanged != null) await ConnectionStateChanged(false);
         };
     }
 

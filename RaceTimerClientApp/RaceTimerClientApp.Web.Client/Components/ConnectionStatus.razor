@@ -1,0 +1,5 @@
+@inject RaceTimerClientApp.Web.Client.Services.RaceSignalRService SignalR
+
+<div>
+    <span>SignalR: @(SignalR.IsConnected ? "Connected" : "Disconnected")</span>
+</div>

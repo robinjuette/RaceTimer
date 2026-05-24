@@ -5,6 +5,8 @@
     public Guid RaceId { get; set; }
 
     private Race? race;
+    private List<Participant> allParticipants = new();
+    private Guid selectedParticipantToAdd;
 
     protected override void OnParametersSet()
     {
@@ -12,6 +14,17 @@
         {
             race = r;
         }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        allParticipants = (await State.GetAllParticipantsAsync()).ToList();
+    }
+
+    private async Task AddParticipant()
+    {
+        if (selectedParticipantToAdd == Guid.Empty) return;
+        await State.AssignParticipantToRaceAsync(RaceId, selectedParticipantToAdd);
     }
 }
 
@@ -29,8 +42,18 @@
         <ul>
             @foreach(var p in race.RaceParticipants)
             {
-                <li>@p.Participant.DisplayName - Finish: @p.FinishDateTimeUTC</li>
+                <li>@p.Participant.DisplayName (Nr: @p.ParticipantNr) - Finish: @p.FinishDateTimeUTC</li>
             }
         </ul>
+        <div>
+            <select @bind="selectedParticipantToAdd">
+                <option value="">select participant to add</option>
+                @foreach(var p in allParticipants)
+                {
+                    <option value="@p.Id">@p.DisplayName</option>
+                }
+            </select>
+            <button class="btn btn-sm btn-primary" @onclick="AddParticipant">Add</button>
+        </div>
     }
 </div>

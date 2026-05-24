@@ -34,6 +34,84 @@ public class RaceStateService : IAsyncDisposable
         _signalR.Reconnected += async (cid) => await OnReconnected(cid);
     }
 
+    public async Task<IEnumerable<Race>> GetAvailableRacesAsync()
+    {
+        try
+        {
+            return await _http.GetFromJsonAsync<IEnumerable<Race>>("api/races") ?? Enumerable.Empty<Race>();
+        }
+        catch
+        {
+            return Enumerable.Empty<Race>();
+        }
+    }
+
+    public async Task<IEnumerable<Participant>> GetAllParticipantsAsync()
+    {
+        try
+        {
+            return await _http.GetFromJsonAsync<IEnumerable<Participant>>("api/participants") ?? Enumerable.Empty<Participant>();
+        }
+        catch
+        {
+            return Enumerable.Empty<Participant>();
+        }
+    }
+
+    // Create a new race and subscribe to it
+    public async Task<Race?> CreateRaceAsync(Race race)
+    {
+        var res = await _http.PostAsJsonAsync("api/races", race);
+        if (!res.IsSuccessStatusCode) return null;
+        var created = await res.Content.ReadFromJsonAsync<Race>();
+        if (created is not null)
+        {
+            Races[created.Id] = created;
+            await SubscribeAndFetchRaceAsync(created.Id);
+        }
+        return created;
+    }
+
+    public async Task<Participant?> CreateParticipantAsync(Participant p)
+    {
+        var res = await _http.PostAsJsonAsync("api/participants", p);
+        if (!res.IsSuccessStatusCode) return null;
+        var created = await res.Content.ReadFromJsonAsync<Participant>();
+        return created;
+    }
+
+    public async Task<RaceParticipantTimePoint?> CreateUnassignedTimePointAsync(DateTime utc)
+    {
+        var res = await _http.PostAsJsonAsync("api/timepoints/unassigned", utc);
+        if (!res.IsSuccessStatusCode) return null;
+        var created = await res.Content.ReadFromJsonAsync<RaceParticipantTimePoint>();
+        if (created is not null) UnassignedTimePoints.Add(created);
+        return created;
+    }
+
+    public async Task<bool> AssignParticipantToRaceAsync(Guid raceId, Guid participantId)
+    {
+        var res = await _http.PostAsync($"api/races/{raceId}/participants/{participantId}", null);
+        if (res.IsSuccessStatusCode)
+        {
+            // local update will be applied via SignalR event; return true
+            return true;
+        }
+        return false;
+    }
+
+    public async Task<bool> AssignTimePointToParticipantAsync(Guid timePointId, Guid participantId)
+    {
+        var res = await _http.PostAsync($"api/timepoints/{timePointId}/assign/participant/{participantId}", null);
+        return res.IsSuccessStatusCode;
+    }
+
+    public async Task<bool> AssignTimePointToRaceAsync(Guid timePointId, Guid raceId)
+    {
+        var res = await _http.PostAsync($"api/timepoints/{timePointId}/assign/race/{raceId}", null);
+        return res.IsSuccessStatusCode;
+    }
+
     public async Task InitializeAsync()
     {
         await _signalR.StartAsync();

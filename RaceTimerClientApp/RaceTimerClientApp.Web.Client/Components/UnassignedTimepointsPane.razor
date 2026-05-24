@@ -6,7 +6,44 @@
     <ul>
         @foreach (var tp in State.UnassignedTimePoints)
         {
-            <li>@tp.TimePointUTC - Id: @tp.Id</li>
+            <li>
+                @tp.TimePointUTC - Id: @tp.Id
+                <select @onchange="(e) => AssignToParticipant(tp.Id, Guid.Parse(e.Value.ToString()))">
+                    <option value="">assign participant</option>
+                    @foreach(var p in participants)
+                    {
+                        <option value="@p.Id">@p.DisplayName</option>
+                    }
+                </select>
+                <select @onchange="(e) => AssignToRace(tp.Id, Guid.Parse(e.Value.ToString()))">
+                    <option value="">assign race</option>
+                    @foreach(var r in races)
+                    {
+                        <option value="@r.Id">@r.Name</option>
+                    }
+                </select>
+            </li>
         }
     </ul>
 </div>
+
+@code {
+    private List<Participant> participants = new();
+    private List<Race> races = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        participants = (await State.GetAllParticipantsAsync()).ToList();
+        races = (await State.GetAvailableRacesAsync()).ToList();
+    }
+
+    private async Task AssignToParticipant(Guid tpId, Guid participantId)
+    {
+        await State.AssignTimePointToParticipantAsync(tpId, participantId);
+    }
+
+    private async Task AssignToRace(Guid tpId, Guid raceId)
+    {
+        await State.AssignTimePointToRaceAsync(tpId, raceId);
+    }
+}

@@ -1,12 +1,48 @@
 @using RaceTimer.Shared.Models
 @inject RaceTimerClientApp.Web.Client.Services.RaceStateService State
+@using RaceTimer.Shared.Models
+
+@code {
+    private List<Race> available = new();
+    private string newRaceName = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        available = (await State.GetAvailableRacesAsync()).ToList();
+    }
+
+    private async Task CreateRace()
+    {
+        if (string.IsNullOrWhiteSpace(newRaceName)) return;
+        var r = new Race { Name = newRaceName };
+        await State.CreateRaceAsync(r);
+        available = (await State.GetAvailableRacesAsync()).ToList();
+    }
+}
 
 <div>
     <h3>Subscribed Races</h3>
     <ul>
         @foreach(var r in State.Races.Values)
         {
-            <li>@r.Name (@(r.StartTimeUTC is null ? "prepared" : r.FinishDateTimeUTC is null ? "running" : "finished"))</li>
+            <li>
+                <b>@r.Id</b>
+                @r.Name (@(r.StartTimeUTC is null ? "prepared" : r.FinishDateTimeUTC is null ? "running" : "finished"))
+                <button class="btn btn-sm btn-link" @onclick="() => State.UnsubscribeRaceAsync(r.Id)">Unsubscribe</button>
+            </li>
         }
     </ul>
+
+    <h4>Available Races</h4>
+    <ul>
+        @foreach(var r in available)
+        {
+            <li>@r.Name <button class="btn btn-sm btn-link" @onclick="() => State.SubscribeAndFetchRaceAsync(r.Id)">Subscribe</button></li>
+        }
+    </ul>
+
+    <div>
+        <input @bind="newRaceName" placeholder="New race name" />
+        <button class="btn btn-sm btn-primary" @onclick="CreateRace">Create</button>
+    </div>
 </div>

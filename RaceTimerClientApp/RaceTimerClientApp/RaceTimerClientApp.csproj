@@ -74,6 +74,12 @@
 
   <ItemGroup>
     <ProjectReference Include="..\RaceTimerClientApp.Shared\RaceTimerClientApp.Shared.csproj" />
+    <ProjectReference Include="..\..\RaceTimerShared\RaceTimerShared.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.8" />
+    <PackageReference Include="System.Net.Http.Json" Version="7.0.0" />
   </ItemGroup>
 
 </Project>
