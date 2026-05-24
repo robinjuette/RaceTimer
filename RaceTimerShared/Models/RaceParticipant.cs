@@ -13,5 +13,6 @@ namespace RaceTimer.Shared.Models
         public DateTime? StartTime { get; set; }
         public DateTime? FinishDateTimeUTC { get; set; }
         public DateTime? LastModifiedUtc { get; set; }
+        public int ParticipantNr { get; set; }
     }
 }

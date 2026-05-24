@@ -126,7 +126,11 @@ public class RaceRepository
 
     public async Task AssignParticipantToRaceAsync(Guid raceId, Guid participantId)
     {
-        var rp = new RaceParticipant { RaceID = raceId, ParticipantID = participantId };
+        // determine smallest available participant number > 0 for this race
+        var existingNumbers = await _db.RaceParticipants.Where(rp => rp.RaceID == raceId).Select(rp => rp.ParticipantNr).ToListAsync();
+        int nr = 1;
+        while (existingNumbers.Contains(nr)) nr++;
+        var rp = new RaceParticipant { RaceID = raceId, ParticipantID = participantId, ParticipantNr = nr };
         _db.RaceParticipants.Add(rp);
         await _db.SaveChangesAsync();
         await _hub.Clients.Group(RaceTimerServer.Hubs.RaceHub.GetGroupName(raceId.ToString())).SendCoreAsync("ParticipantAssigned", new object?[] { raceId, participantId });
