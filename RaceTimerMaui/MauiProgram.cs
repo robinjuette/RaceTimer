@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Components.WebView.Maui;
 using Microsoft.Extensions.DependencyInjection;
 using RaceTimer.Shared.Http;
 

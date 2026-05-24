@@ -1,29 +1,57 @@
+using Microsoft.EntityFrameworkCore;
 using RaceTimer.Shared.Models;
+using RaceTimerServer.Data;
 
 namespace RaceTimerServer.Services;
 
 public class RaceRepository
 {
-    private readonly List<Race> _races = new();
+    private readonly RaceTimerDbContext _db;
 
-    public IEnumerable<Race> GetAll() => _races;
+    public RaceRepository(RaceTimerDbContext db)
+    {
+        _db = db;
+    }
 
-    public Race? Get(Guid id) => _races.FirstOrDefault(r => r.Id == id);
+    public async Task<IEnumerable<Race>> GetAllAsync()
+    {
+        return await _db.Races
+            .Include(r => r.RaceParticipants)
+            .Include(r => r.RaceTimePoints)
+            .Include(r => r.RaceParticipantTimePoints)
+            .ToListAsync();
+    }
 
-    public void Add(Race race)
+    public async Task<Race?> GetAsync(Guid id)
+    {
+        return await _db.Races
+            .Include(r => r.RaceParticipants)
+            .Include(r => r.RaceTimePoints)
+            .Include(r => r.RaceParticipantTimePoints)
+            .FirstOrDefaultAsync(r => r.Id == id);
+    }
+
+    public async Task AddAsync(Race race)
     {
         if (race.Id == Guid.Empty) race.Id = Guid.NewGuid();
-        _races.Add(race);
+        _db.Races.Add(race);
+        await _db.SaveChangesAsync();
     }
 
-    public void Update(Race race)
+    public async Task UpdateAsync(Race race)
     {
-        var existing = Get(race.Id);
+        var existing = await _db.Races.FindAsync(race.Id);
         if (existing is null) return;
-        existing.Name = race.Name;
-        existing.StartTime = race.StartTime;
-        existing.Participants = race.Participants;
+        _db.Entry(existing).CurrentValues.SetValues(race);
+        // for related collections you may need to handle updates explicitly
+        await _db.SaveChangesAsync();
     }
 
-    public void Remove(Guid id) => _races.RemoveAll(r => r.Id == id);
+    public async Task RemoveAsync(Guid id)
+    {
+        var existing = await _db.Races.FindAsync(id);
+        if (existing is null) return;
+        _db.Races.Remove(existing);
+        await _db.SaveChangesAsync();
+    }
 }

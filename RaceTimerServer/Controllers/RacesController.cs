@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using RaceTimer.Shared.Models;
+using RaceTimerServer.Services;
 
 namespace RaceTimerServer.Controllers;
 
@@ -15,39 +16,39 @@ public class RacesController : ControllerBase
     }
 
     [HttpGet]
-    public ActionResult<IEnumerable<Race>> GetAll() => Ok(_repo.GetAll());
+    public async Task<ActionResult<IEnumerable<Race>>> GetAll() => Ok(await _repo.GetAllAsync());
 
     [HttpGet("{id}")]
-    public ActionResult<Race> Get(Guid id)
+    public async Task<ActionResult<Race>> Get(Guid id)
     {
-        var r = _repo.Get(id);
+        var r = await _repo.GetAsync(id);
         if (r is null) return NotFound();
         return Ok(r);
     }
 
     [HttpPost]
-    public ActionResult Create(Race race)
+    public async Task<ActionResult> Create(Race race)
     {
-        _repo.Add(race);
+        await _repo.AddAsync(race);
         return CreatedAtAction(nameof(Get), new { id = race.Id }, race);
     }
 
     [HttpPut("{id}")]
-    public ActionResult Update(Guid id, Race race)
+    public async Task<ActionResult> Update(Guid id, Race race)
     {
         if (id != race.Id) return BadRequest();
-        var existing = _repo.Get(id);
+        var existing = await _repo.GetAsync(id);
         if (existing is null) return NotFound();
-        _repo.Update(race);
+        await _repo.UpdateAsync(race);
         return NoContent();
     }
 
     [HttpDelete("{id}")]
-    public ActionResult Delete(Guid id)
+    public async Task<ActionResult> Delete(Guid id)
     {
-        var existing = _repo.Get(id);
+        var existing = await _repo.GetAsync(id);
         if (existing is null) return NotFound();
-        _repo.Remove(id);
+        await _repo.RemoveAsync(id);
         return NoContent();
     }
 }

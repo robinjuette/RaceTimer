@@ -3,9 +3,10 @@
     <File Path=".gitignore" />
     <File Path="Konzept RaceTimer.odt" />
   </Folder>
-  <Project Path="RaceTimerClient.UI/RaceTimerClient.UI.csproj" />
-  <Project Path="RaceTimerClient/RaceTimerClient.csproj" />
-  <Project Path="RaceTimerMaui/RaceTimerMaui.csproj" />
+  <Project Path="RaceTimerClientApp/RaceTimerClientApp.Shared/RaceTimerClientApp.Shared.csproj" Id="e2dff4d7-26b1-49fb-91d7-bb70c4ca8177" />
+  <Project Path="RaceTimerClientApp/RaceTimerClientApp.Web.Client/RaceTimerClientApp.Web.Client.csproj" Id="61771a4a-483a-48f7-b61e-69905219d793" />
+  <Project Path="RaceTimerClientApp/RaceTimerClientApp.Web/RaceTimerClientApp.Web.csproj" Id="539a15ee-6881-414e-840d-350eed39c8e9" />
+  <Project Path="RaceTimerClientApp/RaceTimerClientApp/RaceTimerClientApp.csproj" Id="9e774d84-8a44-4362-a3a8-d2792dbe318f" />
   <Project Path="RaceTimerServer/RaceTimerServer.csproj" />
   <Project Path="RaceTimerShared/RaceTimerShared.csproj" />
 </Solution>
