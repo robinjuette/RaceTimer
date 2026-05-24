@@ -39,8 +39,15 @@ public class RacesController : ControllerBase
         if (id != race.Id) return BadRequest();
         var existing = await _repo.GetAsync(id);
         if (existing is null) return NotFound();
-        await _repo.UpdateAsync(race);
-        return NoContent();
+        try
+        {
+            await _repo.UpdateAsync(race);
+            return NoContent();
+        }
+        catch (Microsoft.EntityFrameworkCore.DbUpdateConcurrencyException)
+        {
+            return Conflict("Concurrency conflict - the race was modified by another client.");
+        }
     }
 
     [HttpDelete("{id}")]
@@ -49,6 +56,26 @@ public class RacesController : ControllerBase
         var existing = await _repo.GetAsync(id);
         if (existing is null) return NotFound();
         await _repo.RemoveAsync(id);
+        return NoContent();
+    }
+
+    [HttpPost("{id}/participants/{participantId}")]
+    public async Task<ActionResult> AssignParticipant(Guid id, Guid participantId)
+    {
+        var race = await _repo.GetAsync(id);
+        if (race is null) return NotFound();
+        var participant = await _repo.GetParticipantAsync(participantId);
+        if (participant is null) return NotFound();
+        await _repo.AssignParticipantToRaceAsync(id, participantId);
+        return NoContent();
+    }
+
+    [HttpDelete("{id}/participants/{participantId}")]
+    public async Task<ActionResult> RemoveParticipantFromRace(Guid id, Guid participantId)
+    {
+        var race = await _repo.GetAsync(id);
+        if (race is null) return NotFound();
+        await _repo.RemoveParticipantFromRaceAsync(id, participantId);
         return NoContent();
     }
 }

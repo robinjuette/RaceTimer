@@ -25,6 +25,7 @@ public class RaceTimerDbContext : DbContext
             b.HasMany(r => r.RaceParticipants).WithOne(rp => rp.Race).HasForeignKey(rp => rp.RaceID);
             b.HasMany(r => r.RaceTimePoints).WithOne(rtp => rtp.Race).HasForeignKey(rtp => rtp.RaceID);
             b.HasMany(r => r.RaceParticipantTimePoints).WithOne(rptp => rptp.Race).HasForeignKey(rptp => rptp.RaceID);
+            b.Property(r => r.RowVersion).IsRowVersion();
         });
 
         modelBuilder.Entity<Participant>(b =>

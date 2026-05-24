@@ -6,6 +6,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+// SignalR for real-time updates
+builder.Services.AddSignalR();
 
 // Allow simple cross-origin access for development (adjust in production)
 builder.Services.AddCors(options =>
@@ -59,5 +61,8 @@ app.UseCors("AllowAll");
 app.UseAuthorization();
 
 app.MapControllers();
+
+// SignalR hubs
+app.MapHub<RaceTimerServer.Hubs.RaceHub>("/raceHub");
 
 app.Run();
