@@ -45,20 +45,17 @@ public class RaceService
     // Rennen filtern nach Status
     public async Task<IEnumerable<Race>> GetRunningRacesAsync()
     {
-        var races = await _repository.GetAllRacesAsync();
-        return races.Where(r => r.StartTimeUTC.HasValue && !r.FinishDateTimeUTC.HasValue);
+        return await _repository.GetRacesByStatusAsync(RaceStatus.Running);
     }
 
     public async Task<IEnumerable<Race>> GetPlannedRacesAsync()
     {
-        var races = await _repository.GetAllRacesAsync();
-        return races.Where(r => !r.StartTimeUTC.HasValue);
+        return await _repository.GetRacesByStatusAsync(RaceStatus.Planned);
     }
 
     public async Task<IEnumerable<Race>> GetFinishedRacesAsync()
     {
-        var races = await _repository.GetAllRacesAsync();
-        return races.Where(r => r.FinishDateTimeUTC.HasValue);
+        return await _repository.GetRacesByStatusAsync(RaceStatus.Finished);
     }
 
     // Rennen erstellen
@@ -86,7 +83,7 @@ public class RaceService
     }
 
     // Rennen starten
-    public async Task<bool> StartRaceAsync(Guid raceId, IEnumerable<Guid> participantIds)
+    public async Task<bool> StartRaceAsync(Guid raceId, params IEnumerable<Guid> participantIds)
     {
         return await _repository.StartRaceAsync(raceId, DateTime.UtcNow, participantIds.ToList());
     }

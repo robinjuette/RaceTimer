@@ -2,7 +2,7 @@
 @using RaceTimerApp.Shared.Services
 @inject NavigationManager Navigation
 @inject RaceService RaceService
-@rendermode InteractiveServer
+@inject TimingService TimingService
 
 <div class="main-container">
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
@@ -69,6 +69,7 @@
     protected override async Task OnInitializedAsync()
     {
         await CheckRunningRaces();
+        _ = CheckHasUnassignedTimePointsAsync();
     }
 
     private async Task CheckRunningRaces()
@@ -77,9 +78,16 @@
         _hasRunningRace = running.Any();
     }
 
+    private async Task CheckHasUnassignedTimePointsAsync()
+    {
+        await TimingService.LoadUnassignedTimePointsAsync();
+        _hasUnassignedPoints = TimingService.GetUnassignedTimePoints().Any();
+    }
+
     private async Task RecordTimePoint()
     {
-        // Wird von der TimingService implementiert
-        Navigation.NavigateTo("/timing");
+        await TimingService.RecordTimePointAsync();
+
+        _ = CheckHasUnassignedTimePointsAsync();
     }
 }

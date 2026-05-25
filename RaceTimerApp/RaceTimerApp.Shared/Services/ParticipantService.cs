@@ -81,25 +81,4 @@ public class ParticipantService
             p.DisplayName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase));
     }
 
-    // Prüfe ob Rennen aktive Teilnehmer hat (nicht beendet)
-    public IEnumerable<RaceParticipant> GetActiveParticipants(
-        IEnumerable<RaceParticipant> raceParticipants)
-    {
-        return raceParticipants.Where(rp =>
-            rp.StartTime.HasValue && !rp.FinishDateTimeUTC.HasValue);
-    }
-
-    // Prüfe ob Rennen noch nicht gestartete Teilnehmer hat
-    public IEnumerable<RaceParticipant> GetNotStartedParticipants(
-        IEnumerable<RaceParticipant> raceParticipants)
-    {
-        return raceParticipants.Where(rp => !rp.StartTime.HasValue);
-    }
-
-    // Prüfe ob Rennen beendete Teilnehmer hat
-    public IEnumerable<RaceParticipant> GetFinishedParticipants(
-        IEnumerable<RaceParticipant> raceParticipants)
-    {
-        return raceParticipants.Where(rp => rp.FinishDateTimeUTC.HasValue);
-    }
 }

@@ -410,7 +410,7 @@ public class CoreRaceRepository : IRaceRepository
         await CheckAndApplyMigrationsAsync();
         using RaceTimerDbContext _db = await dbContextFactory.CreateDbContextAsync();
 
-        return await _db.RaceParticipants.Where(rp => rp.RaceID == id).ToListAsync();
+        return await _db.RaceParticipants.Include(rp => rp.Participant).Where(rp => rp.RaceID == id).ToListAsync();
     }
 
     public async Task<IEnumerable<RaceParticipantTimePoint>?> GetUnassignedTimepointsAsync()
@@ -426,7 +426,7 @@ public class CoreRaceRepository : IRaceRepository
         await CheckAndApplyMigrationsAsync();
         using RaceTimerDbContext _db = await dbContextFactory.CreateDbContextAsync();
 
-        return await _db.RaceParticipantTimePoints.Where(rp => rp.RaceID == raceId).ToListAsync();
+        return await _db.RaceParticipantTimePoints.Include(rptp => rptp.Participant).Where(rp => rp.RaceID == raceId).ToListAsync();
     }
 
     public async Task<bool> SetRaceParticipantTimePointPenaltyTime(Guid timePointId, TimeSpan penaltyTime)

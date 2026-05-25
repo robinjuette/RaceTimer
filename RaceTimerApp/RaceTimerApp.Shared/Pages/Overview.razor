@@ -64,9 +64,9 @@
                                     <span class="participant-name">@participant.Participant?.DisplayName</span>
                                 </div>
                                 <div class="participant-actions">
-                                    <button class="btn btn-sm btn-outline-primary" @onclick="() => PrepareStart(participant)">Vorbereiten</button>
+                                    <button class="btn btn-sm btn-outline-primary" 
+                                            @onclick="() => PrepareStart(participant)">Vorbereiten</button>
                                     <button class="btn btn-sm btn-success"
-                                            disabled="!@_preparedParticipant?.ParticipantID.Equals(participant.ParticipantID)"
                                             @onclick="() => StartParticipant(participant)">Start</button>
                                 </div>
                             </div>
@@ -143,13 +143,6 @@
     </div>
 }
 
-<!-- Timing Button -->
-<div class="timing-button-container mt-4">
-    <button class="btn btn-primary btn-lg timing-button" @onclick="RecordTimePoint" title="Zeitpunkt erfassen">
-        <span class="oi oi-clock"></span> Zeit erfassen
-    </button>
-</div>
-
 @code {
     [Parameter]
     public string? RaceId { get; set; }
@@ -157,6 +150,8 @@
     private List<Race> RunningRaces = [];
     private Guid SelectedRaceId = Guid.Empty;
     private RaceParticipant? _preparedParticipant;
+
+    private Dictionary<Guid, List<RaceParticipant>> RacesParticipants = new();
 
     private IEnumerable<Race> DisplayRaces
     {
@@ -187,6 +182,13 @@
 
     private async Task LoadRaces()
     {
+        var loaded = await RaceService.GetRunningRacesAsync();
+
+        foreach(Race lr in loaded)
+        {
+            RacesParticipants[lr.Id] = (await ParticipantService.GetRaceParticipantsAsync(lr.Id)).ToList();
+        }
+
         RunningRaces = (await RaceService.GetRunningRacesAsync()).ToList();
     }
 
@@ -210,17 +212,23 @@
 
     private IEnumerable<RaceParticipant> GetNotStartedParticipants(Race race)
     {
-        return race.RaceParticipants.Where(rp => !rp.StartTime.HasValue);
+        if (!RacesParticipants.ContainsKey(race.Id)) return Enumerable.Empty<RaceParticipant>();
+
+        return RacesParticipants[race.Id].Where(rp => !rp.StartTime.HasValue);
     }
 
     private IEnumerable<RaceParticipant> GetActiveParticipants(Race race)
     {
-        return race.RaceParticipants.Where(rp => rp.StartTime.HasValue && !rp.FinishDateTimeUTC.HasValue);
+        if (!RacesParticipants.ContainsKey(race.Id)) return Enumerable.Empty<RaceParticipant>();
+
+        return RacesParticipants[race.Id].Where(rp => rp.StartTime.HasValue && !rp.FinishDateTimeUTC.HasValue);
     }
 
     private IEnumerable<RaceParticipant> GetFinishedParticipants(Race race)
     {
-        return race.RaceParticipants.Where(rp => rp.FinishDateTimeUTC.HasValue);
+        if (!RacesParticipants.ContainsKey(race.Id)) return Enumerable.Empty<RaceParticipant>();
+
+        return RacesParticipants[race.Id].Where(rp => rp.FinishDateTimeUTC.HasValue);
     }
 
     private bool HasReachedTimePoint(RaceParticipant participant, RaceTimePoint timePoint, Race race)
@@ -232,18 +240,15 @@
 
     private void PrepareStart(RaceParticipant participant)
     {
-        _preparedParticipant = _preparedParticipant?.ParticipantID == participant.ParticipantID ? null : participant;
+        _preparedParticipant = participant;
     }
 
     private async Task StartParticipant(RaceParticipant participant)
     {
-        // Würde von Server-API ausgelöst
-        _preparedParticipant = null;
-        await LoadRaces();
-    }
+        if (_preparedParticipant != participant) return;
 
-    private void RecordTimePoint()
-    {
-        Navigation.NavigateTo("/timing");
+        await RaceService.StartRaceAsync(participant.RaceID, participant.ParticipantID);
+
+        await LoadRaces();
     }
 }

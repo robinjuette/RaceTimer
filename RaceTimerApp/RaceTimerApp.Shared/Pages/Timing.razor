@@ -2,6 +2,7 @@
 @using RaceTimerApp.Shared.Services
 @using RaceTimer.Shared.Models
 @inject RaceService RaceService
+@inject ParticipantService ParticipantService
 @inject TimingService TimingService
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
@@ -114,7 +115,7 @@
         ActiveParticipants.Clear();
         foreach (var race in RunningRaces)
         {
-            foreach (var participant in race.RaceParticipants.Where(rp => rp.StartTime.HasValue && !rp.FinishDateTimeUTC.HasValue))
+            foreach (var participant in (await ParticipantService.GetRaceParticipantsAsync(race.Id)).Where(rp => rp.StartTime.HasValue && !rp.FinishDateTimeUTC.HasValue))
             {
                 ActiveParticipants.Add((race, participant));
             }
