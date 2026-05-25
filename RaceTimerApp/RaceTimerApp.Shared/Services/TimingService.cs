@@ -110,7 +110,7 @@ public class TimingService
 
         var participantTimes = participantTimePoints
             .Where(rptp => rptp.ParticipantID == participant.ParticipantID)
-            .OrderBy(rptp => rptp.TimePointUTC)
+            .OrderBy(rptp => rptp.RTPIndex)
             .ToList();
 
         if (!participantTimes.Any())
@@ -165,8 +165,6 @@ public class TimingService
     // Laden der unzugeordneten Zeitpunkte
     public async Task LoadUnassignedTimePointsAsync()
     {
-        // Dies erfordert eine API-Erweiterung
-        // GET /api/times/unassigned
 
         _unassignedTimePoints.Clear();
         IEnumerable<RaceParticipantTimePoint>? unassigneds = await _repository.GetUnassignedTimepointsAsync();

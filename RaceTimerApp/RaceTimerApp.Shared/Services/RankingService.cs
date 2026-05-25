@@ -1,135 +1,114 @@
 using RaceTimer.Shared.Models;
+using RaceTimer.Shared.Services;
+using RaceTimerApp.Shared.Models;
 
 namespace RaceTimerApp.Shared.Services;
 
 /// <summary>
 /// Service für Sortierung und Ranglistenberechnung
 /// </summary>
-public class RankingService
+public class RankingService(IRaceRepository raceRepository)
 {
-    /// <summary>
-    /// Sortiere Teilnehmer nach Zwischenstand für die Übersichtsseite
-    /// </summary>
-    public IEnumerable<(RaceParticipant Participant, TimeSpan? Time)> GetSortedParticipants(
-        Race race,
-        IEnumerable<RaceParticipant> participants,
-        TimingService timingService)
+
+    public async Task<List<RankingEntry>> GetRankingsAsync(Guid raceId)
     {
-        var timingService_param = timingService;
-        var result = new List<(RaceParticipant Participant, TimeSpan? Time)>();
+        IEnumerable<RaceParticipant>? rps = await raceRepository.GetRacesParticipantsAsync(raceId);
+        IEnumerable<RaceTimePoint>? rtps = await raceRepository.GetRaceTimePointsAsync(raceId);
+        List<RaceParticipantTimePoint>? rptps = (await raceRepository.GetRaceParticipantTimePointsForRaceAsync(raceId))?.ToList();
 
-        // 1. Beendete Teilnehmer (nach Gesamtzeit sortiert)
-        var finishedParticipants = participants
-            .Where(p => p.FinishDateTimeUTC.HasValue)
-            .OrderBy(p =>
-            {
-                var totalTime = timingService_param.CalculateTotalTime(
-                    p,
-                    race.RaceParticipantTimePoints);
-                return totalTime ?? TimeSpan.MaxValue;
-            })
-            .ToList();
-
-        foreach (var p in finishedParticipants)
+        if(rps == null || rtps == null || rptps == null)
         {
-            var totalTime = timingService_param.CalculateTotalTime(p, race.RaceParticipantTimePoints);
-            result.Add((p, totalTime));
+            return [];
         }
 
-        // 2. Aktive Teilnehmer (nach Progress sortiert)
-        var activeParticipants = participants
-            .Where(p => p.StartTime.HasValue && !p.FinishDateTimeUTC.HasValue)
-            .OrderBy(p =>
-            {
-                var progressTime = timingService_param.CalculateProgressTime(
-                    race,
-                    p,
-                    race.RaceParticipantTimePoints);
-                return progressTime ?? TimeSpan.MaxValue;
-            })
-            .ToList();
+        Dictionary<RaceParticipant, RankingEntry> rankingEntriesDict = new();
 
-        // Berechne die Position basierend auf vergleichbarem Fortschritt mit beendeten Teilnehmern
-        foreach (var activeParticipant in activeParticipants)
+        foreach(RaceParticipant rp in rps)
         {
-            var progressTime = timingService_param.CalculateProgressTime(
-                race,
-                activeParticipant,
-                race.RaceParticipantTimePoints);
+            rankingEntriesDict[rp] = GetRankingEntry(rp, rtps, rptps);
+        }
 
-            if (!progressTime.HasValue)
-            {
-                result.Add((activeParticipant, progressTime));
-                continue;
-            }
+        List<RankingEntry> rankingEntries = rankingEntriesDict.Values.Where(re => re.Progress == 1).OrderBy(re => re.RunTime).ToList();
 
-            // Finde die erste beendete Teilnehmerin, die länger für den gleichen Fortschritt brauchte
-            var insertIndex = result.Count;
-            for (int i = 0; i < result.Count; i++)
+        List<RaceTimePoint> raceTimePointsDesc = rtps.OrderByDescending(rtp => rtp.Index).ToList();
+        //Die fertigen Entries wollen wir ja nicht nochmal mit reinpacken
+        raceTimePointsDesc.RemoveAt(0);
+
+        TimeSpan SumSplitsAndPenaltiesToIndex(RankingEntry rankingEntry, uint maxIndex)
+        {
+            return new(rankingEntry
+                .SplitTimes
+                .Where(kvp => kvp.Key <= maxIndex && kvp.Value.HasValue)
+                .Sum(kvp => kvp.Value.Value.Ticks)
+                +
+                rankingEntry.PenaltyTimes
+                .Where(kvp => kvp.Key <= maxIndex && kvp.Value.HasValue)
+                .Sum(kvp => kvp.Value.Value.Ticks)
+                );
+        }
+
+        foreach(RaceTimePoint raceTimePoint in raceTimePointsDesc)
+        {
+            IEnumerable<RankingEntry> progressedToHere = rankingEntriesDict.Values.Where(re => re.SplitTimes.Where(kvp => kvp.Value.HasValue).Max(kvp => kvp.Key) == raceTimePoint.Index);
+
+            foreach(RankingEntry curProgressed in progressedToHere)
             {
-                if (result[i].Time.HasValue && result[i].Time > progressTime)
+                TimeSpan progressTimeSpan = SumSplitsAndPenaltiesToIndex(curProgressed, raceTimePoint.Index);
+
+                bool inserted = false;
+
+                for(int i = 0; i < rankingEntries.Count && !inserted; i++)
                 {
-                    insertIndex = i;
-                    break;
+                    TimeSpan curEntriesProgressTimeSpan = SumSplitsAndPenaltiesToIndex(rankingEntries[i], raceTimePoint.Index);
+
+                    if(curEntriesProgressTimeSpan > progressTimeSpan)
+                    {
+                        rankingEntries.Insert(i, curProgressed);
+                        inserted = true;
+                    }
+                }
+
+                if (!inserted)
+                {
+                    rankingEntries.Add(curProgressed);
                 }
             }
-
-            result.Insert(insertIndex, (activeParticipant, progressTime));
         }
 
-        return result;
-    }
 
-    /// <summary>
-    /// Berechne Rennposition für einen Teilnehmer
-    /// </summary>
-    public int GetParticipantPosition(
-        RaceParticipant participant,
-        IEnumerable<(RaceParticipant, TimeSpan?)> sortedParticipants)
-    {
-        var position = 1;
-        foreach (var (p, _) in sortedParticipants)
+        for (int i = 0; i < rankingEntries.Count; i++)
         {
-            if (p.ParticipantID == participant.ParticipantID)
-                return position;
-            position++;
+            rankingEntries[i].Position = (uint)i;
         }
 
-        return position;
+        return rankingEntries;
     }
 
-    /// <summary>
-    /// Berechne den Fortschritt eines Teilnehmers in Prozent
-    /// </summary>
-    public double GetParticipantProgress(
-        RaceParticipant participant,
-        Race race,
-        IEnumerable<RaceParticipantTimePoint> participantTimePoints)
+    private RankingEntry GetRankingEntry(RaceParticipant raceParticipant, IEnumerable<RaceTimePoint> raceTimePoints, IEnumerable<RaceParticipantTimePoint> raceParticipantTimePoints)
     {
-        if (!participant.StartTime.HasValue)
-            return 0;
+        List<RaceParticipantTimePoint> tps = raceParticipantTimePoints.Where(rptp => rptp.ParticipantID == raceParticipant.ParticipantID).ToList();
 
-        var totalTimePoints = race.RaceTimePoints.Count;
-        if (totalTimePoints == 0)
-            return 0;
+        Dictionary<uint, TimeSpan?> splitTimes = new();
+        splitTimes[1] = TimeSpan.Zero;
+        DateTime? prevDateTimeUTC = raceParticipant.StartTime;
 
-        var completedTimePoints = participantTimePoints
-            .Where(rptp => rptp.ParticipantID == participant.ParticipantID)
-            .Count();
+        for(uint i = 2; i <= raceTimePoints.Max(rtp => rtp.Index); i++)
+        {
+            DateTime? curDateTimeUTC = tps.FirstOrDefault(rptp => rptp.RTPIndex == i)?.TimePointUTC;
+            if(prevDateTimeUTC.HasValue && curDateTimeUTC.HasValue)
+            {
+                splitTimes[i] = curDateTimeUTC.Value - prevDateTimeUTC.Value;
+            }
+            else
+            {
+                splitTimes[i] = null;
+            }
+            prevDateTimeUTC = curDateTimeUTC;
+        }
 
-        return (double)completedTimePoints / totalTimePoints * 100;
+        return new(raceParticipant, 
+            splitTimes, 
+            raceTimePoints.ToDictionary(rtp => rtp.Index, rtp => rtp.HasPenaltyTime ? tps.FirstOrDefault(rptp => rptp.RTPIndex == rtp.Index)?.PenaltyTime : TimeSpan.Zero));
     }
 
-    /// <summary>
-    /// Prüfe ob ein Teilnehmer das nächste Zeitpunkt erreicht hat
-    /// </summary>
-    public bool HasReachedTimePoint(
-        RaceParticipant participant,
-        RaceTimePoint timePoint,
-        IEnumerable<RaceParticipantTimePoint> participantTimePoints)
-    {
-        return participantTimePoints.Any(rptp =>
-            rptp.ParticipantID == participant.ParticipantID &&
-            rptp.RaceTimePoint?.Id == timePoint.Id);
-    }
 }

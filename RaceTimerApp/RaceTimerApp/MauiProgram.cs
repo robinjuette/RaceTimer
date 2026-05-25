@@ -25,7 +25,7 @@ namespace RaceTimerApp
             builder.Services.AddMauiRaceServices();
 
             // Register app-specific services
-            builder.Services.AddScoped<RaceService>();
+            builder.Services.AddScoped<RaceManagementService>();
             builder.Services.AddScoped<ParticipantService>();
             builder.Services.AddScoped<TimingService>();
             builder.Services.AddScoped<RankingService>();

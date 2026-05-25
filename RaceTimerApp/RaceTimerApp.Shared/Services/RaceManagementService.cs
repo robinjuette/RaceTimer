@@ -8,7 +8,7 @@ namespace RaceTimerApp.Shared.Services;
 /// Service für Rennverwaltung und Business-Logik
 /// Verwendet lokal das IRaceRepository (offline-first) und optional Server-Sync via SignalR
 /// </summary>
-public class RaceService
+public class RaceManagementService
 {
     private readonly IRaceRepository _repository;
     private readonly SignalRSyncService? _signalRSync;
@@ -16,7 +16,7 @@ public class RaceService
     /// <summary>
     /// Offline-Modus (nur lokales Repository)
     /// </summary>
-    public RaceService(IRaceRepository repository)
+    public RaceManagementService(IRaceRepository repository)
     {
         _repository = repository;
         _signalRSync = null;
@@ -25,7 +25,7 @@ public class RaceService
     /// <summary>
     /// Online-Modus (mit optionalem Server-Sync)
     /// </summary>
-    public RaceService(IRaceRepository repository, SignalRSyncService signalRSync)
+    public RaceManagementService(IRaceRepository repository, SignalRSyncService signalRSync)
     {
         _repository = repository;
         _signalRSync = signalRSync;

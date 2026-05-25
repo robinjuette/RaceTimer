@@ -1,18 +1,11 @@
 @page "/timing"
 @using RaceTimerApp.Shared.Services
 @using RaceTimer.Shared.Models
-@inject RaceService RaceService
+@inject RaceManagementService RaceService
 @inject ParticipantService ParticipantService
 @inject TimingService TimingService
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
-
-<div class="page-header">
-    <h1>Zeiterfassung</h1>
-    <button class="btn btn-primary btn-lg" @onclick="RecordNewTimePoint" title="Zeitpunkt jetzt erfassen">
-        <span class="oi oi-clock"></span> Zeitpunkt erfassen
-    </button>
-</div>
 
 <div class="row">
     <!-- Offene Zeitpunkte -->
@@ -142,15 +135,6 @@
     private void SelectParticipant((Race, RaceParticipant) p)
     {
         SelectedParticipant = p.Item2.ParticipantID == SelectedParticipant?.Item2.ParticipantID ? null : p;
-    }
-
-    private async Task RecordNewTimePoint()
-    {
-        var recorded = await TimingService.RecordTimePointAsync();
-        if (recorded is not null)
-        {
-            UnassignedTimePoints.Add(recorded);
-        }
     }
 
     private async Task AssignTimePoint()

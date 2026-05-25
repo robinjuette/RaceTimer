@@ -14,7 +14,7 @@ builder.Services.AddRazorComponents()
 builder.Services.AddMauiRaceServices();
 builder.Services.AddScoped<SettingsService>();
 builder.Services.AddScoped<TimingService>();
-builder.Services.AddScoped<RaceService>();
+builder.Services.AddScoped<RaceManagementService>();
 builder.Services.AddScoped<ParticipantService>();
 builder.Services.AddScoped<RankingService>();
 

@@ -1,7 +1,7 @@
 @page "/races/{RaceId}"
 @using RaceTimerApp.Shared.Services
 @using RaceTimer.Shared.Models
-@inject RaceService RaceService
+@inject RaceManagementService RaceService
 @inject ParticipantService ParticipantService
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
@@ -18,10 +18,13 @@
     {
         <a href="/overview/@RaceId" class="btn btn-primary">Zur Rennübersicht</a>
     }
-    else
+    @if (Status == RaceStatus.Running || Status == RaceStatus.Finished)
     {
-        <button class="btn btn-secondary" @onclick="GoBack">Zurück</button>
+        <a href="/standings/@RaceId" class="btn btn-primary">Zum Rennstand</a>
     }
+        
+    <button class="btn btn-secondary" @onclick="GoBack">Zurück</button>
+    
 </div>
 
 <!-- Status Badge -->

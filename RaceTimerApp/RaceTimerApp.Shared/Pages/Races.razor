@@ -1,7 +1,7 @@
 @page "/races"
 @using RaceTimerApp.Shared.Services
 @using RaceTimer.Shared.Models
-@inject RaceService RaceService
+@inject RaceManagementService RaceService
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
 
@@ -122,8 +122,13 @@
         }
     }
 
-    private void CreateNewRace()
+    private async Task CreateNewRace()
     {
-        Navigation.NavigateTo("/races/new");
+        Race? newRace = await RaceService.CreateRaceAsync("New");
+
+        if (newRace != null)
+        {
+            ManageRace(newRace.Id);
+        }
     }
 }
