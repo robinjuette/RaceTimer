@@ -13,7 +13,20 @@
 }
 
 <div class="page-header">
-    <h1>@CurrentRace.Name</h1>
+    <div>
+        @if (IsEditingName)
+        {
+            <div class="input-group" style="max-width: 400px;">
+                <input type="text" class="form-control" @bind="EditRaceName" placeholder="Rennname"/>
+                <button class="btn btn-primary" @onclick="SaveRaceName">Speichern</button>
+                <button class="btn btn-secondary" @onclick="CancelEditName">Abbrechen</button>
+            </div>
+        }
+        else
+        {
+            <h1>@CurrentRace.Name <button class="btn btn-sm btn-outline-secondary" @onclick="() => StartEditName()" title="Rennen umbenennen">✎</button></h1>
+        }
+    </div>
     @if (Status == RaceStatus.Running)
     {
         <a href="/overview/@RaceId" class="btn btn-primary">Zur Rennübersicht</a>
@@ -22,9 +35,8 @@
     {
         <a href="/standings/@RaceId" class="btn btn-primary">Zum Rennstand</a>
     }
-        
+
     <button class="btn btn-secondary" @onclick="GoBack">Zurück</button>
-    
 </div>
 
 <!-- Status Badge -->
@@ -42,14 +54,14 @@
     </div>
 </div>
 
-@if (Status == RaceStatus.Planned)
-{
-    <!-- Geplantes Rennen: Zeitpunkte & Teilnehmer hinzufügen -->
-    <div class="card mb-3">
-        <div class="card-header">
-            <h5>Rennzeitpunkte</h5>
-        </div>
-        <div class="card-body">
+<!-- Rennzeitpunkte - für alle Status -->
+<div class="card mb-3">
+    <div class="card-header">
+        <h5>Rennzeitpunkte</h5>
+    </div>
+    <div class="card-body">
+        @if (Status == RaceStatus.Planned)
+        {
             <div class="row mb-3">
                 <div class="col-md-9">
                     <input type="text" class="form-control" placeholder="Name des Zeitpunkts" @bind="NewTimePointName" />
@@ -58,132 +70,71 @@
                     <button class="btn btn-success" @onclick="AddTimePoint">Hinzufügen</button>
                 </div>
             </div>
+        }
 
-            @if (CurrentRace.RaceTimePoints.Any())
-            {
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th>Position</th>
-                            <th>Name</th>
+        @if (CurrentRace.RaceTimePoints.Any())
+        {
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Position</th>
+                        <th>Name</th>
+                        <th>Strafzeit</th>
+                        @if (Status == RaceStatus.Planned)
+                        {
                             <th></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var tp in CurrentRace.RaceTimePoints.OrderBy(x => x.Index))
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var tp in CurrentRace.RaceTimePoints.OrderBy(x => x.Index))
+                    {
+                        @if (EditingTimePointId == tp.Id && Status == RaceStatus.Planned)
+                        {
+                            <tr>
+                                <td>@tp.Index</td>
+                                <td>
+                                    <input type="text" class="form-control" @bind="EditTimePointName" />
+                                </td>
+                                <td>
+                                    <input type="checkbox" class="form-check-input" @bind="EditTimePointPenalty" />
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-primary" @onclick="() => SaveTimePoint(tp.Id)">Speichern</button>
+                                    <button class="btn btn-sm btn-secondary" @onclick="CancelEditTimePoint">Abbrechen</button>
+                                </td>
+                            </tr>
+                        }
+                        else
                         {
                             <tr>
                                 <td>@tp.Index</td>
                                 <td>@tp.DisplayName</td>
                                 <td>
-                                    <button class="btn btn-danger btn-sm" @onclick="() => RemoveTimePoint(tp.Id)">Löschen</button>
+                                    @if (tp.HasPenaltyTime)
+                                    {
+                                        <span title="Strafzeit erforderlich">⏱️</span>
+                                    }
                                 </td>
+                                @if (Status == RaceStatus.Planned)
+                                {
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-primary" @onclick="() => StartEditTimePoint(tp)">Bearbeiten</button>
+                                        <button class="btn btn-danger btn-sm" @onclick="() => RemoveTimePoint(tp.Id)">Löschen</button>
+                                    </td>
+                                }
                             </tr>
                         }
-                    </tbody>
-                </table>
-            }
-            else
-            {
-                <div class="alert alert-info">Keine Zeitpunkte. Mindestens 2 sind erforderlich um zu starten.</div>
-            }
-        </div>
-    </div>
-
-    <!-- Teilnehmerverwaltung -->
-    <div class="card mb-3">
-        <div class="card-header">
-            <h5>Teilnehmer (@CurrentRace.RaceParticipants.Count)</h5>
-        </div>
-        <div class="card-body">
-            <div class="row mb-3">
-                <div class="col-md-8">
-                    <input type="text" class="form-control" placeholder="Teilnehmer suchen oder neu erstellen..." @bind="NewParticipantName" @oninput="SearchParticipants" />
-                    @if (SearchResults.Any())
-                    {
-                        <div class="list-group mt-2" style="max-height: 200px; overflow-y: auto;">
-                            @foreach (var p in SearchResults)
-                            {
-                                <button type="button" class="list-group-item list-group-item-action" @onclick="() => SelectExistingParticipant(p)">
-                                    @p.DisplayName
-                                </button>
-                            }
-                        </div>
                     }
-                </div>
-                <div class="col-md-4">
-                    <button class="btn btn-success" @onclick="AddNewParticipant">Neuer Teilnehmer</button>
-                </div>
-            </div>
-
-            @if (CurrentRace.RaceParticipants.Any())
-            {
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th>Nr.</th>
-                            <th>Name</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var rp in CurrentRace.RaceParticipants.OrderBy(x => x.ParticipantNr))
-                        {
-                            <tr>
-                                <td>@rp.ParticipantNr</td>
-                                <td>@rp.Participant?.DisplayName</td>
-                                <td>
-                                    <button class="btn btn-danger btn-sm" @onclick="() => RemoveParticipant(rp.ParticipantID)">Entfernen</button>
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            }
-            else
-            {
-                <div class="alert alert-info">Keine Teilnehmer. Mindestens 1 ist erforderlich.</div>
-            }
-        </div>
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <div class="alert alert-info">Keine Zeitpunkte. @(Status == RaceStatus.Planned ? "Mindestens 2 sind erforderlich um zu starten." : "")</div>
+        }
     </div>
-
-    <!-- Start Button -->
-    <div class="d-grid">
-        <button class="btn btn-lg btn-primary" @onclick="PrepareStart" disabled="@(CurrentRace.RaceTimePoints.Count < 2 || !CurrentRace.RaceParticipants.Any())">
-            Rennen starten vorbereiten
-        </button>
-    </div>
-}
-else if (Status == RaceStatus.Running || Status == RaceStatus.Planned)
-{
-    <!-- Laufendes oder geplantes Rennen: Nur Teilnehmerverwaltung -->
-    <div class="card mb-3">
-        <div class="card-header">
-            <h5>Teilnehmer (@CurrentRace.RaceParticipants.Count)</h5>
-        </div>
-        <div class="card-body">
-            <div class="row mb-3">
-                <div class="col-md-8">
-                    <input type="text" class="form-control" placeholder="Teilnehmer suchen oder neu erstellen..." @bind="NewParticipantName" @oninput="SearchParticipants" />
-                    @if (SearchResults.Any())
-                    {
-                        <div class="list-group mt-2" style="max-height: 200px; overflow-y: auto;">
-                            @foreach (var p in SearchResults)
-                            {
-                                <button type="button" class="list-group-item list-group-item-action" @onclick="() => SelectExistingParticipant(p)">
-                                    @p.DisplayName
-                                </button>
-                            }
-                        </div>
-                    }
-                </div>
-                <div class="col-md-4">
-                    <button class="btn btn-success" @onclick="AddNewParticipant">Neuer Teilnehmer</button>
-                </div>
-            </div>
-        </div>
-    </div>
-}
+</div>
 
 @code {
     [Parameter]
@@ -194,6 +145,15 @@ else if (Status == RaceStatus.Running || Status == RaceStatus.Planned)
     private string NewTimePointName = "";
     private string NewParticipantName = "";
     private List<Participant> SearchResults = [];
+
+    // Für Rennen umbenennen
+    private bool IsEditingName = false;
+    private string EditRaceName = "";
+
+    // Für TimePoint bearbeiten
+    private Guid EditingTimePointId = Guid.Empty;
+    private string EditTimePointName = "";
+    private bool EditTimePointPenalty = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -215,6 +175,54 @@ else if (Status == RaceStatus.Running || Status == RaceStatus.Planned)
                 Status = RaceService.GetRaceStatus(CurrentRace);
             }
         }
+    }
+
+    private void StartEditName()
+    {
+        IsEditingName = true;
+        EditRaceName = CurrentRace?.Name ?? "";
+    }
+
+    private async Task SaveRaceName()
+    {
+        if (string.IsNullOrEmpty(EditRaceName) || CurrentRace is null)
+            return;
+
+        await RaceService.UpdateRaceNameAsync(CurrentRace.Id, EditRaceName);
+        CurrentRace = await RaceService.GetRaceAsync(CurrentRace.Id);
+        IsEditingName = false;
+    }
+
+    private void CancelEditName()
+    {
+        IsEditingName = false;
+        EditRaceName = "";
+    }
+
+    private void StartEditTimePoint(RaceTimePoint timePoint)
+    {
+        EditingTimePointId = timePoint.Id;
+        EditTimePointName = timePoint.DisplayName;
+        EditTimePointPenalty = timePoint.HasPenaltyTime;
+    }
+
+    private async Task SaveTimePoint(Guid timePointId)
+    {
+        if (string.IsNullOrEmpty(EditTimePointName) || CurrentRace is null)
+            return;
+
+        await RaceService.UpdateRaceTimePointAsync(CurrentRace.Id, timePointId, EditTimePointName, EditTimePointPenalty);
+        CurrentRace = await RaceService.GetRaceAsync(CurrentRace.Id);
+        EditingTimePointId = Guid.Empty;
+        EditTimePointName = "";
+        EditTimePointPenalty = false;
+    }
+
+    private void CancelEditTimePoint()
+    {
+        EditingTimePointId = Guid.Empty;
+        EditTimePointName = "";
+        EditTimePointPenalty = false;
     }
 
     private async Task AddTimePoint()

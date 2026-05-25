@@ -1,6 +1,7 @@
 @page "/overview"
 @page "/overview/{RaceId}"
 @using RaceTimerApp.Shared.Services
+@using RaceTimerApp.Shared.Models
 @using RaceTimer.Shared.Models
 @inject RaceManagementService RaceService
 @inject ParticipantService ParticipantService
@@ -12,7 +13,15 @@
     <h1>Rennübersicht</h1>
 </div>
 
-<!-- Race Selector -->
+@if (!RunningRaces.Any())
+{
+    <div class="alert alert-info">
+        Keine laufenden Rennen. <a href="/races">Zur Rennverwaltung</a>
+    </div>
+    return;
+}
+
+<!-- Race Selector - nur wenn mehrere Rennen laufen -->
 @if (RunningRaces.Count > 1)
 {
     <div class="mb-3">
@@ -27,121 +36,131 @@
     </div>
 }
 
-@if (!RunningRaces.Any())
-{
-    <div class="alert alert-info">
-        Keine laufenden Rennen. <a href="/races">Zur Rennverwaltung</a>
-    </div>
-    return;
-}
-
-<!-- Rennen Display -->
-@foreach (var race in DisplayRaces)
-{
-    <div class="race-overview-card mb-4">
-        <div class="race-header">
+<!-- Rennen Display Container -->
+<div class="overview-container">
+    @foreach (var race in DisplayRaces)
+    {
+        <div class="race-overview-card">
+            <!-- Header mit Rennname (nur bei mehreren Rennen) -->
             @if (DisplayRaces.Count() > 1)
             {
-                <h3>@race.Name</h3>
+                <div class="race-header">
+                    <h4>@race.Name</h4>
+                    <small class="text-muted">Gestartet: @race.StartTimeUTC?.ToLocalTime().ToString("G")</small>
+                </div>
             }
-            <small class="text-muted">
-                Gestartet: @race.StartTimeUTC?.ToLocalTime().ToString("G")
-            </small>
-        </div>
 
-        <div class="race-content">
-            <!-- Nicht gestartete Teilnehmer (linke Seite) -->
-            <div class="side-panel left-panel">
-                <h5>Noch nicht gestartet</h5>
-                @if (GetNotStartedParticipants(race).Any())
-                {
-                    <div class="participant-list">
-                        @foreach (var participant in GetNotStartedParticipants(race))
-                        {
-                            <div class="participant-item pending">
-                                <div class="participant-info">
-                                    <span class="participant-number">#@participant.ParticipantNr</span>
-                                    <span class="participant-name">@participant.Participant?.DisplayName</span>
-                                </div>
-                                <div class="participant-actions">
-                                    <button class="btn btn-sm btn-outline-primary" 
-                                            @onclick="() => PrepareStart(participant)">Vorbereiten</button>
-                                    <button class="btn btn-sm btn-success"
-                                            @onclick="() => StartParticipant(participant)">Start</button>
-                                </div>
-                            </div>
-                        }
+            <div class="race-content">
+                <!-- Linke Seite: Noch nicht gestartete Teilnehmer -->
+                <div class="side-panel left-panel">
+                    <div class="panel-header">
+                        <h6>Noch nicht gestartet</h6>
                     </div>
-                }
-                else
-                {
-                    <div class="text-muted">Alle haben gestartet</div>
-                }
-            </div>
-
-            <!-- Laufende Teilnehmer (Mitte) -->
-            <div class="center-panel">
-                <h5>Aktive Teilnehmer</h5>
-                @if (GetActiveParticipants(race).Any())
-                {
-                    <div class="participant-list">
-                        @foreach (var participant in GetActiveParticipants(race).OrderBy(p => p.ParticipantNr))
-                        {
-                            <div class="participant-item active">
-                                <div class="participant-header">
-                                    <span class="participant-number">#@participant.ParticipantNr</span>
-                                    <span class="participant-name">@participant.Participant?.DisplayName</span>
-                                </div>
-
-                                <!-- Progress Bar -->
-                                <div class="progress-container">
-                                    <div class="progress-bar-wrapper">
-                                        @foreach (var timePoint in race.RaceTimePoints.OrderBy(tp => tp.Index))
+                    @if (GetNotStartedParticipants(race).Any())
+                    {
+                        <div class="participant-list">
+                            @foreach (var participant in GetNotStartedParticipants(race).OrderBy(p => p.ParticipantNr))
+                            {
+                                <div class="participant-item pending">
+                                    <div class="participant-info">
+                                        <span class="participant-number">@participant.ParticipantNr</span>
+                                        <span class="participant-name">@participant.Participant?.DisplayName</span>
+                                    </div>
+                                    <div class="participant-actions">
+                                        @if (_preparedParticipant?.ParticipantID == participant.ParticipantID)
                                         {
-                                            var reached = HasReachedTimePoint(participant, timePoint, race);
-                                            <div class="progress-dot @(reached ? "reached" : "pending")" title="@timePoint.DisplayName">
-                                            </div>
+                                            <button class="btn btn-sm btn-outline-secondary" @onclick="() => CancelPrepare()">Abbrechen</button>
+                                            <button class="btn btn-sm btn-success" @onclick="() => StartParticipant(participant, race)">Start</button>
+                                        }
+                                        else
+                                        {
+                                            <button class="btn btn-sm btn-outline-primary" @onclick="() => PrepareStart(participant)">Vorbereiten</button>
+                                            <button class="btn btn-sm btn-success" disabled>Start</button>
                                         }
                                     </div>
                                 </div>
-                            </div>
-                        }
-                    </div>
-                }
-                else
-                {
-                    <div class="text-muted">Keine aktiven Teilnehmer</div>
-                }
-            </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-muted text-center py-3">Alle gestartet</div>
+                    }
+                </div>
 
-            <!-- Beendete Teilnehmer (rechte Seite) -->
-            <div class="side-panel right-panel">
-                <h5>Beendet</h5>
-                @if (GetFinishedParticipants(race).Any())
-                {
-                    <div class="participant-list">
-                        @foreach (var participant in GetFinishedParticipants(race))
-                        {
-                            <div class="participant-item finished">
-                                <div class="participant-info">
-                                    <span class="participant-number">#@participant.ParticipantNr</span>
-                                    <span class="participant-name">@participant.Participant?.DisplayName</span>
-                                </div>
-                                <small class="text-muted">
-                                    @(participant.FinishDateTimeUTC?.ToLocalTime().ToString("t") ?? "")
-                                </small>
-                            </div>
-                        }
+                <!-- Mitte: Laufende Teilnehmer mit Fortschritt -->
+                <div class="center-panel">
+                    <div class="panel-header">
+                        <h6>Aktive Teilnehmer</h6>
                     </div>
-                }
-                else
-                {
-                    <div class="text-muted">Noch niemand beendet</div>
-                }
+                    @if (GetActiveParticipants(race).Any())
+                    {
+                        <div class="participant-list">
+                            @foreach (var participant in GetActiveParticipants(race).OrderBy(p => p.ParticipantNr))
+                            {
+                                var ranking = GetRankingEntry(race, participant);
+                                <div class="participant-item active">
+                                    <div class="participant-header">
+                                        <span class="participant-number">@participant.ParticipantNr</span>
+                                        <span class="participant-name">@participant.Participant?.DisplayName</span>
+                                        <span class="participant-time">@FormatTimeSpan(ranking?.RunTime)</span>
+                                    </div>
+
+                                    <!-- Progress Bar mit Zeitpunkten -->
+                                    <div class="progress-container">
+                                        <div class="progress-bar-wrapper">
+                                            @foreach (var timePoint in race.RaceTimePoints.OrderBy(tp => tp.Index))
+                                            {
+                                                var reached = HasReachedTimePoint(participant, timePoint, race);
+                                                var timePointTime = GetTimePointTime(participant, timePoint, race);
+                                                <div class="progress-dot @(reached ? "reached" : "pending")" 
+                                                     title="@timePoint.DisplayName @(timePointTime.HasValue ? timePointTime.Value.ToLocalTime().ToString("G") : "")">
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-muted text-center py-3">Keine aktiven Teilnehmer</div>
+                    }
+                </div>
+
+                <!-- Rechte Seite: Beendete Teilnehmer -->
+                <div class="side-panel right-panel">
+                    <div class="panel-header">
+                        <h6>Beendet</h6>
+                    </div>
+                    @if (GetFinishedParticipants(race).Any())
+                    {
+                        <div class="participant-list">
+                            @foreach (var participant in GetFinishedParticipants(race).OrderBy(p => p.ParticipantNr))
+                            {
+                                var ranking = GetRankingEntry(race, participant);
+                                <div class="participant-item finished">
+                                    <div class="participant-info">
+                                        <span class="participant-number">@participant.ParticipantNr</span>
+                                        <span class="participant-name">@participant.Participant?.DisplayName</span>
+                                    </div>
+                                    <div class="participant-time">
+                                        @FormatTimeSpan(ranking?.RunTime)
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-muted text-center py-3">Noch niemand beendet</div>
+                    }
+                </div>
             </div>
         </div>
-    </div>
-}
+    }
+</div>
 
 @code {
     [Parameter]
@@ -151,8 +170,8 @@
     private Guid SelectedRaceId = Guid.Empty;
     private RaceParticipant? _preparedParticipant;
 
+    private Dictionary<Guid, List<RankingEntry>> RaceRankings = new();
     private Dictionary<Guid, List<RaceParticipant>> RacesParticipants = new();
-
     private IEnumerable<Race> DisplayRaces
     {
         get
@@ -166,14 +185,15 @@
     protected override async Task OnInitializedAsync()
     {
         await LoadRaces();
+
         if (Guid.TryParse(RaceId, out var raceId))
         {
             SelectedRaceId = raceId;
         }
-        else if (!RunningRaces.Any())
+        else if (RunningRaces.Count == 1)
         {
             // Auto-select wenn nur ein Rennen läuft
-            SelectedRaceId = RunningRaces.FirstOrDefault()?.Id ?? Guid.Empty;
+            SelectedRaceId = RunningRaces.First().Id;
         }
 
         // Auto-refresh
@@ -184,11 +204,16 @@
     {
         var loaded = await RaceService.GetRunningRacesAsync();
 
-        foreach(Race lr in loaded)
+        foreach (Race lr in loaded)
         {
             RacesParticipants[lr.Id] = (await ParticipantService.GetRaceParticipantsAsync(lr.Id)).ToList();
         }
-
+        // Lade Rankings für alle Rennen
+        foreach (var race in loaded)
+        {
+            var rankings = await RankingService.GetRankingsAsync(race.Id);
+            RaceRankings[race.Id] = rankings;
+        }
         RunningRaces = (await RaceService.GetRunningRacesAsync()).ToList();
     }
 
@@ -196,7 +221,7 @@
     {
         while (true)
         {
-            await Task.Delay(5000); // Alle 5 Sekunden refresh
+            await Task.Delay(2000); // Alle 5 Sekunden refresh
             await LoadRaces();
             StateHasChanged();
         }
@@ -207,6 +232,10 @@
         if (e.Value is not null && Guid.TryParse(e.Value.ToString(), out var raceId))
         {
             SelectedRaceId = raceId;
+        }
+        else
+        {
+            SelectedRaceId = Guid.Empty;
         }
     }
 
@@ -238,16 +267,52 @@
             rptp.RaceTimePoint?.Id == timePoint.Id);
     }
 
+    private DateTime? GetTimePointTime(RaceParticipant participant, RaceTimePoint timePoint, Race race)
+    {
+        return race.RaceParticipantTimePoints
+            .FirstOrDefault(rptp =>
+                rptp.ParticipantID == participant.ParticipantID &&
+                rptp.RaceTimePoint?.Id == timePoint.Id)?
+            .TimePointUTC;
+    }
+
+    private RankingEntry? GetRankingEntry(Race race, RaceParticipant participant)
+    {
+        if (!RaceRankings.TryGetValue(race.Id, out var rankings))
+            return null;
+
+        return rankings.FirstOrDefault(r => r.RaceParticipant.ParticipantID == participant.ParticipantID);
+    }
+
+    private string FormatTimeSpan(TimeSpan? timeSpan)
+    {
+        if (!timeSpan.HasValue)
+            return "-";
+
+        var ts = timeSpan.Value;
+        if (ts.TotalHours >= 1)
+            return $"{ts.Hours:D2}:{ts.Minutes:D2}:{ts.Seconds:D2}";
+        else
+            return $"{ts.Minutes:D2}:{ts.Seconds:D2}";
+    }
+
     private void PrepareStart(RaceParticipant participant)
     {
         _preparedParticipant = participant;
     }
 
-    private async Task StartParticipant(RaceParticipant participant)
+    private void CancelPrepare()
     {
-        if (_preparedParticipant != participant) return;
+        _preparedParticipant = null;
+    }
 
-        await RaceService.StartRaceAsync(participant.RaceID, participant.ParticipantID);
+    private async Task StartParticipant(RaceParticipant participant, Race race)
+    {
+        if (_preparedParticipant?.ParticipantID != participant.ParticipantID) 
+            return;
+
+        await RaceService.StartRaceAsync(race.Id, participant.ParticipantID);
+        _preparedParticipant = null;
 
         await LoadRaces();
     }

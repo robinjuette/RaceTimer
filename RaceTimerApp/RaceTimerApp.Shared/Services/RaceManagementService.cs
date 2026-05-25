@@ -105,6 +105,33 @@ public class RaceManagementService
         return await _repository.DeleteRaceTimePointAsync(timePointId);
     }
 
+    // Rennen umbenennen
+    public async Task<bool> UpdateRaceNameAsync(Guid raceId, string newName)
+    {
+        var race = await _repository.GetRaceAsync(raceId);
+        if (race is null) return false;
+
+        race.Name = newName;
+        await _repository.UpdateRaceAsync(race);
+        return true;
+    }
+
+    // RaceTimePoint aktualisieren (Name und HasPenaltyTime)
+    public async Task<bool> UpdateRaceTimePointAsync(Guid raceId, Guid timePointId, string displayName, bool hasPenaltyTime)
+    {
+        var race = await _repository.GetRaceAsync(raceId);
+        if (race is null) return false;
+
+        var timePoint = race.RaceTimePoints.FirstOrDefault(tp => tp.Id == timePointId);
+        if (timePoint is null) return false;
+
+        timePoint.DisplayName = displayName;
+        timePoint.HasPenaltyTime = hasPenaltyTime;
+
+        await _repository.UpdateTimePointsAsync(raceId, race.RaceTimePoints);
+        return true;
+    }
+
     // Status berechnen
     public RaceStatus GetRaceStatus(Race race)
     {

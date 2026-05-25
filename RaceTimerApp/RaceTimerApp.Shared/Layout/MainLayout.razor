@@ -5,40 +5,24 @@
 @inject TimingService TimingService
 
 <div class="main-container">
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="/">
-                <span class="badge badge-primary">RaceTimer</span>
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="/races" aria-current="page">Rennen</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/overview">Übersicht</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/timing">Zeiterfassung</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/penalty">Strafzeiten</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/standings">Zwischenstand</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/settings">Einstellungen</a>
-                    </li>
-                </ul>
-            </div>
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <span class="sidebar-brand">RaceTimer</span>
         </div>
-    </nav>
+        <nav class="sidebar-nav">
+            <ul>
+                <li><a href="/" class="nav-link">Home</a></li>
+                <li><a href="/races" class="nav-link">Rennen</a></li>
+                <li><a href="/overview" class="nav-link">Übersicht</a></li>
+                <li><a href="/timing" class="nav-link">Zeiterfassung</a></li>
+                <li><a href="/penalty" class="nav-link">Strafzeiten</a></li>
+                <li><a href="/standings" class="nav-link">Zwischenstand</a></li>
+                <li><a href="/settings" class="nav-link">Einstellungen</a></li>
+            </ul>
+        </nav>
+    </aside>
 
-    <div class="container-fluid main-content">
+    <div class="main-content">
         @Body
     </div>
 
