@@ -128,7 +128,32 @@ public class RaceManagementService
         timePoint.DisplayName = displayName;
         timePoint.HasPenaltyTime = hasPenaltyTime;
 
-        await _repository.UpdateTimePointsAsync(raceId, race.RaceTimePoints);
+        await _repository.UpdateTimePointsAsync(raceId, race.RaceTimePoints.OrderBy(rtp => rtp.Index).ToList());
+        return true;
+    }
+
+    // RaceTimePoints umsortieren (Reorder)
+    public async Task<bool> ReorderRaceTimePointsAsync(Guid raceId, List<Guid> orderedTimePointIds)
+    {
+        var race = await _repository.GetRaceAsync(raceId);
+        if (race is null) return false;
+
+        // Erstelle neue Liste mit aktualisierten Index-Werten
+        var reorderedTimePoints = new List<RaceTimePoint>();
+        for (uint i = 0; i < orderedTimePointIds.Count; i++)
+        {
+            var tp = race.RaceTimePoints.FirstOrDefault(rtp => rtp.Id == orderedTimePointIds[(int)i]);
+            if (tp is not null)
+            {
+                tp.Index = i + 1; // Index beginnt bei 1
+                reorderedTimePoints.Add(tp);
+            }
+        }
+
+        if (reorderedTimePoints.Count != orderedTimePointIds.Count)
+            return false;
+
+        await _repository.UpdateTimePointsAsync(raceId, reorderedTimePoints);
         return true;
     }
 

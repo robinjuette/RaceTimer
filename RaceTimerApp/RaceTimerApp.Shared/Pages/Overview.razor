@@ -208,12 +208,14 @@
         {
             RacesParticipants[lr.Id] = (await ParticipantService.GetRaceParticipantsAsync(lr.Id)).ToList();
         }
+
         // Lade Rankings für alle Rennen
         foreach (var race in loaded)
         {
             var rankings = await RankingService.GetRankingsAsync(race.Id);
             RaceRankings[race.Id] = rankings;
         }
+
         RunningRaces = (await RaceService.GetRunningRacesAsync()).ToList();
     }
 

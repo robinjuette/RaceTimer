@@ -340,25 +340,26 @@ body {
 /* Progress Bar */
 .progress-container {
     width: 100%;
+    padding: 8px 0;
 }
 
 .progress-bar-wrapper {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-start;
     align-items: center;
-    gap: 4px;
+    gap: 6px;
     margin-top: 6px;
+    flex-wrap: wrap;
 }
 
 .progress-dot {
-    width: 18px;
-    height: 18px;
+    width: 20px;
+    height: 20px;
     border-radius: 50%;
     background: #e9ecef;
     border: 2px solid #dee2e6;
     transition: all 0.3s;
-    flex: 1;
-    min-width: 12px;
+    flex-shrink: 0;
 }
 
 .progress-dot.reached {
@@ -625,3 +626,100 @@ h1:focus {
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
     text-align: start;
 }
+
+/* TimePoint List */
+.timepoint-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.timepoint-item {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.timepoint-item:hover {
+    background: #e9ecef;
+    border-color: #adb5bd;
+}
+
+.timepoint-item[draggable="true"] {
+    cursor: move;
+}
+
+.timepoint-item.editing {
+    background: #fff3cd;
+    border-color: #ffc107;
+}
+
+.timepoint-handle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    margin-right: 10px;
+    color: #6c757d;
+    font-weight: bold;
+    cursor: grab;
+    user-select: none;
+}
+
+.timepoint-handle:active {
+    cursor: grabbing;
+}
+
+.timepoint-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+    min-width: 0;
+}
+
+.timepoint-index {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    background: #0d6efd;
+    color: white;
+    border-radius: 4px;
+    font-weight: bold;
+    flex-shrink: 0;
+}
+
+.timepoint-name {
+    flex: 1;
+    min-width: 100px;
+}
+
+.timepoint-penalty {
+    font-size: 18px;
+    margin-left: 8px;
+}
+
+.timepoint-actions {
+    display: flex;
+    gap: 6px;
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
+.timepoint-item.editing .form-control {
+    padding: 6px 8px;
+    font-size: 14px;
+}
+
+.timepoint-item.editing .form-check-input {
+    width: 20px;
+    height: 20px;
+}
+

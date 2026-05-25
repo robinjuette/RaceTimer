@@ -1,6 +1,7 @@
 @page "/races/{RaceId}"
 @using RaceTimerApp.Shared.Services
 @using RaceTimer.Shared.Models
+@using Microsoft.AspNetCore.Components.Web
 @inject RaceManagementService RaceService
 @inject ParticipantService ParticipantService
 @inject NavigationManager Navigation
@@ -74,60 +75,53 @@
 
         @if (CurrentRace.RaceTimePoints.Any())
         {
-            <table class="table table-striped">
-                <thead>
-                    <tr>
-                        <th>Position</th>
-                        <th>Name</th>
-                        <th>Strafzeit</th>
-                        @if (Status == RaceStatus.Planned)
-                        {
-                            <th></th>
-                        }
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var tp in CurrentRace.RaceTimePoints.OrderBy(x => x.Index))
+            <div class="timepoint-list">
+                @foreach (var tp in DisplayTimePoints)
+                {
+                    @if (EditingTimePointId == tp.Id && Status == RaceStatus.Planned)
                     {
-                        @if (EditingTimePointId == tp.Id && Status == RaceStatus.Planned)
-                        {
-                            <tr>
-                                <td>@tp.Index</td>
-                                <td>
-                                    <input type="text" class="form-control" @bind="EditTimePointName" />
-                                </td>
-                                <td>
-                                    <input type="checkbox" class="form-check-input" @bind="EditTimePointPenalty" />
-                                </td>
-                                <td>
+                        <div class="timepoint-item editing">
+                            <div class="timepoint-handle">⋮⋮</div>
+                            <div class="timepoint-content">
+                                <span class="timepoint-index">@tp.Index</span>
+                                <input type="text" class="form-control" @bind="EditTimePointName" />
+                                <input type="checkbox" class="form-check-input ms-2" @bind="EditTimePointPenalty" />
+                                <span class="timepoint-actions">
                                     <button class="btn btn-sm btn-primary" @onclick="() => SaveTimePoint(tp.Id)">Speichern</button>
                                     <button class="btn btn-sm btn-secondary" @onclick="CancelEditTimePoint">Abbrechen</button>
-                                </td>
-                            </tr>
-                        }
-                        else
-                        {
-                            <tr>
-                                <td>@tp.Index</td>
-                                <td>@tp.DisplayName</td>
-                                <td>
-                                    @if (tp.HasPenaltyTime)
-                                    {
-                                        <span title="Strafzeit erforderlich">⏱️</span>
-                                    }
-                                </td>
+                                </span>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="timepoint-item" draggable="@(Status == RaceStatus.Planned ? "true" : "false")" 
+                             @ondragstart="@((DragEventArgs e) => OnDragStart(e, tp.Id))"
+                             @ondrop="@((DragEventArgs e) => OnDrop(e, tp.Id))"
+                             @ondragover="@((DragEventArgs e) => e.DataTransfer.DropEffect = "move")">
+                            @if (Status == RaceStatus.Planned)
+                            {
+                                <div class="timepoint-handle">⋮⋮</div>
+                            }
+                            <div class="timepoint-content">
+                                <span class="timepoint-index">@tp.Index</span>
+                                <span class="timepoint-name">@tp.DisplayName</span>
+                                @if (tp.HasPenaltyTime)
+                                {
+                                    <span class="timepoint-penalty" title="Strafzeit erforderlich">⏱️</span>
+                                }
                                 @if (Status == RaceStatus.Planned)
                                 {
-                                    <td>
+                                    <span class="timepoint-actions">
                                         <button class="btn btn-sm btn-outline-primary" @onclick="() => StartEditTimePoint(tp)">Bearbeiten</button>
                                         <button class="btn btn-danger btn-sm" @onclick="() => RemoveTimePoint(tp.Id)">Löschen</button>
-                                    </td>
+                                    </span>
                                 }
-                            </tr>
-                        }
+                            </div>
+                        </div>
                     }
-                </tbody>
-            </table>
+                }
+            </div>
         }
         else
         {
@@ -135,6 +129,82 @@
         }
     </div>
 </div>
+
+<!-- Teilnehmer -->
+<div class="card mb-3">
+    <div class="card-header">
+        <h5>Teilnehmer</h5>
+    </div>
+    <div class="card-body">
+        @if (Status != RaceStatus.Finished)
+        {
+            <div class="mb-3">
+                <label class="form-label">Teilnehmer hinzufügen</label>
+                <div class="input-group">
+                    <input type="text" class="form-control" 
+                           placeholder="Name oder Nummer eingeben..." 
+                           @bind="NewParticipantName"
+                           @oninput="@((ChangeEventArgs e) => OnParticipantInputChanged(e))" />
+                    <button class="btn btn-success" @onclick="AddNewParticipant">Hinzufügen</button>
+                </div>
+                @if (SearchResults.Any())
+                {
+                    <div class="list-group mt-2" style="max-height: 200px; overflow-y: auto;">
+                        @foreach (var participant in SearchResults)
+                        {
+                            <button type="button" class="list-group-item list-group-item-action" 
+                                    @onclick="() => SelectExistingParticipant(participant)">
+                                @participant.DisplayName
+                            </button>
+                        }
+                    </div>
+                }
+            </div>
+        }
+
+        @if (CurrentRace.RaceParticipants.Any())
+        {
+            <table class="table table-sm table-striped">
+                <thead>
+                    <tr>
+                        <th>Nr.</th>
+                        <th>Name</th>
+                        @if (Status != RaceStatus.Finished)
+                        {
+                            <th style="width: 50px;"></th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var rp in CurrentRace.RaceParticipants.OrderBy(x => x.ParticipantNr))
+                    {
+                        <tr>
+                            <td>@rp.ParticipantNr</td>
+                            <td>@rp.Participant?.DisplayName</td>
+                            @if (Status != RaceStatus.Finished)
+                            {
+                                <td>
+                                    <button class="btn btn-sm btn-danger" @onclick="() => RemoveParticipant(rp.ParticipantID)">Entfernen</button>
+                                </td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <div class="alert alert-info">Keine Teilnehmer</div>
+        }
+    </div>
+</div>
+
+@if (Status == RaceStatus.Planned)
+{
+    <div class="mb-3">
+        <button class="btn btn-lg btn-success" @onclick="PrepareStart">Rennen starten vorbereiten</button>
+    </div>
+}
 
 @code {
     [Parameter]
@@ -155,6 +225,10 @@
     private string EditTimePointName = "";
     private bool EditTimePointPenalty = false;
 
+    // Für Drag & Drop
+    private Guid? DraggedTimePointId = null;
+    private List<RaceTimePoint> DisplayTimePoints = [];
+
     protected override async Task OnInitializedAsync()
     {
         if (RaceId == "new")
@@ -173,7 +247,16 @@
             if (CurrentRace is not null)
             {
                 Status = RaceService.GetRaceStatus(CurrentRace);
+                UpdateDisplayTimePoints();
             }
+        }
+    }
+
+    private void UpdateDisplayTimePoints()
+    {
+        if (CurrentRace is not null)
+        {
+            DisplayTimePoints = CurrentRace.RaceTimePoints.OrderBy(x => x.Index).ToList();
         }
     }
 
@@ -213,6 +296,7 @@
 
         await RaceService.UpdateRaceTimePointAsync(CurrentRace.Id, timePointId, EditTimePointName, EditTimePointPenalty);
         CurrentRace = await RaceService.GetRaceAsync(CurrentRace.Id);
+        UpdateDisplayTimePoints();
         EditingTimePointId = Guid.Empty;
         EditTimePointName = "";
         EditTimePointPenalty = false;
@@ -232,6 +316,7 @@
 
         await RaceService.AddRaceTimePointAsync(CurrentRace.Id, NewTimePointName);
         CurrentRace = await RaceService.GetRaceAsync(CurrentRace.Id);
+        UpdateDisplayTimePoints();
         NewTimePointName = "";
     }
 
@@ -240,6 +325,56 @@
         if (CurrentRace is null) return;
         await RaceService.DeleteRaceTimePointAsync(CurrentRace.Id, timePointId);
         CurrentRace = await RaceService.GetRaceAsync(CurrentRace.Id);
+        UpdateDisplayTimePoints();
+    }
+
+    // Drag & Drop Methoden
+    private void OnDragStart(DragEventArgs e, Guid timePointId)
+    {
+        DraggedTimePointId = timePointId;
+        if (e.DataTransfer is not null)
+        {
+            e.DataTransfer.EffectAllowed = "move";
+        }
+    }
+
+    private async Task OnDrop(DragEventArgs e, Guid targetTimePointId)
+    {
+        if (DraggedTimePointId is null || CurrentRace is null || Status != RaceStatus.Planned)
+            return;
+
+        if (DraggedTimePointId == targetTimePointId)
+        {
+            DraggedTimePointId = null;
+            return;
+        }
+
+        var draggedIndex = DisplayTimePoints.FindIndex(tp => tp.Id == DraggedTimePointId);
+        var targetIndex = DisplayTimePoints.FindIndex(tp => tp.Id == targetTimePointId);
+
+        if (draggedIndex < 0 || targetIndex < 0)
+        {
+            DraggedTimePointId = null;
+            return;
+        }
+
+        // Swap items
+        var temp = DisplayTimePoints[draggedIndex];
+        DisplayTimePoints.RemoveAt(draggedIndex);
+        DisplayTimePoints.Insert(targetIndex, temp);
+
+        // Aktualisiere Index-Werte
+        for (int i = 0; i < DisplayTimePoints.Count; i++)
+        {
+            DisplayTimePoints[i].Index = (uint)(i + 1);
+        }
+
+        // Persistiere neue Reihenfolge
+        var reorderedIds = DisplayTimePoints.Select(tp => tp.Id).ToList();
+        await RaceService.ReorderRaceTimePointsAsync(CurrentRace.Id, reorderedIds);
+
+        DraggedTimePointId = null;
+        StateHasChanged();
     }
 
     private async Task SearchParticipants()
@@ -256,6 +391,12 @@
             var assignedIds = CurrentRace.RaceParticipants.Select(rp => rp.ParticipantID).ToHashSet();
             SearchResults = results.Where(p => !assignedIds.Contains(p.Id)).ToList();
         }
+    }
+
+    private async Task OnParticipantInputChanged(ChangeEventArgs e)
+    {
+        NewParticipantName = e.Value?.ToString() ?? "";
+        await SearchParticipants();
     }
 
     private async Task SelectExistingParticipant(Participant p)
@@ -275,6 +416,7 @@
         await ParticipantService.AddParticipantToRaceAsync(CurrentRace.Id, NewParticipantName);
         CurrentRace = await RaceService.GetRaceAsync(CurrentRace.Id);
         NewParticipantName = "";
+        SearchResults.Clear();
     }
 
     private async Task RemoveParticipant(Guid participantId)
