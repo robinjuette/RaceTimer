@@ -395,15 +395,19 @@ public class CoreRaceRepository : IRaceRepository
         return true;
     }
 
-    public async Task DeleteRaceParticipantTimePointAsync(Guid timePointId)
+    public async Task<bool> DeleteRaceParticipantTimePointAsync(Guid timePointId)
     {
         using RaceTimerDbContext _db = await dbContextFactory.CreateDbContextAsync();
 
+        //TODO: Check ob das Rennen bearbeitbar ist also nur RaceSTatus.running. sonst return false
+
         var timePoint = _db.RaceParticipantTimePoints.Find(timePointId);
-        if (timePoint is null) return;
+        if (timePoint is null) return false;
 
         _db.RaceParticipantTimePoints.Remove(timePoint);
-        _db.SaveChanges();
+        await _db.SaveChangesAsync();
+
+        return true;
     }
 
     public Task<bool> CopyRaceTimePointsAsync(Guid raceIdCopyFrom, Guid raceIdCopyTo)

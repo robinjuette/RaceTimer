@@ -159,6 +159,7 @@
 
         await TimingService.AssignTimePointAsync(
             SelectedTimePoint.Id,
+            SelectedParticipant.Value.Item2.RaceID,
             SelectedParticipant.Value.Item2.ParticipantID);
 
         await LoadData();

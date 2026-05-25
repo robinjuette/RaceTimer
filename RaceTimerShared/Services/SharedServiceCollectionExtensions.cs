@@ -27,7 +27,7 @@ public static class SharedServiceCollectionExtensions
             dbPath = Path.Combine(raceTimerPath, "racetimer.db");
         }
 
-        services.AddDbContext<RaceTimerDbContext>(options =>
+        services.AddDbContextFactory<RaceTimerDbContext>(options =>
             options.UseSqlite($"Data Source={dbPath}"));
 
         services.AddScoped<IRaceRepository, CoreRaceRepository>();

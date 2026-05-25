@@ -9,7 +9,7 @@
         Task<Participant?> CreateParticipantAsync(string name);
         Task DeleteParticipantAsync(Guid id);
         Task<bool> DeleteRaceAsync(Guid id);
-        Task DeleteRaceParticipantTimePointAsync(Guid timePointId);
+        Task<bool> DeleteRaceParticipantTimePointAsync(Guid timePointId);
         Task<IEnumerable<Participant>> GetAllParticipantsAsync();
         Task<IEnumerable<Race>> GetAllRacesAsync();
         Task<object> GetChangesSinceAsync(Guid raceId, DateTime sinceUtc);

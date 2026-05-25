@@ -1,5 +1,6 @@
 using RaceTimer.Shared.Http;
 using RaceTimer.Shared.Models;
+using RaceTimer.Shared.Services;
 
 namespace RaceTimerApp.Shared.Services;
 
@@ -8,18 +9,18 @@ namespace RaceTimerApp.Shared.Services;
 /// </summary>
 public class TimingService
 {
-    private readonly RaceTimerApiClient _apiClient;
+    private readonly IRaceRepository _repository;
     private List<RaceParticipantTimePoint> _unassignedTimePoints = [];
 
-    public TimingService(RaceTimerApiClient apiClient)
+    public TimingService(IRaceRepository repository)
     {
-        _apiClient = apiClient;
+        _repository = repository;
     }
 
     // Neuen Zeitpunkt erfassen
     public async Task<RaceParticipantTimePoint?> RecordTimePointAsync()
     {
-        var created = await _apiClient.CreateRaceParticipantTimePointAsync(DateTime.UtcNow);
+        var created = await _repository.AddUnassignedTimePointAsync(DateTime.UtcNow);
 
         if (created is not null)
         {
@@ -38,9 +39,10 @@ public class TimingService
     // Zeitpunkt einem Teilnehmer zuordnen
     public async Task<bool> AssignTimePointAsync(
         Guid timePointId,
+        Guid raceId,
         Guid participantId)
     {
-        var success = await _apiClient.AssignRaceParticipantTimePointAsync(timePointId, participantId);
+        var success = await _repository.AssignTimePointToRaceParticipantAsync(timePointId, raceId, participantId);
         if (success)
         {
             _unassignedTimePoints.RemoveAll(tp => tp.Id == timePointId);
@@ -52,7 +54,7 @@ public class TimingService
     // Zeitpunkt löschen
     public async Task<bool> DeleteTimePointAsync(Guid timePointId)
     {
-        var success = await _apiClient.DeleteRaceParticipantTimePointAsync(timePointId);
+        var success = await _repository.DeleteRaceParticipantTimePointAsync(timePointId);
         if (success)
         {
             _unassignedTimePoints.RemoveAll(tp => tp.Id == timePointId);
@@ -64,7 +66,7 @@ public class TimingService
     // Strafzeit aktualisieren
     public async Task<bool> UpdatePenaltyTimeAsync(Guid timePointId, TimeSpan penaltyTime)
     {
-        return await _apiClient.SetPenaltyTime(timePointId, penaltyTime);
+        return await _repository.SetRaceParticipantTimePointPenaltyTime(timePointId, penaltyTime);
     }
 
     // Zeitpunkt abrufen
@@ -144,13 +146,11 @@ public class TimingService
     // Zeitpunkte mit Strafzeit abrufen
     public async Task<IEnumerable<RaceParticipantTimePoint>> GetTimePointsWithPenaltyAsync(Guid raceId)
     {
-        var timePoints = await _apiClient.GetRaceParticipantTimePointsAsync(raceId);
-        var race = await _apiClient.GetRaceAsync(raceId);
-
-        if (race is null) return [];
+        var timePoints = await _repository.GetRaceParticipantTimePointsForRaceAsync(raceId);
+        var raceTimePoints = await _repository.GetRaceTimePointsAsync(raceId);
 
         // Finde Zeitpunkte deren Rennzeitpunkt Strafzeit hat
-        var raceTimePointsWithPenalty = race.RaceTimePoints
+        var raceTimePointsWithPenalty = raceTimePoints
             .Where(rtp => rtp.Id != Guid.Empty && rtp.HasPenaltyTime); // Hier würde eine Property "HasPenalty" helfen
 
         return timePoints.Where(rptp => raceTimePointsWithPenalty.Any(rtp => rtp.Id == rptp.Id));
@@ -169,7 +169,7 @@ public class TimingService
         // GET /api/times/unassigned
 
         _unassignedTimePoints.Clear();
-        IEnumerable<RaceParticipantTimePoint> unassigneds = await _apiClient.GetUnassignedTimePointsAsync();
-        _unassignedTimePoints = unassigneds.ToList();
+        IEnumerable<RaceParticipantTimePoint>? unassigneds = await _repository.GetUnassignedTimepointsAsync();
+        _unassignedTimePoints = unassigneds?.ToList() ?? [];
     }
 }

@@ -11,30 +11,24 @@ namespace RaceTimerApp.Shared.Services;
 public class RaceService
 {
     private readonly IRaceRepository _repository;
-    private readonly RaceTimerApiClient? _apiClient;
     private readonly SignalRSyncService? _signalRSync;
-    private readonly TimingService _timingService;
 
     /// <summary>
     /// Offline-Modus (nur lokales Repository)
     /// </summary>
-    public RaceService(IRaceRepository repository, TimingService timingService)
+    public RaceService(IRaceRepository repository)
     {
         _repository = repository;
-        _timingService = timingService;
-        _apiClient = null;
         _signalRSync = null;
     }
 
     /// <summary>
     /// Online-Modus (mit optionalem Server-Sync)
     /// </summary>
-    public RaceService(IRaceRepository repository, TimingService timingService, SignalRSyncService signalRSync)
+    public RaceService(IRaceRepository repository, SignalRSyncService signalRSync)
     {
         _repository = repository;
-        _timingService = timingService;
         _signalRSync = signalRSync;
-        _apiClient = null;
     }
 
     // Rennen abrufen

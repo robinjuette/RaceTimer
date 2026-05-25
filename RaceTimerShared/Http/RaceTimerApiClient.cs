@@ -4,7 +4,7 @@ using System.Net.Http.Json;
 
 namespace RaceTimer.Shared.Http;
 
-public class RaceTimerApiClient
+internal class RaceTimerApiClient
 {
     private readonly HttpClient _http;
 

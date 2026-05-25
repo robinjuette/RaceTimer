@@ -54,7 +54,7 @@ namespace RaceTimer.Shared.Services
             throw new NotImplementedException();
         }
 
-        public Task DeleteRaceParticipantTimePointAsync(Guid timePointId)
+        public Task<bool> DeleteRaceParticipantTimePointAsync(Guid timePointId)
         {
             throw new NotImplementedException();
         }

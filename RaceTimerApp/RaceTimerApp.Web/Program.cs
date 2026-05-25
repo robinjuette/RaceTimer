@@ -1,6 +1,7 @@
 using RaceTimerApp.Web.Components;
 using RaceTimerApp.Shared.Services;
 using RaceTimer.Shared.Http;
+using RaceTimer.Shared.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,19 +11,12 @@ builder.Services.AddRazorComponents()
     .AddInteractiveWebAssemblyComponents();
 
 // Register RaceTimer services
-builder.Services.AddScoped<RaceTimerApiClient>();
+builder.Services.AddMauiRaceServices();
 builder.Services.AddScoped<SettingsService>();
 builder.Services.AddScoped<TimingService>();
 builder.Services.AddScoped<RaceService>();
 builder.Services.AddScoped<ParticipantService>();
 builder.Services.AddScoped<RankingService>();
-
-// Configure HttpClient for API
-builder.Services.AddHttpClient<RaceTimerApiClient>(client =>
-{
-    var baseUrl = builder.Configuration["RaceTimer:BaseUrl"] ?? "http://localhost:5000";
-    client.BaseAddress = new Uri(baseUrl);
-});
 
 var app = builder.Build();
 
