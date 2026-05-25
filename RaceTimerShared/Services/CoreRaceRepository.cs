@@ -9,14 +9,42 @@ public class CoreRaceRepository : IRaceRepository
 {
     private readonly IDbContextFactory<RaceTimerDbContext> dbContextFactory;
 
+    private TaskCompletionSource? migrationCheckTCS;
+
     public CoreRaceRepository(IDbContextFactory<RaceTimerDbContext> dbContextFactory)
     {
         this.dbContextFactory = dbContextFactory;
+
+        _ = CheckAndApplyMigrationsAsync();
+    }
+
+    private async Task CheckAndApplyMigrationsAsync()
+    {
+        if (migrationCheckTCS?.Task.IsCompleted == true)
+        {
+            return;
+        }
+        if(migrationCheckTCS != null)
+        {
+            await migrationCheckTCS.Task;
+        }
+
+        migrationCheckTCS = new();
+
+        using RaceTimerDbContext _db = await dbContextFactory.CreateDbContextAsync();
+
+        if((await _db.Database.GetPendingMigrationsAsync()).Any())
+        {
+            await _db.Database.MigrateAsync();
+        }
+
+        migrationCheckTCS.SetResult();
     }
 
     // Return changes since a given UTC timestamp for a specific race
     public async Task<object> GetChangesSinceAsync(Guid raceId, DateTime sinceUtc)
     {
+        await CheckAndApplyMigrationsAsync();
         using RaceTimerDbContext _db = await dbContextFactory.CreateDbContextAsync();
 
         var races = await _db.Races.Where(r => r.Id == raceId && (r.LastModifiedUtc ?? DateTime.MinValue) > sinceUtc).ToListAsync();
@@ -36,6 +64,7 @@ public class CoreRaceRepository : IRaceRepository
     // Participants
     public async Task<IEnumerable<Participant>> GetAllParticipantsAsync()
     {
+        await CheckAndApplyMigrationsAsync();
         using RaceTimerDbContext _db = await dbContextFactory.CreateDbContextAsync();
 
         return await _db.Participants.ToListAsync();
@@ -43,6 +72,7 @@ public class CoreRaceRepository : IRaceRepository
 
     public async Task<Participant?> GetParticipantAsync(Guid id)
     {
+        await CheckAndApplyMigrationsAsync();
         using RaceTimerDbContext _db = await dbContextFactory.CreateDbContextAsync();
 
         return await _db.Participants.FindAsync(id);
@@ -50,6 +80,7 @@ public class CoreRaceRepository : IRaceRepository
 
     public async Task<Participant?> CreateParticipantAsync(string name)
     {
+        await CheckAndApplyMigrationsAsync();
         using RaceTimerDbContext _db = await dbContextFactory.CreateDbContextAsync();
 
         if (await _db.Participants.AnyAsync(p => p.DisplayName.Equals(name))) return null;
@@ -67,6 +98,7 @@ public class CoreRaceRepository : IRaceRepository
 
     public async Task UpdateParticipantAsync(Participant participant)
     {
+        await CheckAndApplyMigrationsAsync();
         using RaceTimerDbContext _db = await dbContextFactory.CreateDbContextAsync();
 
         var existing = await _db.Participants.FindAsync(participant.Id);
@@ -77,6 +109,7 @@ public class CoreRaceRepository : IRaceRepository
 
     public async Task DeleteParticipantAsync(Guid id)
     {
+        await CheckAndApplyMigrationsAsync();
         using RaceTimerDbContext _db = await dbContextFactory.CreateDbContextAsync();
 
         var existing = await _db.Participants.FindAsync(id);
@@ -87,6 +120,7 @@ public class CoreRaceRepository : IRaceRepository
 
     public async Task<IEnumerable<Race>> GetAllRacesAsync()
     {
+        await CheckAndApplyMigrationsAsync();
         using RaceTimerDbContext _db = await dbContextFactory.CreateDbContextAsync();
 
         return await _db.Races
@@ -98,6 +132,7 @@ public class CoreRaceRepository : IRaceRepository
 
     public async Task<Race?> GetRaceAsync(Guid id)
     {
+        await CheckAndApplyMigrationsAsync();
         using RaceTimerDbContext _db = await dbContextFactory.CreateDbContextAsync();
 
         return await _db.Races
@@ -109,6 +144,7 @@ public class CoreRaceRepository : IRaceRepository
 
     public async Task<Race?> AddRaceAsync(string name)
     {
+        await CheckAndApplyMigrationsAsync();
         using RaceTimerDbContext _db = await dbContextFactory.CreateDbContextAsync();
 
         if (await _db.Races.AnyAsync(r => r.Name.Equals(name)))
@@ -132,6 +168,7 @@ public class CoreRaceRepository : IRaceRepository
 
     public async Task UpdateRaceAsync(Race race)
     {
+        await CheckAndApplyMigrationsAsync();
         using RaceTimerDbContext _db = await dbContextFactory.CreateDbContextAsync();
 
         // TODO: Ensure RaceTimePoints Updated
@@ -153,6 +190,7 @@ public class CoreRaceRepository : IRaceRepository
 
     public async Task<bool> DeleteRaceAsync(Guid id)
     {
+        await CheckAndApplyMigrationsAsync();
         using RaceTimerDbContext _db = await dbContextFactory.CreateDbContextAsync();
 
         var existing = await _db.Races.FindAsync(id);
@@ -180,6 +218,7 @@ public class CoreRaceRepository : IRaceRepository
 
     public async Task<RaceParticipant> AssignParticipantToRaceAsync(Guid raceId, Guid participantId)
     {
+        await CheckAndApplyMigrationsAsync();
         using RaceTimerDbContext _db = await dbContextFactory.CreateDbContextAsync();
 
         // determine smallest available participant number > 0 for this race
@@ -194,6 +233,7 @@ public class CoreRaceRepository : IRaceRepository
 
     public async Task<bool> RemoveParticipantFromRaceAsync(Guid raceId, Guid participantId)
     {
+        await CheckAndApplyMigrationsAsync();
         using RaceTimerDbContext _db = await dbContextFactory.CreateDbContextAsync();
 
         //TODO: Delete existing RaceParticipantTimePoints for RaceParticipant
@@ -208,6 +248,7 @@ public class CoreRaceRepository : IRaceRepository
 
     public async Task<RaceParticipantTimePoint?> GetRaceParticipantTimePointAsync(Guid id)
     {
+        await CheckAndApplyMigrationsAsync();
         using RaceTimerDbContext _db = await dbContextFactory.CreateDbContextAsync();
 
         return await _db.RaceParticipantTimePoints.FindAsync(id);
@@ -215,6 +256,7 @@ public class CoreRaceRepository : IRaceRepository
 
     public async Task<IEnumerable<Race>> GetRacesByStatusAsync(RaceStatus status)
     {
+        await CheckAndApplyMigrationsAsync();
         using RaceTimerDbContext _db = await dbContextFactory.CreateDbContextAsync();
 
         // status: prepared (StartTimeUTC == null && FinishDateTimeUTC == null)
@@ -232,6 +274,7 @@ public class CoreRaceRepository : IRaceRepository
     // Add an unassigned time point (only UTC timestamp) without race assignment
     public async Task<RaceParticipantTimePoint> AddUnassignedTimePointAsync(DateTime timePointUtc)
     {
+        await CheckAndApplyMigrationsAsync();
         using RaceTimerDbContext _db = await dbContextFactory.CreateDbContextAsync();
 
         var tp = new RaceParticipantTimePoint
@@ -249,6 +292,7 @@ public class CoreRaceRepository : IRaceRepository
 
     public async Task<bool> StartRaceAsync(Guid raceId, DateTime timePointUtc, params List<Guid> participantIds)
     {
+        await CheckAndApplyMigrationsAsync();
         using RaceTimerDbContext _db = await dbContextFactory.CreateDbContextAsync();
 
         Dictionary<Guid, RaceParticipant> foundRPS = await _db.RaceParticipants
@@ -296,6 +340,7 @@ public class CoreRaceRepository : IRaceRepository
     // Assign an existing (possibly unassigned) time point to a participant
     public async Task<bool> AssignTimePointToRaceParticipantAsync(Guid timePointId, Guid raceId, Guid participantId)
     {
+        await CheckAndApplyMigrationsAsync();
         using RaceTimerDbContext _db = await dbContextFactory.CreateDbContextAsync();
 
         RaceParticipantTimePoint? tp = await _db.RaceParticipantTimePoints.FindAsync(timePointId);
@@ -345,6 +390,7 @@ public class CoreRaceRepository : IRaceRepository
 
     private async Task CheckForRaceCompletionAsync(Guid raceId)
     {
+        await CheckAndApplyMigrationsAsync();
         using RaceTimerDbContext _db = await dbContextFactory.CreateDbContextAsync();
 
         Race? race = await _db.Races.FindAsync(raceId);
@@ -361,6 +407,7 @@ public class CoreRaceRepository : IRaceRepository
 
     public async Task<IEnumerable<RaceParticipant>> GetRacesParticipantsAsync(Guid id)
     {
+        await CheckAndApplyMigrationsAsync();
         using RaceTimerDbContext _db = await dbContextFactory.CreateDbContextAsync();
 
         return await _db.RaceParticipants.Where(rp => rp.RaceID == id).ToListAsync();
@@ -368,6 +415,7 @@ public class CoreRaceRepository : IRaceRepository
 
     public async Task<IEnumerable<RaceParticipantTimePoint>?> GetUnassignedTimepointsAsync()
     {
+        await CheckAndApplyMigrationsAsync();
         using RaceTimerDbContext _db = await dbContextFactory.CreateDbContextAsync();
 
         return await _db.RaceParticipantTimePoints.Where(tp => tp.RaceID == null && tp.ParticipantID == null).ToListAsync();
@@ -375,6 +423,7 @@ public class CoreRaceRepository : IRaceRepository
 
     public async Task<IEnumerable<RaceParticipantTimePoint>> GetRaceParticipantTimePointsForRaceAsync(Guid raceId)
     {
+        await CheckAndApplyMigrationsAsync();
         using RaceTimerDbContext _db = await dbContextFactory.CreateDbContextAsync();
 
         return await _db.RaceParticipantTimePoints.Where(rp => rp.RaceID == raceId).ToListAsync();
@@ -382,6 +431,7 @@ public class CoreRaceRepository : IRaceRepository
 
     public async Task<bool> SetRaceParticipantTimePointPenaltyTime(Guid timePointId, TimeSpan penaltyTime)
     {
+        await CheckAndApplyMigrationsAsync();
         using RaceTimerDbContext _db = await dbContextFactory.CreateDbContextAsync();
 
         RaceParticipantTimePoint? timePoint = await _db.RaceParticipantTimePoints.FindAsync(timePointId);
@@ -397,6 +447,7 @@ public class CoreRaceRepository : IRaceRepository
 
     public async Task<bool> DeleteRaceParticipantTimePointAsync(Guid timePointId)
     {
+        await CheckAndApplyMigrationsAsync();
         using RaceTimerDbContext _db = await dbContextFactory.CreateDbContextAsync();
 
         //TODO: Check ob das Rennen bearbeitbar ist also nur RaceSTatus.running. sonst return false
@@ -410,8 +461,9 @@ public class CoreRaceRepository : IRaceRepository
         return true;
     }
 
-    public Task<bool> CopyRaceTimePointsAsync(Guid raceIdCopyFrom, Guid raceIdCopyTo)
+    public async Task<bool> CopyRaceTimePointsAsync(Guid raceIdCopyFrom, Guid raceIdCopyTo)
     {
+        await CheckAndApplyMigrationsAsync();
         ///TODO: 
         /// rennen laden, prüfen ob kopierziel überschrieben werden darf (nur wenn noch nicht gestartet)
         /// existierende TimePoints des Ziels löschen, Kopien der TimePoints des copyFrom ins Ziel einfügen
@@ -422,6 +474,7 @@ public class CoreRaceRepository : IRaceRepository
 
     public async Task<IEnumerable<RaceTimePoint>> GetRaceTimePointsAsync(Guid raceId)
     {
+        await CheckAndApplyMigrationsAsync();
         using RaceTimerDbContext _db = await dbContextFactory.CreateDbContextAsync();
 
         return await _db.RaceTimePoints.Where(rtp => rtp.RaceID == raceId).ToListAsync();
@@ -429,6 +482,7 @@ public class CoreRaceRepository : IRaceRepository
 
     public async Task<RaceTimePoint?> CreateRaceTimePointAsync(Guid raceId, string? name)
     {
+        await CheckAndApplyMigrationsAsync();
         using RaceTimerDbContext _db = await dbContextFactory.CreateDbContextAsync();
 
         //TODO: Check ob Race im Status Planned ist, sonst ist keine Bearbeitung erlaubt
@@ -453,6 +507,7 @@ public class CoreRaceRepository : IRaceRepository
 
     public async Task<bool> DeleteRaceTimePointAsync(Guid timePointId)
     {
+        await CheckAndApplyMigrationsAsync();
         using RaceTimerDbContext _db = await dbContextFactory.CreateDbContextAsync();
 
         //TODO: Check ob Race im Status Planned ist, sonst ist keine Bearbeitung erlaubt
@@ -479,6 +534,7 @@ public class CoreRaceRepository : IRaceRepository
 
     public async Task<bool> UpdateTimePointsAsync(Guid raceId, List<RaceTimePoint> timePoints)
     {
+        await CheckAndApplyMigrationsAsync();
         using RaceTimerDbContext _db = await dbContextFactory.CreateDbContextAsync();
         //TODO: Check ob Race im Status Planned ist, sonst ist keine Bearbeitung erlaubt
 

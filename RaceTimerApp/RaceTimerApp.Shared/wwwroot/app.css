@@ -1,3 +1,428 @@
+/* RaceTimer App Stylesheet */
+
+:root {
+    --primary-color: #0d6efd;
+    --danger-color: #dc3545;
+    --success-color: #198754;
+    --warning-color: #ffc107;
+    --info-color: #0dcaf0;
+    --dark-bg: #212529;
+    --light-text: #f8f9fa;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+        'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+        sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background-color: #f5f5f5;
+}
+
+.main-container {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.main-content {
+    flex: 1;
+    padding: 20px;
+}
+
+/* Header */
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    border-bottom: 2px solid #e9ecef;
+    padding-bottom: 15px;
+}
+
+.page-header h1 {
+    margin: 0;
+    color: #212529;
+}
+
+/* Timing Button - Floating */
+.timing-button-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    display: flex;
+    gap: 10px;
+    z-index: 1000;
+}
+
+.timing-button {
+    padding: 20px 30px;
+    font-size: 18px;
+    border-radius: 50px;
+    box-shadow: 0 4px 15px rgba(13, 110, 253, 0.3);
+    animation: pulse 2s infinite;
+}
+
+.timing-button:hover {
+    transform: scale(1.05);
+}
+
+.timing-secondary {
+    padding: 20px 25px;
+    border-radius: 50%;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        box-shadow: 0 4px 15px rgba(13, 110, 253, 0.3);
+    }
+    50% {
+        box-shadow: 0 4px 25px rgba(13, 110, 253, 0.5);
+    }
+}
+
+/* Cards */
+.card {
+    border: none;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+}
+
+.card-header {
+    border-radius: 8px 8px 0 0;
+    font-weight: 600;
+    padding: 15px 20px;
+}
+
+.card-body {
+    padding: 20px;
+}
+
+/* Race List */
+.race-list {
+    display: grid;
+    gap: 15px;
+}
+
+.race-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.race-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Race Overview */
+.race-overview-card {
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.race-header {
+    background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+    color: white;
+    padding: 20px;
+}
+
+.race-header h3 {
+    margin: 0 0 5px 0;
+}
+
+.race-content {
+    display: grid;
+    grid-template-columns: 200px 1fr 200px;
+    gap: 20px;
+    padding: 20px;
+    min-height: 400px;
+}
+
+@media (max-width: 1200px) {
+    .race-content {
+        grid-template-columns: 1fr;
+    }
+}
+
+.side-panel {
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 15px;
+    background: #f8f9fa;
+}
+
+.left-panel h5,
+.center-panel h5,
+.right-panel h5 {
+    margin-top: 0;
+    color: #212529;
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.center-panel {
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 15px;
+}
+
+/* Participant List */
+.participant-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.participant-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    border-radius: 6px;
+    background: white;
+    border: 1px solid #e9ecef;
+}
+
+.participant-item.pending {
+    background: #fffacd;
+}
+
+.participant-item.active {
+    border-left: 4px solid var(--info-color);
+}
+
+.participant-item.finished {
+    background: #d4edda;
+    border-left: 4px solid var(--success-color);
+}
+
+.participant-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.participant-number {
+    font-weight: 700;
+    color: #0d6efd;
+    min-width: 40px;
+}
+
+.participant-name {
+    font-weight: 500;
+}
+
+.participant-info {
+    flex: 1;
+}
+
+.participant-actions {
+    display: flex;
+    gap: 5px;
+}
+
+/* Progress Bar */
+.progress-container {
+    width: 100%;
+}
+
+.progress-bar-wrapper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 5px;
+    margin-top: 8px;
+}
+
+.progress-dot {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #e9ecef;
+    border: 2px solid #dee2e6;
+    transition: all 0.3s;
+}
+
+.progress-dot.reached {
+    background: #198754;
+    border-color: #155724;
+}
+
+.progress-dot:hover {
+    transform: scale(1.2);
+    cursor: pointer;
+}
+
+/* Standings */
+.standings-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+    gap: 20px;
+}
+
+.standings-list {
+    list-style: decimal;
+    padding: 0;
+    margin: 0;
+}
+
+.standing-item {
+    padding: 12px;
+    margin-bottom: 8px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border-left: 4px solid #e9ecef;
+}
+
+.standing-item.finished {
+    background: #d4edda;
+    border-left-color: var(--success-color);
+}
+
+.standing-item.active {
+    background: #d1ecf1;
+    border-left-color: var(--info-color);
+}
+
+/* Badges */
+.badge {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-weight: 500;
+}
+
+.badge-lg {
+    padding: 8px 16px;
+    font-size: 14px;
+}
+
+/* Tabs */
+.nav-tabs .nav-link {
+    color: #6c757d;
+    border: none;
+    border-bottom: 3px solid transparent;
+    transition: all 0.3s;
+}
+
+.nav-tabs .nav-link:hover {
+    color: #0d6efd;
+    border-bottom-color: #0d6efd;
+}
+
+.nav-tabs .nav-link.active {
+    color: #0d6efd;
+    background: none;
+    border-bottom-color: #0d6efd;
+}
+
+/* Forms */
+.form-control,
+.form-select {
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    padding: 10px 12px;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+/* Buttons */
+.btn {
+    border-radius: 6px;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+    border: none;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #0a58ca 0%, #084298 100%);
+    transform: translateY(-2px);
+}
+
+.btn-success {
+    background: linear-gradient(135deg, #198754 0%, #157347 100%);
+    border: none;
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, #dc3545 0%, #bb2d3b 100%);
+    border: none;
+}
+
+.btn-group-vertical .btn {
+    border-radius: 0;
+}
+
+.btn-group-vertical .btn:first-child {
+    border-radius: 6px 6px 0 0;
+}
+
+.btn-group-vertical .btn:last-child {
+    border-radius: 0 0 6px 6px;
+}
+
+/* Alerts */
+.alert {
+    border: none;
+    border-radius: 6px;
+    border-left: 4px solid;
+}
+
+.alert-info {
+    border-left-color: var(--info-color);
+}
+
+.alert-success {
+    border-left-color: var(--success-color);
+}
+
+.alert-danger {
+    border-left-color: var(--danger-color);
+}
+
+.alert-warning {
+    border-left-color: var(--warning-color);
+}
+
+/* Settings */
+.settings-container {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+/* List Groups */
+.list-group {
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.list-group-item {
+    border: none;
+    border-bottom: 1px solid #e9ecef;
+    padding: 12px 15px;
+}
+
+.list-group-item:last-child {
+    border-bottom: none;
+}
+
+.list-group-item.list-group-item-action:hover {
+    background-color: #f0f0f0;
+}
+
+/* Validation Styles */
 h1:focus {
     outline: none;
 }
@@ -26,6 +451,51 @@ h1:focus {
 
 .darker-border-checkbox.form-check-input {
     border-color: #929292;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .page-header h1 {
+        margin-bottom: 10px;
+    }
+
+    .race-content {
+        grid-template-columns: 1fr;
+    }
+
+    .timing-button-container {
+        bottom: 10px;
+        right: 10px;
+    }
+
+    .timing-button {
+        padding: 15px 20px;
+        font-size: 16px;
+    }
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #555;
 }
 
 .form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
