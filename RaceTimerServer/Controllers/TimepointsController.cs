@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using RaceTimer.Shared.Models;
+using RaceTimer.Shared.Services;
 using RaceTimerServer.Services;
 
 namespace RaceTimerServer.Controllers;
@@ -8,9 +9,9 @@ namespace RaceTimerServer.Controllers;
 [Route("api/[controller]")]
 public class TimepointsController : ControllerBase
 {
-    private readonly RaceRepository _repo;
+    private readonly SignallingRaceRepository _repo;
 
-    public TimepointsController(RaceRepository repo)
+    public TimepointsController(SignallingRaceRepository repo)
     {
         _repo = repo;
     }
@@ -33,7 +34,7 @@ public class TimepointsController : ControllerBase
     [HttpGet("{id}")]
     public async Task<ActionResult<RaceParticipantTimePoint>> Get(Guid id)
     {
-        var tp = await _repo.GetTimePointAsync(id);
+        var tp = await _repo.GetRaceParticipantTimePointAsync(id);
         if (tp is null) return NotFound();
         return Ok(tp);
     }
@@ -65,7 +66,7 @@ public class TimepointsController : ControllerBase
     [HttpDelete("{timePointId}")]
     public async Task<ActionResult> DeleteTimePoint(Guid timePointId)
     {
-        var tp = await _repo.GetTimePointAsync(timePointId);
+        var tp = await _repo.GetRaceParticipantTimePointAsync(timePointId);
         if (tp is null) return NotFound();
 
         // Remove the timepoint

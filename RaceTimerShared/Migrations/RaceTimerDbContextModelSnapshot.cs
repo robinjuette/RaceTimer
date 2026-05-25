@@ -2,20 +2,17 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using RaceTimerServer.Data;
+using RaceTimer.Shared.Data;
 
 #nullable disable
 
-namespace RaceTimerServer.Migrations
+namespace RaceTimer.Shared.Migrations
 {
     [DbContext(typeof(RaceTimerDbContext))]
-    [Migration("20260524095754_InitialCreate")]
-    partial class InitialCreate
+    partial class RaceTimerDbContextModelSnapshot : ModelSnapshot
     {
-        /// <inheritdoc />
-        protected override void BuildTargetModel(ModelBuilder modelBuilder)
+        protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.8");
@@ -30,6 +27,9 @@ namespace RaceTimerServer.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<DateTime?>("LastModifiedUtc")
+                        .HasColumnType("TEXT");
+
                     b.HasKey("Id");
 
                     b.ToTable("Participants");
@@ -41,9 +41,20 @@ namespace RaceTimerServer.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
+                    b.Property<DateTime?>("FinishDateTimeUTC")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("LastModifiedUtc")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("TEXT");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("BLOB");
 
                     b.Property<DateTime?>("StartTimeUTC")
                         .HasColumnType("TEXT");
@@ -61,6 +72,15 @@ namespace RaceTimerServer.Migrations
                     b.Property<Guid>("RaceID")
                         .HasColumnType("TEXT");
 
+                    b.Property<DateTime?>("FinishDateTimeUTC")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("LastModifiedUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("ParticipantNr")
+                        .HasColumnType("INTEGER");
+
                     b.Property<DateTime?>("StartTime")
                         .HasColumnType("TEXT");
 
@@ -77,13 +97,16 @@ namespace RaceTimerServer.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
+                    b.Property<DateTime?>("LastModifiedUtc")
+                        .HasColumnType("TEXT");
+
                     b.Property<Guid?>("ParticipantID")
                         .HasColumnType("TEXT");
 
                     b.Property<TimeSpan?>("PenaltyTime")
                         .HasColumnType("TEXT");
 
-                    b.Property<int?>("RTPIndex")
+                    b.Property<uint?>("RTPIndex")
                         .HasColumnType("INTEGER");
 
                     b.Property<Guid?>("RaceID")
@@ -97,11 +120,11 @@ namespace RaceTimerServer.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ParticipantID");
-
                     b.HasIndex("RaceID");
 
                     b.HasIndex("RaceTimePointId");
+
+                    b.HasIndex("ParticipantID", "RaceID");
 
                     b.ToTable("RaceParticipantTimePoints");
                 });
@@ -116,8 +139,14 @@ namespace RaceTimerServer.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<bool>("HasPenaltyTime")
+                        .HasColumnType("INTEGER");
+
                     b.Property<uint>("Index")
                         .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("LastModifiedUtc")
+                        .HasColumnType("TEXT");
 
                     b.Property<Guid>("RaceID")
                         .HasColumnType("TEXT");
@@ -132,7 +161,7 @@ namespace RaceTimerServer.Migrations
             modelBuilder.Entity("RaceTimer.Shared.Models.RaceParticipant", b =>
                 {
                     b.HasOne("RaceTimer.Shared.Models.Participant", "Participant")
-                        .WithMany()
+                        .WithMany("RaceParticipations")
                         .HasForeignKey("ParticipantID")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -162,9 +191,15 @@ namespace RaceTimerServer.Migrations
                         .WithMany()
                         .HasForeignKey("RaceTimePointId");
 
+                    b.HasOne("RaceTimer.Shared.Models.RaceParticipant", "RaceParticipant")
+                        .WithMany("RaceParticipantTimePoints")
+                        .HasForeignKey("ParticipantID", "RaceID");
+
                     b.Navigation("Participant");
 
                     b.Navigation("Race");
+
+                    b.Navigation("RaceParticipant");
 
                     b.Navigation("RaceTimePoint");
                 });
@@ -180,6 +215,11 @@ namespace RaceTimerServer.Migrations
                     b.Navigation("Race");
                 });
 
+            modelBuilder.Entity("RaceTimer.Shared.Models.Participant", b =>
+                {
+                    b.Navigation("RaceParticipations");
+                });
+
             modelBuilder.Entity("RaceTimer.Shared.Models.Race", b =>
                 {
                     b.Navigation("RaceParticipantTimePoints");
@@ -187,6 +227,11 @@ namespace RaceTimerServer.Migrations
                     b.Navigation("RaceParticipants");
 
                     b.Navigation("RaceTimePoints");
+                });
+
+            modelBuilder.Entity("RaceTimer.Shared.Models.RaceParticipant", b =>
+                {
+                    b.Navigation("RaceParticipantTimePoints");
                 });
 #pragma warning restore 612, 618
         }

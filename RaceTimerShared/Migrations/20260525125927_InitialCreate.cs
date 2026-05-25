@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace RaceTimerServer.Migrations
+namespace RaceTimer.Shared.Migrations
 {
     /// <inheritdoc />
     public partial class InitialCreate : Migration
@@ -16,7 +16,8 @@ namespace RaceTimerServer.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "TEXT", nullable: false),
-                    DisplayName = table.Column<string>(type: "TEXT", nullable: false)
+                    DisplayName = table.Column<string>(type: "TEXT", nullable: false),
+                    LastModifiedUtc = table.Column<DateTime>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -29,7 +30,10 @@ namespace RaceTimerServer.Migrations
                 {
                     Id = table.Column<Guid>(type: "TEXT", nullable: false),
                     Name = table.Column<string>(type: "TEXT", nullable: false),
-                    StartTimeUTC = table.Column<DateTime>(type: "TEXT", nullable: true)
+                    StartTimeUTC = table.Column<DateTime>(type: "TEXT", nullable: true),
+                    RowVersion = table.Column<byte[]>(type: "BLOB", rowVersion: true, nullable: true),
+                    FinishDateTimeUTC = table.Column<DateTime>(type: "TEXT", nullable: true),
+                    LastModifiedUtc = table.Column<DateTime>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -42,7 +46,10 @@ namespace RaceTimerServer.Migrations
                 {
                     ParticipantID = table.Column<Guid>(type: "TEXT", nullable: false),
                     RaceID = table.Column<Guid>(type: "TEXT", nullable: false),
-                    StartTime = table.Column<DateTime>(type: "TEXT", nullable: true)
+                    StartTime = table.Column<DateTime>(type: "TEXT", nullable: true),
+                    FinishDateTimeUTC = table.Column<DateTime>(type: "TEXT", nullable: true),
+                    LastModifiedUtc = table.Column<DateTime>(type: "TEXT", nullable: true),
+                    ParticipantNr = table.Column<int>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -68,7 +75,9 @@ namespace RaceTimerServer.Migrations
                     Id = table.Column<Guid>(type: "TEXT", nullable: false),
                     DisplayName = table.Column<string>(type: "TEXT", nullable: false),
                     Index = table.Column<uint>(type: "INTEGER", nullable: false),
-                    RaceID = table.Column<Guid>(type: "TEXT", nullable: false)
+                    RaceID = table.Column<Guid>(type: "TEXT", nullable: false),
+                    LastModifiedUtc = table.Column<DateTime>(type: "TEXT", nullable: true),
+                    HasPenaltyTime = table.Column<bool>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -90,8 +99,9 @@ namespace RaceTimerServer.Migrations
                     PenaltyTime = table.Column<TimeSpan>(type: "TEXT", nullable: true),
                     RaceID = table.Column<Guid>(type: "TEXT", nullable: true),
                     ParticipantID = table.Column<Guid>(type: "TEXT", nullable: true),
-                    RTPIndex = table.Column<int>(type: "INTEGER", nullable: true),
-                    RaceTimePointId = table.Column<Guid>(type: "TEXT", nullable: true)
+                    RTPIndex = table.Column<uint>(type: "INTEGER", nullable: true),
+                    RaceTimePointId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    LastModifiedUtc = table.Column<DateTime>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -101,6 +111,11 @@ namespace RaceTimerServer.Migrations
                         column: x => x.ParticipantID,
                         principalTable: "Participants",
                         principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_RaceParticipantTimePoints_RaceParticipants_ParticipantID_RaceID",
+                        columns: x => new { x.ParticipantID, x.RaceID },
+                        principalTable: "RaceParticipants",
+                        principalColumns: new[] { "ParticipantID", "RaceID" });
                     table.ForeignKey(
                         name: "FK_RaceParticipantTimePoints_RaceTimePoints_RaceTimePointId",
                         column: x => x.RaceTimePointId,
@@ -119,9 +134,9 @@ namespace RaceTimerServer.Migrations
                 column: "RaceID");
 
             migrationBuilder.CreateIndex(
-                name: "IX_RaceParticipantTimePoints_ParticipantID",
+                name: "IX_RaceParticipantTimePoints_ParticipantID_RaceID",
                 table: "RaceParticipantTimePoints",
-                column: "ParticipantID");
+                columns: new[] { "ParticipantID", "RaceID" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_RaceParticipantTimePoints_RaceID",
@@ -143,16 +158,16 @@ namespace RaceTimerServer.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "RaceParticipants");
-
-            migrationBuilder.DropTable(
                 name: "RaceParticipantTimePoints");
 
             migrationBuilder.DropTable(
-                name: "Participants");
+                name: "RaceParticipants");
 
             migrationBuilder.DropTable(
                 name: "RaceTimePoints");
+
+            migrationBuilder.DropTable(
+                name: "Participants");
 
             migrationBuilder.DropTable(
                 name: "Races");

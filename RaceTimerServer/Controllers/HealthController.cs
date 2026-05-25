@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using RaceTimerServer.Data;
+using RaceTimer.Shared.Data;
 
 namespace RaceTimerServer.Controllers;
 

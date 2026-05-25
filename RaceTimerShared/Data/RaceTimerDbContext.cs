@@ -1,8 +1,12 @@
 using Microsoft.EntityFrameworkCore;
 using RaceTimer.Shared.Models;
 
-namespace RaceTimerServer.Data;
+namespace RaceTimer.Shared.Data;
 
+/// <summary>
+/// Shared DbContext für offline-first MAUI App und Server.
+/// Kann mit SQLite (lokal) oder SQL Server (Server) verwendet werden.
+/// </summary>
 public class RaceTimerDbContext : DbContext
 {
     public RaceTimerDbContext(DbContextOptions<RaceTimerDbContext> options) : base(options)

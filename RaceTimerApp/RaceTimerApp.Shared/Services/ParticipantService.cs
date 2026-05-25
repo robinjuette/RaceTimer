@@ -1,30 +1,32 @@
 using RaceTimer.Shared.Http;
 using RaceTimer.Shared.Models;
+using RaceTimer.Shared.Services;
 
 namespace RaceTimerApp.Shared.Services;
 
 /// <summary>
 /// Service für Teilnehmerverwaltung
+/// Verwendet lokal das IRaceRepository (offline-first)
 /// </summary>
 public class ParticipantService
 {
-    private readonly RaceTimerApiClient _apiClient;
+    private readonly IRaceRepository _repository;
 
-    public ParticipantService(RaceTimerApiClient apiClient)
+    public ParticipantService(IRaceRepository repository)
     {
-        _apiClient = apiClient;
+        _repository = repository;
     }
 
     // Alle Teilnehmer abrufen
     public async Task<IEnumerable<Participant>> GetAllParticipantsAsync()
     {
-        return await _apiClient.GetParticipantsAsync() ?? Enumerable.Empty<Participant>();
+        return await _repository.GetAllParticipantsAsync();
     }
 
     // Teilnehmer abrufen
     public async Task<Participant?> GetParticipantAsync(Guid id)
     {
-        return await _apiClient.GetParticipantAsync(id);
+        return await _repository.GetParticipantAsync(id);
     }
 
     // Neuen Teilnehmer erstellen oder aus bestehendem hinzufügen
@@ -41,40 +43,31 @@ public class ParticipantService
         }
         else
         {
-            // Neuen Teilnehmer erstellen
-            participant = new Participant
-            {
-                Id = Guid.NewGuid(),
-                DisplayName = displayName
-            };
-
-            var created = await _apiClient.CreateParticipantAsync(participant);
-            if (created is null) return null;
-
+            var created = await _repository.CreateParticipantAsync(displayName);
             participant = created;
         }
 
         // Zum Rennen hinzufügen
-        return await _apiClient.CreateRaceParticipantAsync(raceId, participant.Id);
+        return await _repository.AssignParticipantToRaceAsync(raceId, participant.Id);
     }
 
     // Teilnehmer aus Rennen entfernen
     public async Task<bool> RemoveParticipantFromRaceAsync(Guid raceId, Guid participantId)
     {
-        return await _apiClient.DeleteRaceParticipantAsync(raceId, participantId);
+        return await _repository.RemoveParticipantFromRaceAsync(raceId, participantId);
     }
 
     // Rennteilnehmer eines Rennens abrufen
     public async Task<IEnumerable<RaceParticipant>> GetRaceParticipantsAsync(Guid raceId)
     {
-        return await _apiClient.GetRaceParticipantsAsync(raceId);
+        return await _repository.GetRacesParticipantsAsync(raceId);
     }
 
     // Nicht zugeordnete Teilnehmer abrufen
     public async Task<IEnumerable<Participant>> GetUnassignedParticipantsAsync(Guid raceId)
     {
-        var allParticipants = await _apiClient.GetParticipantsAsync();
-        var raceParticipants = await _apiClient.GetRaceParticipantsAsync(raceId);
+        var allParticipants = await _repository.GetAllParticipantsAsync();
+        var raceParticipants = await _repository.GetRacesParticipantsAsync(raceId);
 
         var assignedIds = raceParticipants.Select(rp => rp.ParticipantID).ToHashSet();
         return allParticipants.Where(p => !assignedIds.Contains(p.Id));
@@ -83,7 +76,7 @@ public class ParticipantService
     // Suche Teilnehmer nach Name
     public async Task<IEnumerable<Participant>> SearchParticipantsAsync(string searchTerm)
     {
-        var allParticipants = await _apiClient.GetParticipantsAsync();
+        var allParticipants = await _repository.GetAllParticipantsAsync();
         return allParticipants.Where(p =>
             p.DisplayName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase));
     }

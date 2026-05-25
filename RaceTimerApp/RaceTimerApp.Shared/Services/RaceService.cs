@@ -1,145 +1,117 @@
 using RaceTimer.Shared.Http;
 using RaceTimer.Shared.Models;
+using RaceTimer.Shared.Services;
 
 namespace RaceTimerApp.Shared.Services;
 
 /// <summary>
 /// Service für Rennverwaltung und Business-Logik
+/// Verwendet lokal das IRaceRepository (offline-first) und optional Server-Sync via SignalR
 /// </summary>
 public class RaceService
 {
-    private readonly RaceTimerApiClient _apiClient;
+    private readonly IRaceRepository _repository;
+    private readonly RaceTimerApiClient? _apiClient;
+    private readonly SignalRSyncService? _signalRSync;
     private readonly TimingService _timingService;
 
-    public RaceService(RaceTimerApiClient apiClient, TimingService timingService)
+    /// <summary>
+    /// Offline-Modus (nur lokales Repository)
+    /// </summary>
+    public RaceService(IRaceRepository repository, TimingService timingService)
     {
-        _apiClient = apiClient;
+        _repository = repository;
         _timingService = timingService;
+        _apiClient = null;
+        _signalRSync = null;
+    }
+
+    /// <summary>
+    /// Online-Modus (mit optionalem Server-Sync)
+    /// </summary>
+    public RaceService(IRaceRepository repository, TimingService timingService, SignalRSyncService signalRSync)
+    {
+        _repository = repository;
+        _timingService = timingService;
+        _signalRSync = signalRSync;
+        _apiClient = null;
     }
 
     // Rennen abrufen
     public async Task<IEnumerable<Race>> GetAllRacesAsync()
     {
-        return await _apiClient.GetRacesAsync();
+        return await _repository.GetAllRacesAsync();
     }
 
     public async Task<Race?> GetRaceAsync(Guid id)
     {
-        return await _apiClient.GetRaceAsync(id);
+        return await _repository.GetRaceAsync(id);
     }
 
     // Rennen filtern nach Status
     public async Task<IEnumerable<Race>> GetRunningRacesAsync()
     {
-        var races = await _apiClient.GetRacesAsync();
+        var races = await _repository.GetAllRacesAsync();
         return races.Where(r => r.StartTimeUTC.HasValue && !r.FinishDateTimeUTC.HasValue);
     }
 
     public async Task<IEnumerable<Race>> GetPlannedRacesAsync()
     {
-        var races = await _apiClient.GetRacesAsync();
+        var races = await _repository.GetAllRacesAsync();
         return races.Where(r => !r.StartTimeUTC.HasValue);
     }
 
     public async Task<IEnumerable<Race>> GetFinishedRacesAsync()
     {
-        var races = await _apiClient.GetRacesAsync();
+        var races = await _repository.GetAllRacesAsync();
         return races.Where(r => r.FinishDateTimeUTC.HasValue);
     }
 
     // Rennen erstellen
     public async Task<Race?> CreateRaceAsync(string name)
     {
-        var race = new Race
-        {
-            Id = Guid.NewGuid(),
-            Name = name,
-            RaceParticipants = [],
-            RaceTimePoints = [],
-            RaceParticipantTimePoints = []
-        };
-
-        return await _apiClient.CreateRaceAsync(race);
+        return await _repository.AddRaceAsync(name);
     }
 
     // Rennen als Kopie erstellen
     public async Task<Race?> CreateRaceFromCopyAsync(Race originalRace)
     {
-        var newRace = new Race
-        {
-            Id = Guid.NewGuid(),
-            Name = originalRace.Name + " - Kopie",
-            RaceParticipants = [],
-            RaceTimePoints = originalRace.RaceTimePoints
-                .Select(rtp => new RaceTimePoint
-                {
-                    Id = Guid.NewGuid(),
-                    DisplayName = rtp.DisplayName,
-                    Index = rtp.Index,
-                    RaceID = Guid.Empty,
-                    Race = null!
-                })
-                .ToList(),
-            RaceParticipantTimePoints = []
-        };
+        var newRace = await _repository.AddRaceAsync(originalRace.Name + " - Kopie");
 
-        return await _apiClient.CreateRaceAsync(newRace);
-    }
+        if (newRace == null) return null;
 
-    // Rennen aktualisieren
-    public async Task<bool> UpdateRaceAsync(Race race)
-    {
-        return await _apiClient.UpdateRaceAsync(race);
+        await _repository.CopyRaceTimePointsAsync(originalRace.Id, newRace.Id);
+
+        return newRace;
     }
 
     // Rennen löschen
     public async Task<bool> DeleteRaceAsync(Guid raceId)
     {
-        return await _apiClient.DeleteRaceAsync(raceId);
+        return await _repository.DeleteRaceAsync(raceId);
     }
 
     // Rennen starten
     public async Task<bool> StartRaceAsync(Guid raceId, IEnumerable<Guid> participantIds)
     {
-        return await _apiClient.StartRaceAsync(raceId, participantIds);
-    }
-
-    // Rennen beenden
-    public async Task<bool> FinishRaceAsync(Guid raceId)
-    {
-        var race = await _apiClient.GetRaceAsync(raceId);
-        if (race is null) return false;
-
-        race.FinishDateTimeUTC = DateTime.UtcNow;
-        return await _apiClient.UpdateRaceAsync(race);
+        return await _repository.StartRaceAsync(raceId, DateTime.UtcNow, participantIds.ToList());
     }
 
     // Zeitpunkte verwalten
     public async Task<IEnumerable<RaceTimePoint>> GetRaceTimePointsAsync(Guid raceId)
     {
-        var timePoints = await _apiClient.GetRaceTimePointsAsync(raceId);
+        IEnumerable<RaceTimePoint> timePoints = await _repository.GetRaceTimePointsAsync(raceId);
         return timePoints.OrderBy(tp => tp.Index);
     }
 
     public async Task<RaceTimePoint?> AddRaceTimePointAsync(Guid raceId, string displayName)
     {
-        var existingPoints = await _apiClient.GetRaceTimePointsAsync(raceId);
-        var nextIndex = (uint)(existingPoints.Count() + 1);
-
-        var timePoint = new RaceTimePoint
-        {
-            Id = Guid.NewGuid(),
-            DisplayName = displayName,
-            Index = nextIndex,
-            RaceID = raceId
-        };
-
-        return await _apiClient.CreateRaceTimePointAsync(raceId, timePoint);
+        return await _repository.CreateRaceTimePointAsync(raceId, displayName);
     }
 
     public async Task<bool> DeleteRaceTimePointAsync(Guid raceId, Guid timePointId)
     {
-        return await _apiClient.DeleteRaceTimePointAsync(raceId, timePointId);
+        return await _repository.DeleteRaceTimePointAsync(timePointId);
     }
 
     // Status berechnen
@@ -152,34 +124,5 @@ public class RaceService
         return RaceStatus.Planned;
     }
 
-    // Prüfe ob Rennen beendet werden sollte
-    public async Task<bool> ShouldAutoFinishRaceAsync(Guid raceId)
-    {
-        var race = await _apiClient.GetRaceAsync(raceId);
-        if (race is null || !race.StartTimeUTC.HasValue || race.FinishDateTimeUTC.HasValue)
-            return false;
-
-        var participants = await _apiClient.GetRaceParticipantsAsync(raceId);
-        var timePoints = await _apiClient.GetRaceTimePointsAsync(raceId);
-
-        // Rennen beenden wenn alle Teilnehmer das letzte Zeitpoint erreicht haben
-        foreach (var participant in participants)
-        {
-            var participantTimes = race.RaceParticipantTimePoints
-                .Where(rptp => rptp.ParticipantID == participant.ParticipantID)
-                .OrderBy(rptp => rptp.TimePointUTC);
-
-            if (!participantTimes.Any() || (!participantTimes.Last().RaceTimePoint?.Equals(timePoints.OrderBy(tp => tp.Index).Last()) ?? false))
-                return false;
-        }
-
-        return true;
-    }
 }
 
-public enum RaceStatus
-{
-    Planned,
-    Running,
-    Finished
-}

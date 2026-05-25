@@ -1,20 +1,21 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using RaceTimer.Shared.Data;
 using RaceTimer.Shared.Models;
-using RaceTimerServer.Data;
+using RaceTimer.Shared.Services;
 using System.Diagnostics;
 
 namespace RaceTimerServer.Services;
 
-public class RaceRepository
+public class SignallingRaceRepository : IRaceRepository
 {
-    private readonly RaceTimerDbContext _db;
-    private readonly Microsoft.AspNetCore.SignalR.IHubContext<RaceTimerServer.Hubs.RaceHub> _hub;
+    private readonly CoreRaceRepository coreRaceRepository;
+    private readonly Microsoft.AspNetCore.SignalR.IHubContext<Hubs.RaceHub> _hub;
 
-    public RaceRepository(RaceTimerDbContext db, Microsoft.AspNetCore.SignalR.IHubContext<RaceTimerServer.Hubs.RaceHub> hub)
+    public SignallingRaceRepository(CoreRaceRepository rp, Microsoft.AspNetCore.SignalR.IHubContext<Hubs.RaceHub> hub)
     {
-        _db = db;
+        coreRaceRepository = rp;
         _hub = hub;
     }
 
@@ -36,17 +37,17 @@ public class RaceRepository
     }
 
     // Participants
-    public async Task<IEnumerable<RaceTimer.Shared.Models.Participant>> GetParticipantsAsync()
+    public async Task<IEnumerable<Participant>> GetAllParticipantsAsync()
     {
         return await _db.Participants.ToListAsync();
     }
 
-    public async Task<RaceTimer.Shared.Models.Participant?> GetParticipantAsync(Guid id)
+    public async Task<Participant?> GetParticipantAsync(Guid id)
     {
         return await _db.Participants.FindAsync(id);
     }
 
-    public async Task AddParticipantAsync(RaceTimer.Shared.Models.Participant participant)
+    public async Task AddParticipantAsync(Participant participant)
     {
         if (participant.Id == Guid.Empty) participant.Id = Guid.NewGuid();
         _db.Participants.Add(participant);
@@ -54,7 +55,7 @@ public class RaceRepository
         await _hub.Clients.All.SendCoreAsync("ParticipantCreated", new object?[] { participant });
     }
 
-    public async Task UpdateParticipantAsync(RaceTimer.Shared.Models.Participant participant)
+    public async Task UpdateParticipantAsync(Participant participant)
     {
         var existing = await _db.Participants.FindAsync(participant.Id);
         if (existing is null) return;
@@ -63,7 +64,7 @@ public class RaceRepository
         await _hub.Clients.All.SendCoreAsync("ParticipantUpdated", new object?[] { participant });
     }
 
-    public async Task RemoveParticipantAsync(Guid id)
+    public async Task DeleteParticipantAsync(Guid id)
     {
         var existing = await _db.Participants.FindAsync(id);
         if (existing is null) return;
@@ -72,7 +73,7 @@ public class RaceRepository
         await _hub.Clients.All.SendCoreAsync("ParticipantDeleted", new object?[] { id });
     }
 
-    public async Task<IEnumerable<Race>> GetAllAsync()
+    public async Task<IEnumerable<Race>> GetAllRacesAsync()
     {
         return await _db.Races
             .Include(r => r.RaceParticipants)
@@ -81,7 +82,7 @@ public class RaceRepository
             .ToListAsync();
     }
 
-    public async Task<Race?> GetAsync(Guid id)
+    public async Task<Race?> GetRaceAsync(Guid id)
     {
         return await _db.Races
             .Include(r => r.RaceParticipants)
@@ -99,7 +100,7 @@ public class RaceRepository
         await _hub.Clients.Group(RaceTimerServer.Hubs.RaceHub.GetGroupName(race.Id.ToString())).SendCoreAsync("RaceCreated", new object?[] { race });
     }
 
-    public async Task UpdateAsync(Race race)
+    public async Task UpdateRaceAsync(Race race)
     {
         var existing = await _db.Races.FindAsync(race.Id);
         if (existing is null) return;
@@ -117,7 +118,7 @@ public class RaceRepository
         }
     }
 
-    public async Task RemoveAsync(Guid id)
+    public async Task DeleteRaceAsync(Guid id)
     {
         var existing = await _db.Races.FindAsync(id);
         if (existing is null) return;
@@ -148,24 +149,11 @@ public class RaceRepository
         await _hub.Clients.Group(RaceTimerServer.Hubs.RaceHub.GetGroupName(raceId.ToString())).SendCoreAsync("ParticipantUnassigned", new object?[] { raceId, participantId });
     }
 
-    public async Task<RaceParticipantTimePoint?> GetTimePointAsync(Guid id)
+    public async Task<RaceParticipantTimePoint?> GetRaceParticipantTimePointAsync(Guid id)
     {
         return await _db.RaceParticipantTimePoints.FindAsync(id);
     }
 
-    public async Task<IEnumerable<Race>> GetRacesByStatusAsync(string status)
-    {
-        // status: prepared (StartTimeUTC == null && FinishDateTimeUTC == null)
-        // running: StartTimeUTC != null && FinishDateTimeUTC == null
-        // finished: FinishDateTimeUTC != null
-        return status.ToLowerInvariant() switch
-        {
-            "prepared" => await _db.Races.Where(r => r.StartTimeUTC == null && r.FinishDateTimeUTC == null).ToListAsync(),
-            "running" => await _db.Races.Where(r => r.StartTimeUTC != null && r.FinishDateTimeUTC == null).ToListAsync(),
-            "finished" => await _db.Races.Where(r => r.FinishDateTimeUTC != null).ToListAsync(),
-            _ => Enumerable.Empty<Race>()
-        };
-    }
 
     // Add an unassigned time point (only UTC timestamp) without race assignment
     public async Task<RaceParticipantTimePoint> AddUnassignedTimePointAsync(DateTime timePointUtc)
@@ -200,7 +188,7 @@ public class RaceRepository
             .ThenInclude(r => r.RaceTimePoints)
             .SingleOrDefaultAsync();
 
-        if(affectedRP is null) return;
+        if (affectedRP is null) return;
 
         uint maxCurrentTPIndex = affectedRP.RaceParticipantTimePoints.Max(rptp => rptp.RTPIndex) ?? 0;
 
@@ -213,11 +201,11 @@ public class RaceRepository
 
         bool checkForCompletion = false;
 
-        if(nextIndex == 1)
+        if (nextIndex == 1)
         {
             affectedRP.StartTime = tp.TimePointUTC;
         }
-        if(nextIndex == maxIndex)
+        if (nextIndex == maxIndex)
         {
             affectedRP.FinishDateTimeUTC = tp.TimePointUTC;
             checkForCompletion = true;
@@ -240,7 +228,7 @@ public class RaceRepository
         if (race is null) return;
 
         if (!await _db.Races.Where(r => r.Id == raceId).AllAsync(r => r.RaceParticipants.All(rp => rp.FinishDateTimeUTC != null))) return;
-        
+
         race.FinishDateTimeUTC = await _db.Races.Where(r => r.Id == raceId).Select(r => r.RaceParticipants.Max(rp => rp.FinishDateTimeUTC)).SingleAsync();
 
         await _db.SaveChangesAsync();
@@ -321,5 +309,100 @@ public class RaceRepository
 
         _db.RaceParticipantTimePoints.Remove(timePoint);
         _db.SaveChanges();
+    }
+
+    public Task<Race?> AddRaceAsync(string name)
+    {
+        return ((IRaceRepository)coreRaceRepository).AddRaceAsync(name);
+    }
+
+    Task<RaceTimePoint?> IRaceRepository.AddTimePointAsync(Guid raceId, RaceTimePoint timePoint)
+    {
+        return ((IRaceRepository)coreRaceRepository).AddTimePointAsync(raceId, timePoint);
+    }
+
+    public Task<bool> AssignTimePointToRaceParticipantAsync(Guid timePointId, Guid raceId, Guid participantId)
+    {
+        return ((IRaceRepository)coreRaceRepository).AssignTimePointToRaceParticipantAsync(timePointId, raceId, participantId);
+    }
+
+    public Task<Participant?> CreateParticipantAsync(string name)
+    {
+        return ((IRaceRepository)coreRaceRepository).CreateParticipantAsync(name);
+    }
+
+    Task<bool> IRaceRepository.DeleteRaceAsync(Guid id)
+    {
+        return ((IRaceRepository)coreRaceRepository).DeleteRaceAsync(id);
+    }
+
+    Task IRaceRepository.DeleteTimePointAsync(Guid timePointId)
+    {
+        return ((IRaceRepository)coreRaceRepository).DeleteTimePointAsync(timePointId);
+    }
+
+    public Task<IEnumerable<RaceParticipant>> GetRacesParticipantsAsync(Guid id)
+    {
+        return ((IRaceRepository)coreRaceRepository).GetRacesParticipantsAsync(id);
+    }
+
+    Task<IEnumerable<RaceParticipantTimePoint>> IRaceRepository.GetRaceParticipantTimePointsForRaceAsync(Guid raceId)
+    {
+        return ((IRaceRepository)coreRaceRepository).GetRaceParticipantTimePointsForRaceAsync(raceId);
+    }
+
+    Task<IEnumerable<RaceParticipantTimePoint>?> IRaceRepository.GetUnassignedTimepointsAsync()
+    {
+        return ((IRaceRepository)coreRaceRepository).GetUnassignedTimepointsAsync();
+    }
+
+    Task<bool> IRaceRepository.RemoveParticipantFromRaceAsync(Guid raceId, Guid participantId)
+    {
+        return ((IRaceRepository)coreRaceRepository).RemoveParticipantFromRaceAsync(raceId, participantId);
+    }
+
+    Task IRaceRepository.RemoveTimePointAsync(Guid raceId, Guid timePointId)
+    {
+        return ((IRaceRepository)coreRaceRepository).RemoveTimePointAsync(raceId, timePointId);
+    }
+
+    Task<bool> IRaceRepository.SetTimePointPenaltyTime(Guid timePointId, TimeSpan penaltyTime)
+    {
+        return ((IRaceRepository)coreRaceRepository).SetTimePointPenaltyTime(timePointId, penaltyTime);
+    }
+
+    public Task<bool> StartRaceAsync(Guid raceId, DateTime timePointUtc, params List<Guid> participantIds)
+    {
+        return ((IRaceRepository)coreRaceRepository).StartRaceAsync(raceId, timePointUtc, participantIds);
+    }
+
+    Task<RaceTimePoint?> IRaceRepository.UpdateTimePointAsync(Guid raceId, RaceTimePoint timePoint)
+    {
+        return ((IRaceRepository)coreRaceRepository).UpdateTimePointAsync(raceId, timePoint);
+    }
+
+    public Task<IEnumerable<Race>> GetRacesByStatusAsync(RaceStatus status)
+    {
+        return ((IRaceRepository)coreRaceRepository).GetRacesByStatusAsync(status);
+    }
+
+    public Task<bool> CopyRaceTimePointsAsync(Guid raceIdCopyFrom, Guid raceIdCopyTo)
+    {
+        return ((IRaceRepository)coreRaceRepository).CopyRaceTimePointsAsync(raceIdCopyFrom, raceIdCopyTo);
+    }
+
+    public Task<IEnumerable<RaceTimePoint>> GetRaceTimePointsAsync(Guid raceId)
+    {
+        return ((IRaceRepository)coreRaceRepository).GetRaceTimePointsAsync(raceId);
+    }
+
+    public Task<RaceTimePoint?> CreateRaceTimePointAsync(Guid raceId, RaceTimePoint timePoint)
+    {
+        return ((IRaceRepository)coreRaceRepository).CreateRaceTimePointAsync(raceId, timePoint);
+    }
+
+    public Task<bool> DeleteRaceTimePointAsync(Guid timePointId)
+    {
+        return ((IRaceRepository)coreRaceRepository).DeleteRaceTimePointAsync(timePointId);
     }
 }

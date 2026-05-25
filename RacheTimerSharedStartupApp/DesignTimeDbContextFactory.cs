@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 
-namespace RaceTimerServer.Data;
+namespace RaceTimer.Shared.Data;
 
 public class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<RaceTimerDbContext>
 {
@@ -13,3 +13,4 @@ public class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<RaceTimerD
         return new RaceTimerDbContext(builder.Options);
     }
 }
+

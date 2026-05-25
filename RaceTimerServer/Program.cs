@@ -1,4 +1,7 @@
 using Microsoft.EntityFrameworkCore;
+using RaceTimer.Shared.Data;
+using RaceTimer.Shared.Services;
+using RaceTimerServer.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,14 +18,11 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowAll", p => p.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod());
 });
 
-// Repository using EF Core DbContext
-builder.Services.AddScoped<RaceTimerServer.Services.RaceRepository>();
-
 // Register HTTP API client builder for typed clients (clients will set BaseAddress)
 builder.Services.AddHttpClient<RaceTimer.Shared.Http.RaceTimerApiClient>();
 
 // Configure EF Core DbContext: default to local SQLite file, optional SQL Server when ConnectionStrings:SqlServer is set
-builder.Services.AddDbContext<RaceTimerServer.Data.RaceTimerDbContext>((serviceProvider, options) =>
+builder.Services.AddDbContext<RaceTimerDbContext>((serviceProvider, options) =>
 {
     var configuration = serviceProvider.GetRequiredService<IConfiguration>();
     var sqlServerConn = configuration.GetConnectionString("SqlServer");
@@ -39,6 +39,10 @@ builder.Services.AddDbContext<RaceTimerServer.Data.RaceTimerDbContext>((serviceP
     }
 });
 
+// Repository using shared services
+builder.Services.AddScoped<IRaceRepository, LocalRaceRepository>();
+builder.Services.AddScoped<SignallingRaceRepository>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -50,7 +54,7 @@ if (app.Environment.IsDevelopment())
 // Apply pending migrations on startup
 using (var scope = app.Services.CreateScope())
 {
-    var db = scope.ServiceProvider.GetRequiredService<RaceTimerServer.Data.RaceTimerDbContext>();
+    var db = scope.ServiceProvider.GetRequiredService<RaceTimerDbContext>();
     db.Database.Migrate();
 }
 

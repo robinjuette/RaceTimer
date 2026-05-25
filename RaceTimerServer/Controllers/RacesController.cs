@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using RaceTimer.Shared.Models;
+using RaceTimer.Shared.Services;
 using RaceTimerServer.Services;
 
 namespace RaceTimerServer.Controllers;
@@ -8,15 +9,15 @@ namespace RaceTimerServer.Controllers;
 [Route("api/[controller]")]
 public class RacesController : ControllerBase
 {
-    private readonly RaceRepository _repo;
+    private readonly SignallingRaceRepository _repo;
 
-    public RacesController(RaceRepository repo)
+    public RacesController(SignallingRaceRepository repo)
     {
         _repo = repo;
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Race>>> GetAll() => Ok(await _repo.GetAllAsync());
+    public async Task<ActionResult<IEnumerable<Race>>> GetAll() => Ok(await _repo.GetAllRacesAsync());
 
     [HttpGet("status/{status}")]
     public async Task<ActionResult<IEnumerable<Race>>> GetByStatus(string status)
@@ -42,7 +43,7 @@ public class RacesController : ControllerBase
     [HttpGet("{id}")]
     public async Task<ActionResult<Race>> Get(Guid id)
     {
-        var r = await _repo.GetAsync(id);
+        var r = await _repo.GetRaceAsync(id);
         if (r is null) return NotFound();
         return Ok(r);
     }
@@ -58,11 +59,11 @@ public class RacesController : ControllerBase
     public async Task<ActionResult> Update(Guid id, Race race)
     {
         if (id != race.Id) return BadRequest();
-        var existing = await _repo.GetAsync(id);
+        var existing = await _repo.GetRaceAsync(id);
         if (existing is null) return NotFound();
         try
         {
-            await _repo.UpdateAsync(race);
+            await _repo.UpdateRaceAsync(race);
             return NoContent();
         }
         catch (Microsoft.EntityFrameworkCore.DbUpdateConcurrencyException)
@@ -74,16 +75,16 @@ public class RacesController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<ActionResult> Delete(Guid id)
     {
-        var existing = await _repo.GetAsync(id);
+        var existing = await _repo.GetRaceAsync(id);
         if (existing is null) return NotFound();
-        await _repo.RemoveAsync(id);
+        await _repo.DeleteRaceAsync(id);
         return NoContent();
     }
 
     [HttpPost("{id}/participants/{participantId}")]
     public async Task<ActionResult<RaceParticipant>> AssignParticipant(Guid id, Guid participantId)
     {
-        var race = await _repo.GetAsync(id);
+        var race = await _repo.GetRaceAsync(id);
         if (race is null) return NotFound();
         var participant = await _repo.GetParticipantAsync(participantId);
         if (participant is null) return NotFound();
@@ -93,7 +94,7 @@ public class RacesController : ControllerBase
     [HttpGet("{id}/participants/")]
     public async Task<ActionResult<IEnumerable<RaceParticipant>>> GetParticipants(Guid id)
     {
-        var race = await _repo.GetAsync(id);
+        var race = await _repo.GetRaceAsync(id);
         if (race is null) return NotFound();
         return Ok(await _repo.GetRaceParticipantsAsync(id));
     }
@@ -101,7 +102,7 @@ public class RacesController : ControllerBase
     [HttpDelete("{id}/participants/{participantId}")]
     public async Task<ActionResult> RemoveParticipantFromRace(Guid id, Guid participantId)
     {
-        var race = await _repo.GetAsync(id);
+        var race = await _repo.GetRaceAsync(id);
         if (race is null) return NotFound();
         await _repo.RemoveParticipantFromRaceAsync(id, participantId);
         return NoContent();
@@ -110,7 +111,7 @@ public class RacesController : ControllerBase
     [HttpPost("{id}/start")]
     public async Task<ActionResult> StartRace(Guid id, IEnumerable<Guid> participants)
     {
-        var race = await _repo.GetAsync(id);
+        var race = await _repo.GetRaceAsync(id);
         if (race is null) return NotFound();
         if (race.FinishDateTimeUTC != null) return BadRequest();
         DateTime startDT = DateTime.UtcNow;
@@ -118,7 +119,7 @@ public class RacesController : ControllerBase
         if (race.StartTimeUTC == null)
         {
             race.StartTimeUTC = startDT;
-            await _repo.UpdateAsync(race);
+            await _repo.UpdateRaceAsync(race);
         }
 
         foreach(Guid guid in participants)
@@ -133,19 +134,19 @@ public class RacesController : ControllerBase
     [HttpPost("{id}/finish")]
     public async Task<ActionResult> FinishRace(Guid id)
     {
-        var race = await _repo.GetAsync(id);
+        var race = await _repo.GetRaceAsync(id);
         if (race is null) return NotFound();
         if (race.StartTimeUTC is null) return BadRequest("Race not started");
         if (race.FinishDateTimeUTC is not null) return BadRequest("Race already finished");
 
         race.FinishDateTimeUTC = DateTime.UtcNow;
-        await _repo.UpdateAsync(race);
+        await _repo.UpdateRaceAsync(race);
         return Ok();
     }
     [HttpGet("{id}/timepoints")]
     public async Task<ActionResult<IEnumerable<RaceTimePoint>>> GetRaceTimePoints(Guid id)
     {
-        var race = await _repo.GetAsync(id);
+        var race = await _repo.GetRaceAsync(id);
         if (race is null) return NotFound();
         return Ok(race.RaceTimePoints.OrderBy(tp => tp.Index));
     }
@@ -153,7 +154,7 @@ public class RacesController : ControllerBase
     [HttpPost("{id}/timepoint")]
     public async Task<ActionResult<RaceTimePoint>> AddRaceTimePoint(Guid id, [FromBody] RaceTimePoint timePoint)
     {
-        var race = await _repo.GetAsync(id);
+        var race = await _repo.GetRaceAsync(id);
         if (race is null) return NotFound();
 
         timePoint.Id = Guid.NewGuid();
@@ -166,7 +167,7 @@ public class RacesController : ControllerBase
     [HttpDelete("{id}/timepoints/{timePointId}")]
     public async Task<ActionResult> DeleteRaceTimePoint(Guid id, Guid timePointId)
     {
-        var race = await _repo.GetAsync(id);
+        var race = await _repo.GetRaceAsync(id);
         if (race is null) return NotFound();
 
         await _repo.RemoveTimePointAsync(id, timePointId);
@@ -176,7 +177,7 @@ public class RacesController : ControllerBase
     [HttpPatch("{id}/timepoint/{timePointID}")]
     public async Task<ActionResult<RaceTimePoint>> UpdateRaceTimePoint(Guid id, Guid timePointID, RaceTimePoint raceTimePoint)
     {
-        var race = await _repo.GetAsync(id);
+        var race = await _repo.GetRaceAsync(id);
         if (race is null) return NotFound();
 
         raceTimePoint.Id = timePointID;

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using RaceTimer.Shared.Models;
+using RaceTimer.Shared.Services;
 using RaceTimerServer.Services;
 
 namespace RaceTimerServer.Controllers;
@@ -8,9 +9,9 @@ namespace RaceTimerServer.Controllers;
 [Route("api/[controller]")]
 public class ParticipantsController : ControllerBase
 {
-    private readonly RaceRepository _repo;
+    private readonly SignallingRaceRepository _repo;
 
-    public ParticipantsController(RaceRepository repo)
+    public ParticipantsController(SignallingRaceRepository repo)
     {
         _repo = repo;
     }
@@ -18,7 +19,7 @@ public class ParticipantsController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<IEnumerable<Participant>>> GetAll()
     {
-        var participants = await _repo.GetParticipantsAsync();
+        var participants = await _repo.GetAllParticipantsAsync();
         return Ok(participants);
     }
 
@@ -52,7 +53,7 @@ public class ParticipantsController : ControllerBase
     {
         var existing = await _repo.GetParticipantAsync(id);
         if (existing is null) return NotFound();
-        await _repo.RemoveParticipantAsync(id);
+        await _repo.DeleteParticipantAsync(id);
         return NoContent();
     }
 }
