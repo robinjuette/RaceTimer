@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/Projektmappenelemente/">
     <File Path=".gitignore" />
+    <File Path="Feedback.txt" />
     <File Path="Konzept RaceTimer.docx" />
     <File Path="Konzept RaceTimer.odt" />
     <File Path="Konzept RaceTimer.rtf" />

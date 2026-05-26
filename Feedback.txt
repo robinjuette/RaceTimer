@@ -1,0 +1,10 @@
+Bitte schreibe im Reiter "Zwischenstand" hinter den Namen eines Teilnehmers "fertig" wenn dieser das Rennen beendet hat. 
+
+Bitte nimm in die Anleitung mit auf wie ich eine Strafzeit für einen Teilnehmer erfassen kann.
+
+Bitte zeige den Namen eines Teilnehmers in der Auflistung an wenn ich ihn hinzugefügt habe und in den Rennvorbereitungen, nicht nur eine Nummer.
+
+Beim benutzen der App hat gerade keine Zeiterfassung funktioniert - weder wurde ein Button unten rechts angezeigt, noch ging die manuelle Zeiterfassung. Bitte fixe das! 
+
+
+Bitte mach die Spalten der Tabelle in der Strafzeiterfassung größer. Außerdem füge den Namen des Zeitpunktes ein, dieser wird gerade nicht angezeigt. 

@@ -121,7 +121,7 @@
         foreach (var race in runningRaces)
         {
             // Vereinfacht: alle TimePoints mit Strafzeiten prüfen
-            foreach (var rptp in race.RaceParticipantTimePoints)
+            foreach (var rptp in await TimingService.GetTimePointsWithPenaltyAsync(race.Id))
             {
                 AllPenalties.Add(rptp);
                 if (!rptp.PenaltyTime.HasValue)

@@ -179,11 +179,12 @@ body {
 .participant-item {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
     padding: 12px;
     border-radius: 6px;
     background: white;
     border: 1px solid #e9ecef;
+    gap: 10px;
 }
 
 .participant-item.pending {
@@ -219,6 +220,15 @@ body {
 
 .participant-info {
     flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.participant-time {
+    white-space: nowrap;
+    font-weight: 600;
+    color: #212529;
 }
 
 .participant-actions {

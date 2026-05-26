@@ -28,6 +28,25 @@
     display: block;
 }
 
+.sidebar-new-race {
+    padding: 15px;
+    border-bottom: 1px solid #495057;
+}
+
+.new-race-btn {
+    width: 100%;
+    padding: 15px 10px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+}
+
+.new-race-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
 .sidebar-nav {
     margin-top: 20px;
 }

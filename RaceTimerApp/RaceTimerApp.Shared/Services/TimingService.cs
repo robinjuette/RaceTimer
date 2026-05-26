@@ -153,7 +153,20 @@ public class TimingService
         var raceTimePointsWithPenalty = raceTimePoints
             .Where(rtp => rtp.Id != Guid.Empty && rtp.HasPenaltyTime); // Hier würde eine Property "HasPenalty" helfen
 
-        return timePoints.Where(rptp => raceTimePointsWithPenalty.Any(rtp => rtp.Id == rptp.Id));
+        return timePoints.Where(rptp => raceTimePointsWithPenalty.Any(rtp => rtp.Index == rptp.RTPIndex));
+    }
+
+    // Zeitpunkte mit Strafzeit abrufen
+    public async Task<IEnumerable<RaceParticipantTimePoint>> GetTimePointsWithOpenPenaltyAsync(Guid raceId)
+    {
+        var timePoints = await _repository.GetRaceParticipantTimePointsForRaceAsync(raceId);
+        var raceTimePoints = await _repository.GetRaceTimePointsAsync(raceId);
+
+        // Finde Zeitpunkte deren Rennzeitpunkt Strafzeit hat
+        var raceTimePointsWithPenalty = raceTimePoints
+            .Where(rtp => rtp.Id != Guid.Empty && rtp.HasPenaltyTime); // Hier würde eine Property "HasPenalty" helfen
+
+        return timePoints.Where(rptp => raceTimePointsWithPenalty.Any(rtp => rtp.Id == rptp.Id) && rptp.PenaltyTime == null);
     }
 
     // Clear unzugeordnete Zeitpunkte (z.B. beim Neuladen)

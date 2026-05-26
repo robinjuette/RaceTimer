@@ -1,0 +1,399 @@
+@page "/guide"
+
+<div class="page-header">
+    <h1>📖 Anleitung zur Rennerstellung</h1>
+</div>
+
+<div class="guide-container">
+    <!-- Überblick Sektion -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">🎯 Überblick</h5>
+        </div>
+        <div class="card-body">
+            <p>In dieser Anleitung erfahren Sie, wie Sie ein neues Rennen erstellen und konfigurieren. 
+               Ein Rennen besteht aus Rennzeitpunkten (z.B. Start, Checkpoints, Ziel) und Teilnehmern, 
+               die diese Punkte durchlaufen.</p>
+            <p class="text-muted"><small>Sie können ein Rennen mit dem grünen Button „Neues Rennen" in der linken Sidebar erstellen.</small></p>
+        </div>
+    </div>
+
+    <!-- Rennzeitpunkte Sektion -->
+    <div class="card mb-4">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0">⏱️ Rennzeitpunkte (Checkpoints)</h5>
+        </div>
+        <div class="card-body">
+            <h6>Wie viele Zeitpunkte muss ein Rennen mindestens haben?</h6>
+            <p class="mb-3">
+                <strong>Mindestens 2 Zeitpunkte</strong> sind erforderlich. Jedes Rennen wird automatisch mit einem 
+                „Start"-Zeitpunkt erstellt. Sie müssen mindestens einen weiteren Punkt hinzufügen (z.B. „Ziel"), 
+                um das Rennen zu starten.
+            </p>
+
+            <h6>Wie viele Zeitpunkte kann ein Rennen maximal haben?</h6>
+            <p class="mb-3">
+                Es gibt keine technische Obergrenze. Sie können so viele Zeitpunkte hinzufügen, wie Sie möchten 
+                (z.B. mehrere Checkpoints auf einem Kurs). Die praktische Grenze hängt von der Lesbarkeit der 
+                Benutzeroberfläche ab.
+            </p>
+
+            <h6>Dürfen verschiedene Rennzeitpunkte die gleichen Namen haben?</h6>
+            <p class="mb-3">
+                <strong>Ja, technisch ist es erlaubt.</strong> Es ist aber nicht empfohlen! Wenn Sie mehrere 
+                Zeitpunkte mit dem gleichen Namen haben, wird es verwirrend sein. Zum Beispiel sollten Sie 
+                nicht zwei Zeitpunkte „Checkpoint" nennen, sondern lieber „Checkpoint 1" und „Checkpoint 2".
+            </p>
+
+            <div class="alert alert-warning" role="alert">
+                <strong>💡 Tipp:</strong> Die Reihenfolge der Zeitpunkte ist wichtig! Sie können diese mit 
+                Drag & Drop neu anordnen, solange das Rennen noch nicht gestartet ist.
+            </div>
+
+            <h6>Strafzeiten bei Zeitpunkten</h6>
+            <p>
+                Sie können einzelne Zeitpunkte als „Strafzeit erforderlich" markieren. Dies bedeutet, dass 
+                Teilnehmer an diesem Punkt möglicherweise Strafzeiten erhalten können (z.B. bei Regelverstößen).
+            </p>
+        </div>
+    </div>
+
+    <!-- Teilnehmer Sektion -->
+    <div class="card mb-4">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-0">👥 Teilnehmer</h5>
+        </div>
+        <div class="card-body">
+            <h6>Wie viele Teilnehmer muss ein Rennen mindestens haben?</h6>
+            <p class="mb-3">
+                <strong>Technisch mindestens 1 Teilnehmer.</strong> Es ist jedoch empfohlen, mindestens 2 Teilnehmer 
+                hinzuzufügen, damit ein Rennen sinnvoll ist. Sie können Teilnehmer in der Regel bis zur Vorbereitung 
+                des Rennenstarts hinzufügen.
+            </p>
+
+            <h6>Wie viele Teilnehmer kann ein Rennen maximal haben?</h6>
+            <p class="mb-3">
+                Es gibt keine technische Obergrenze. Die Anzahl der Teilnehmer ist unbegrenzt. 
+                Die Leistung hängt von Ihrem System und der Datenbankgröße ab.
+            </p>
+
+            <h6>Dürfen Teilnehmer die gleichen Namen haben?</h6>
+            <p class="mb-3">
+                <strong>Nein, das wird nicht empfohlen.</strong> Teilnehmer sollten eindeutige Namen oder 
+                Nummern haben. Wenn zwei Teilnehmer den gleichen Namen haben, kann dies zu Verwirrung bei 
+                der Zeiterfassung und Auswertung führen. Idealerweise verwenden Sie eine eindeutige 
+                Nummer (z.B. Startnummer) als Identifikation.
+            </p>
+
+            <div class="alert alert-info" role="alert">
+                <strong>ℹ️ Hinweis:</strong> Sie können existierende Teilnehmer aus einer Liste auswählen oder 
+                neue Teilnehmer erstellen. Wenn Sie einen Namen eingeben, werden Sie nach übereinstimmenden 
+                Teilnehmern gefragt.
+            </div>
+        </div>
+    </div>
+
+    <!-- Rennen bearbeiten Sektion -->
+    <div class="card mb-4">
+        <div class="card-header bg-warning text-dark">
+            <h5 class="mb-0">✏️ Rennen nach Erstellung bearbeiten</h5>
+        </div>
+        <div class="card-body">
+            <h6>Was kann ich noch ändern nachdem ich das Rennen erstellt habe?</h6>
+
+            <p><strong>Solange das Rennen GEPLANT ist (nicht gestartet):</strong></p>
+            <ul>
+                <li><strong>Rennname:</strong> Klicken Sie auf das Bearbeitungssymbol (✎) neben dem Namen</li>
+                <li><strong>Rennzeitpunkte:</strong> 
+                    <ul>
+                        <li>Neue Zeitpunkte hinzufügen</li>
+                        <li>Zeitpunkte löschen</li>
+                        <li>Zeitpunkte umbenennen</li>
+                        <li>Reihenfolge der Zeitpunkte ändern (Drag & Drop)</li>
+                        <li>Strafzeit-Option aktivieren/deaktivieren</li>
+                    </ul>
+                </li>
+                <li><strong>Teilnehmer:</strong>
+                    <ul>
+                        <li>Neue Teilnehmer hinzufügen</li>
+                        <li>Teilnehmer entfernen</li>
+                    </ul>
+                </li>
+            </ul>
+
+            <p class="mt-3"><strong>Nachdem das Rennen GESTARTET ist:</strong></p>
+            <ul>
+                <li>✗ Sie können <strong>KEINE</strong> Zeitpunkte mehr ändern</li>
+                <li>✗ Sie können <strong>KEINE</strong> Teilnehmer mehr hinzufügen oder entfernen</li>
+                <li>✓ Sie können aber Strafzeiten hinzufügen</li>
+                <li>✓ Sie können Zeitpunkte für Teilnehmer erfassen</li>
+            </ul>
+
+            <p class="mt-3"><strong>Nach dem Rennen:</strong></p>
+            <p>Nach Beendigung des Rennens ist es nur noch im Lesemodus verfügbar. Sie können die Ergebnisse 
+               ansehen, aber keine Änderungen vornehmen.</p>
+
+            <div class="alert alert-success" role="alert">
+                <strong>💡 Tipp:</strong> Überprüfen Sie alle Einstellungen gründlich, bevor Sie das Rennen starten! 
+                Danach können Sie die Struktur (Zeitpunkte und Teilnehmer) nicht mehr ändern.
+            </div>
+        </div>
+    </div>
+
+    <!-- Rennstart Vorbereitung -->
+    <div class="card mb-4">
+        <div class="card-header bg-danger text-white">
+            <h5 class="mb-0">🚀 Rennen starten</h5>
+        </div>
+        <div class="card-body">
+            <p>Um ein Rennen zu starten, müssen Sie folgende Bedingungen erfüllen:</p>
+            <ul>
+                <li>✓ Mindestens 2 Rennzeitpunkte</li>
+                <li>✓ Mindestens 1 Teilnehmer (empfohlen: mindestens 2)</li>
+            </ul>
+
+            <p class="mt-3">Klicken Sie auf „Rennstart vorbereiten", um die Startvorbereitung zu öffnen. 
+               Dort können Sie auswählen, welche Teilnehmer tatsächlich starten sollen (Sie können einzelne 
+               Teilnehmer abwählen), bevor Sie das Rennen offiziell starten.</p>
+
+            <div class="alert alert-info" role="alert">
+                <strong>ℹ️ Info:</strong> Nach dem Start können Sie das Rennen in der Rennübersicht verfolgen 
+                und die Zeitpunkte der Teilnehmer erfassen.
+            </div>
+        </div>
+    </div>
+
+    <!-- Zeiterfassung während des Rennens -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">⏱️ Zeiterfassung während des Rennens</h5>
+        </div>
+        <div class="card-body">
+            <p>Während ein Rennen läuft, erfassen Sie die Zeitpunkte, wenn Teilnehmer die einzelnen 
+               Checkpoints erreichen. Es gibt zwei Hauptmethoden:</p>
+
+            <h6>Methode 1: Über den großen "Zeit erfassen" Button (Empfohlen)</h6>
+            <ul>
+                <li>Dieser Button ist <strong>immer sichtbar</strong> (in der unteren rechten Ecke), wenn ein Rennen läuft</li>
+                <li>Drücken Sie den Button <strong>genau dann</strong>, wenn ein Teilnehmer einen Checkpoint erreicht</li>
+                <li>Der Zeitpunkt wird mit der aktuellen Zeit erfasst und in die Liste der „Offenen Zeitpunkte" eingetragen</li>
+                <li><strong>Vorteil:</strong> Schnelle, intuitive Erfassung ohne viele Klicks</li>
+                <li><strong>Best Practice:</strong> Diese Methode ist für schnelle Rennabläufe am besten geeignet</li>
+            </ul>
+
+            <h6>Methode 2: Manuelle Zuordnung auf der Zeiterfassungsseite</h6>
+            <p>Wenn Sie mehrere Zeiten hintereinander erfasst haben oder Zeitpunkte korrigieren möchten:</p>
+            <ol>
+                <li>Klicken Sie auf <strong>„Zeiterfassung"</strong> in der Sidebar</li>
+                <li>Sie sehen zwei Spalten:
+                    <ul>
+                        <li><strong>Links:</strong> „Offene Zeitpunkte" - alle erfassten Zeiten, die noch keinem Teilnehmer zugeordnet sind</li>
+                        <li><strong>Rechts:</strong> „Aktive Teilnehmer" - alle Teilnehmer, die gerade laufen</li>
+                    </ul>
+                </li>
+                <li>Wählen Sie einen <strong>offenen Zeitpunkt</strong> aus (linke Seite)</li>
+                <li>Wählen Sie den <strong>zutreffenden Teilnehmer</strong> aus (rechte Seite)</li>
+                <li>Klicken Sie auf <strong>„Zeitpunkt zuordnen"</strong></li>
+                <li>Der Zeitpunkt wird dem Teilnehmer zugeordnet und verschwindet aus der Liste der offenen Zeitpunkte</li>
+            </ol>
+
+            <div class="alert alert-info" role="alert">
+                <strong>ℹ️ Anzeige:</strong> Die Seite wird alle 2 Sekunden automatisch aktualisiert, damit Sie 
+                immer die neuesten Daten sehen.
+            </div>
+
+            <h6>Workflow Beispiel</h6>
+            <div class="bg-light p-3 rounded mb-3">
+                <p><strong>Szenario:</strong> Sie führen einen 5km Lauf mit 3 Checkpoints durch.</p>
+                <ol>
+                    <li>Teilnehmer Anna startet → Sie drücken den „Zeit erfassen" Button</li>
+                    <li>Teilnehmer Bob startet → Sie drücken den „Zeit erfassen" Button</li>
+                    <li>Anna erreicht Checkpoint 1 → Sie drücken den „Zeit erfassen" Button</li>
+                    <li>Bob erreicht Checkpoint 1 → Sie drücken den „Zeit erfassen" Button</li>
+                    <li>Sie gehen zur Zeiterfassungsseite und ordnen die Zeiten den Teilnehmern zu</li>
+                    <li>Die Rennübersicht zeigt die Fortschritte in Echtzeit an</li>
+                </ol>
+            </div>
+
+            <h6>Fehlerhafte Zeitpunkte löschen</h6>
+            <p>Falls Sie versehentlich einen Zeitpunkt erfasst haben:</p>
+            <ol>
+                <li>Gehen Sie zur <strong>Zeiterfassungsseite</strong></li>
+                <li>Finden Sie den falschen Zeitpunkt in der Liste „Offene Zeitpunkte"</li>
+                <li>Klicken Sie auf den roten <strong>„Löschen"</strong> Button</li>
+                <li>Der Zeitpunkt wird gelöscht und kann nicht wiederhergestellt werden</li>
+            </ol>
+
+            <div class="alert alert-warning" role="alert">
+                <strong>⚠️ Warnung:</strong> Einmal zugeordnete Zeitpunkte können nicht mehr gelöscht werden! 
+                Überprüfen Sie daher vor der Zuordnung, dass der richtige Zeitpunkt und der richtige Teilnehmer 
+                ausgewählt sind.
+            </div>
+
+            <h6>Tipps für schnelle und genaue Zeiterfassung</h6>
+            <ul>
+                <li><strong>Vorbereitung:</strong> Stellen Sie sicher, dass Ihr System die aktuelle Systemzeit korrekt anzeigt</li>
+                <li><strong>Position:</strong> Stehen Sie beim „Zeit erfassen" Button, damit Sie schnell reagieren können</li>
+                <li><strong>Genauigkeit:</strong> Der Button erfasst die Zeit automatisch mit Sekundengenauigkeit</li>
+                <li><strong>Bei Mehrfach-Rennen:</strong> Sie können Zeiten auch für mehrere gleichzeitig laufende Rennen erfassen</li>
+                <li><strong>Zuordnung hinterher:</strong> Sie müssen die Zuordnung nicht sofort vornehmen - Sie können sie auch nach dem Rennen machen</li>
+            </ul>
+
+            <div class="alert alert-success" role="alert">
+                <strong>💡 Pro-Tipp:</strong> Nutzen Sie die „Zeit erfassen" Schaltfläche für spontane Erfassungen und die 
+                Zeiterfassungsseite später für genaue Zuordnungen, wenn Sie Zeit haben zu überprüfen.
+            </div>
+        </div>
+    </div>
+
+    <!-- Häufig gestellte Fragen -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">❓ Häufig gestellte Fragen</h5>
+        </div>
+        <div class="card-body">
+            <div class="accordion" id="faqAccordion">
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" 
+                                data-bs-target="#faq1" aria-expanded="false" aria-controls="faq1">
+                            Kann ich ein Rennen kopieren?
+                        </button>
+                    </h2>
+                    <div id="faq1" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">
+                            Ja! In der Rennübersicht können Sie auf ein beendetes oder geplantes Rennen klicken 
+                            und eine Kopie erstellen. Dies ist nützlich, wenn Sie ähnliche Rennen mehrmals durchführen.
+                        </div>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" 
+                                data-bs-target="#faq2" aria-expanded="false" aria-controls="faq2">
+                            Was passiert wenn ich einen Teilnehmer lösche?
+                        </button>
+                    </h2>
+                    <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">
+                            Der Teilnehmer wird aus dem Rennen entfernt. Alle damit verbundenen Zeitdaten werden gelöscht 
+                            (aber nur solange das Rennen noch geplant ist). Nach dem Start können Sie Teilnehmer nicht mehr löschen.
+                        </div>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" 
+                                data-bs-target="#faq3" aria-expanded="false" aria-controls="faq3">
+                            Kann ich die Startreihenfolge ändern?
+                        </button>
+                    </h2>
+                    <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">
+                            Nein, die Startreihenfolge wird durch die Teilnehmerliste vorgegeben. Sie können die 
+                            Reihenfolge nicht ändern, da dies die Zeiterfassung kompliziert würde.
+                        </div>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" 
+                                data-bs-target="#faq4" aria-expanded="false" aria-controls="faq4">
+                            Was ist ein „Strafzeit-Punkt"?
+                        </button>
+                    </h2>
+                    <div id="faq4" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">
+                            Ein Punkt, an dem Strafzeiten verwaltet werden können. Wenn Sie einen Zeitpunkt als 
+                            „Strafzeit erforderlich" markieren, können Sie später Strafzeiten für Teilnehmer 
+                            hinzufügen (z.B. bei Disqualifikation oder Regelverstoß).
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Schritt-für-Schritt -->
+    <div class="card mb-4">
+        <div class="card-header bg-secondary text-white">
+            <h5 class="mb-0">📋 Schritt-für-Schritt: Rennen erstellen</h5>
+        </div>
+        <div class="card-body">
+            <ol>
+                <li>Klicken Sie auf den grünen Button <strong>„Neues Rennen"</strong> in der linken Sidebar</li>
+                <li>Ein neues Rennen wird erstellt und Sie werden zur Bearbeitungsseite weitergeleitet</li>
+                <li>Geben Sie einen aussagekräftigen Namen für das Rennen ein (z.B. „10km Lauf 2025")</li>
+                <li>Ergänzen Sie die Rennzeitpunkte:
+                    <ul>
+                        <li>Ein „Start"-Punkt ist bereits vorhanden</li>
+                        <li>Fügen Sie mindestens einen weiteren Punkt hinzu (z.B. „Ziel")</li>
+                        <li>Ordnen Sie die Punkte in der richtigen Reihenfolge an</li>
+                    </ul>
+                </li>
+                <li>Fügen Sie Teilnehmer hinzu:
+                    <ul>
+                        <li>Geben Sie den Namen oder die Nummer des Teilnehmers ein</li>
+                        <li>Wählen Sie einen existierenden Teilnehmer oder erstellen Sie einen neuen</li>
+                        <li>Wiederholen Sie dies für alle Teilnehmer</li>
+                    </ul>
+                </li>
+                <li>Überprüfen Sie alle Einstellungen</li>
+                <li>Klicken Sie auf <strong>„Rennstart vorbereiten"</strong></li>
+                <li>Wählen Sie die Teilnehmer, die starten sollen (Abwählen möglich)</li>
+                <li>Klicken Sie auf <strong>„RENNEN STARTEN"</strong></li>
+            </ol>
+        </div>
+    </div>
+</div>
+
+<style>
+.guide-container {
+    max-width: 900px;
+}
+
+.card-header h5 {
+    margin: 0;
+}
+
+.accordion-button:not(.collapsed) {
+    background-color: #e7f1ff;
+    color: #0d6efd;
+}
+
+.accordion-button:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.alert {
+    border-left: 4px solid;
+}
+
+.alert-warning {
+    border-left-color: #ffc107;
+}
+
+.alert-info {
+    border-left-color: #0dcaf0;
+}
+
+.alert-success {
+    border-left-color: #198754;
+}
+
+ul {
+    line-height: 1.8;
+}
+
+li {
+    margin-bottom: 0.5rem;
+}
+
+h6 {
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: #212529;
+}
+</style>
