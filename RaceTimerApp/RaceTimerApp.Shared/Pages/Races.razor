@@ -121,7 +121,7 @@
 
     private async Task CreateNewRace()
     {
-        Race? newRace = await RaceService.CreateRaceAsync("New");
+        Race? newRace = await RaceService.CreateRaceAsync();
 
         if (newRace != null)
         {

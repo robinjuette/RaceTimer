@@ -11,10 +11,31 @@ public class TimingService
 {
     private readonly IRaceRepository _repository;
     private List<RaceParticipantTimePoint> _unassignedTimePoints = [];
+    private List<WeakReference<TimingServiceUpdateEndpoint>> weakUpdateCallbacks = new();
 
     public TimingService(IRaceRepository repository)
     {
         _repository = repository;
+    }
+
+    public void RegisterForCallback(TimingServiceUpdateEndpoint callback)
+    {
+        weakUpdateCallbacks.Add(new(callback));
+    }
+
+    private void UpdateCallbacks(RaceParticipantTimePoint? updated)
+    {
+        foreach (var wr in weakUpdateCallbacks.ToList())
+        {
+            if (wr.TryGetTarget(out var handler))
+            {
+                handler.UpdateCallback(updated);
+            }
+            else
+            {
+                weakUpdateCallbacks.Remove(wr);
+            }
+        }
     }
 
     // Neuen Zeitpunkt erfassen
@@ -25,6 +46,7 @@ public class TimingService
         if (created is not null)
         {
             _unassignedTimePoints.Add(created);
+            UpdateCallbacks(created);
         }
 
         return created;
@@ -46,6 +68,7 @@ public class TimingService
         if (success)
         {
             _unassignedTimePoints.RemoveAll(tp => tp.Id == timePointId);
+            UpdateCallbacks(await _repository.GetRaceParticipantTimePointAsync(timePointId));
         }
 
         return success;
@@ -58,6 +81,7 @@ public class TimingService
         if (success)
         {
             _unassignedTimePoints.RemoveAll(tp => tp.Id == timePointId);
+            UpdateCallbacks(null);
         }
 
         return success;
@@ -66,7 +90,13 @@ public class TimingService
     // Strafzeit aktualisieren
     public async Task<bool> UpdatePenaltyTimeAsync(Guid timePointId, TimeSpan penaltyTime)
     {
-        return await _repository.SetRaceParticipantTimePointPenaltyTime(timePointId, penaltyTime);
+        bool success = await _repository.SetRaceParticipantTimePointPenaltyTime(timePointId, penaltyTime);
+        if (success)
+        {
+            UpdateCallbacks(await _repository.GetRaceParticipantTimePointAsync(timePointId));
+        }
+
+        return success;
     }
 
     // Zeitpunkt abrufen
@@ -99,50 +129,6 @@ public class TimingService
         return timePoints.FirstOrDefault(tp => tp.Index > lastCompletedIndex);
     }
 
-    // Berechne Rennfortschritt für Sortierung
-    public TimeSpan? CalculateProgressTime(
-        Race race,
-        RaceParticipant participant,
-        IEnumerable<RaceParticipantTimePoint> participantTimePoints)
-    {
-        if (!participant.StartTime.HasValue)
-            return null;
-
-        var participantTimes = participantTimePoints
-            .Where(rptp => rptp.ParticipantID == participant.ParticipantID)
-            .OrderBy(rptp => rptp.RTPIndex)
-            .ToList();
-
-        if (!participantTimes.Any())
-            return null;
-
-        var elapsed = participantTimes.Last().TimePointUTC - participant.StartTime.Value;
-        var penalties = participantTimes
-            .Where(rptp => rptp.PenaltyTime.HasValue)
-            .Aggregate(TimeSpan.Zero, (acc, rptp) => acc + rptp.PenaltyTime!.Value);
-
-        return elapsed + penalties;
-    }
-
-    // Berechne Gesamtzeit (für beendete Teilnehmer)
-    public TimeSpan? CalculateTotalTime(
-        RaceParticipant participant,
-        IEnumerable<RaceParticipantTimePoint> participantTimePoints)
-    {
-        if (!participant.StartTime.HasValue || !participant.FinishDateTimeUTC.HasValue)
-            return null;
-
-        var elapsed = participant.FinishDateTimeUTC.Value - participant.StartTime.Value;
-        var participantTimes = participantTimePoints
-            .Where(rptp => rptp.ParticipantID == participant.ParticipantID);
-
-        var penalties = participantTimes
-            .Where(rptp => rptp.PenaltyTime.HasValue)
-            .Aggregate(TimeSpan.Zero, (acc, rptp) => acc + rptp.PenaltyTime!.Value);
-
-        return elapsed + penalties;
-    }
-
     // Zeitpunkte mit Strafzeit abrufen
     public async Task<IEnumerable<RaceParticipantTimePoint>> GetTimePointsWithPenaltyAsync(Guid raceId)
     {
@@ -156,7 +142,7 @@ public class TimingService
         return timePoints.Where(rptp => raceTimePointsWithPenalty.Any(rtp => rtp.Index == rptp.RTPIndex));
     }
 
-    // Zeitpunkte mit Strafzeit abrufen
+    // Zeitpunkte mit offener Strafzeit abrufen
     public async Task<IEnumerable<RaceParticipantTimePoint>> GetTimePointsWithOpenPenaltyAsync(Guid raceId)
     {
         var timePoints = await _repository.GetRaceParticipantTimePointsForRaceAsync(raceId);
@@ -169,12 +155,6 @@ public class TimingService
         return timePoints.Where(rptp => raceTimePointsWithPenalty.Any(rtp => rtp.Id == rptp.Id) && rptp.PenaltyTime == null);
     }
 
-    // Clear unzugeordnete Zeitpunkte (z.B. beim Neuladen)
-    public void ClearUnassignedTimePoints()
-    {
-        _unassignedTimePoints.Clear();
-    }
-
     // Laden der unzugeordneten Zeitpunkte
     public async Task LoadUnassignedTimePointsAsync()
     {
@@ -182,5 +162,14 @@ public class TimingService
         _unassignedTimePoints.Clear();
         IEnumerable<RaceParticipantTimePoint>? unassigneds = await _repository.GetUnassignedTimepointsAsync();
         _unassignedTimePoints = unassigneds?.ToList() ?? [];
+    }
+}
+
+public class TimingServiceUpdateEndpoint(Action<RaceParticipantTimePoint?> updateCallback)
+{
+    public Action<RaceParticipantTimePoint?> UpdateCallback => updateCallback;
+    ~TimingServiceUpdateEndpoint()
+    {
+
     }
 }

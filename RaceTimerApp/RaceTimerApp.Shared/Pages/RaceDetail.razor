@@ -233,7 +233,7 @@
     {
         if (RaceId == "new")
         {
-            var newRace = await RaceService.CreateRaceAsync("Neues Rennen");
+            var newRace = await RaceService.CreateRaceAsync();
             if (newRace is not null)
             {
                 Navigation.NavigateTo($"/races/{newRace.Id}");

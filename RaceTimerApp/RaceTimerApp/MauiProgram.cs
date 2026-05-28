@@ -27,10 +27,10 @@ namespace RaceTimerApp
             // Register app-specific services
             builder.Services.AddScoped<RaceManagementService>();
             builder.Services.AddScoped<ParticipantService>();
-            builder.Services.AddScoped<TimingService>();
+            builder.Services.AddSingleton<TimingService>();
             builder.Services.AddScoped<RankingService>();
             builder.Services.AddScoped<SettingsService>();
-
+            builder.Services.AddBlazorBootstrap();
 #if DEBUG
             builder.Services.AddBlazorWebViewDeveloperTools();
             builder.Logging.AddDebug();

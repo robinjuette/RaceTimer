@@ -1,13 +1,20 @@
 @page "/standings"
 @page "/standings/{RaceId}"
+@using BlazorBootstrap
 @using RaceTimerApp.Shared.Services
 @using RaceTimerApp.Shared.Models;
 @using RaceTimer.Shared.Models
 @inject RaceManagementService RaceService
 @inject RankingService RankingService
+@inject NavigationManager Navigation
 
 <div class="page-header">
     <h1>Zwischenstand</h1>
+</div>
+
+
+<div>
+
 </div>
 
 <div class="standings-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(500px, 1fr)); gap: 20px;">
@@ -28,21 +35,22 @@
                                     <span>
                                         <strong>#@rankingEntry.RaceParticipant.ParticipantNr</strong>
                                         @rankingEntry.RaceParticipant.Participant?.DisplayName
+                                        @if (rankingEntry.CompletelyFinished)
+                                        {
+                                            <span class="badge bg-success ms-2">fertig</span>
+                                        }
                                     </span>
                                     <span class="badge badge-lg @(rankingEntry.CompletelyFinished ? "bg-success" : "bg-info")">
-                                        
+
                                         @rankingEntry.RunTime.ToString(@"hh\:mm\:ss")
-                                        
+
                                     </span>
                                 </div>
+                                <Progress Class="mb-3">
+                                    <ProgressBar Width="rankingEntry.ProgressPercent"/>
+                                </Progress>
+                                
 
-                                <!-- Progress Bar (nur für aktive) -->
-                                @if (!rankingEntry.CompletelyFinished)
-                                {
-                                    <div class="progress mt-2">
-                                        <div class="progress-bar" style="width: @rankingEntry.Progress%"></div>
-                                    </div>
-                                }
                             </li>
                         }
                     </ol>
@@ -60,53 +68,102 @@
     [Parameter]
     public string? RaceId { get; set; }
 
+    private SemaphoreSlim refreshSemaphore = new(1);
+    private CancellationTokenSource? refreshCTS;
+
+    private TimeSpan inactiveReloadDelay = TimeSpan.FromMinutes(1);
+    private TimeSpan activeReloadDelay = TimeSpan.FromSeconds(20);
+
     private List<Race> RunningRaces = [];
+    private List<Race> DisplayedRaces = [];
     private Dictionary<Guid, List<RankingEntry>> rankings = new();
-    private IEnumerable<Race> DisplayedRaces
+
+    private bool RunningRacesAvailable
     {
-        get
-        {
-            return RunningRaces.Take(4);
-        }
+        get => (RunningRaces.Count == DisplayedRaces.Count &&
+            RunningRaces.All(DisplayedRaces.Contains) &&
+            !string.IsNullOrWhiteSpace(RaceId));
     }
 
     protected override async Task OnInitializedAsync()
     {
         await LoadRaces();
-        _ = AutoRefresh();
+        _ = AutoReload();
     }
 
     private async Task LoadRaces()
     {
-        List<Race> races = new();
+        List<Race> displayedRaces = new();
+
+        RunningRaces = (await RaceService.GetRunningRacesAsync()).ToList();
 
         if (!string.IsNullOrWhiteSpace(RaceId) && 
-            Guid.TryParse(RaceId, out Guid raceGuid) &&
-            await RaceService.GetRaceAsync(raceGuid) is Race race)
+            Guid.TryParse(RaceId, out Guid raceGuid))
         {
-            races.Add(race);
+            if(RunningRaces.FirstOrDefault(r => r.Id == raceGuid) is Race runningRace)
+            {
+                displayedRaces.Add(runningRace);
+            }
+            else if (await RaceService.GetRaceAsync(raceGuid) is Race race)
+            {
+                displayedRaces.Add(race);
+            }
         }
 
-        if(races.Count == 0)
+        if(displayedRaces.Count == 0)
         {
-            races.AddRange(await RaceService.GetRunningRacesAsync());
+            displayedRaces.AddRange(RunningRaces);
         }
 
-        RunningRaces = races;
+        DisplayedRaces = displayedRaces;
 
         rankings.Clear();
 
-        foreach(Race RunningRace in RunningRaces)
+        foreach(Race RunningRace in DisplayedRaces)
         {
             rankings[RunningRace.Id] = await RankingService.GetRankingsAsync(RunningRace.Id);
         }
+
+        AutoRefreshUI();
     }
 
-    private async Task AutoRefresh()
+    private void SwitchToRunningRaces()
     {
-        while (!string.IsNullOrWhiteSpace(RaceId))
+        Navigation.NavigateTo("/standings");
+    }
+
+    private async void AutoRefreshUI()
+    {
+        if(refreshSemaphore.CurrentCount == 0)
         {
-            await Task.Delay(TimeSpan.FromSeconds(60)); // Update alle 60 Sekunden
+            return;
+        }
+
+        CancellationTokenSource cancellationTokenSource = new();
+        refreshCTS = cancellationTokenSource;
+
+        TimeSpan timeSpan = TimeSpan.FromSeconds(1);
+
+        while(DisplayedRaces.Any(RunningRaces.Contains) && 
+            !cancellationTokenSource.IsCancellationRequested)
+        {
+            await Task.Delay(timeSpan);
+            StateHasChanged();
+        }
+    }
+
+    private async Task AutoReload()
+    {
+        while (true)
+        {
+            TimeSpan delayTS = inactiveReloadDelay;
+
+            if(RunningRaces.Count > 0)
+            {
+                delayTS = activeReloadDelay;
+            }
+
+            await Task.Delay(activeReloadDelay);
             await LoadRaces();
             StateHasChanged();
         }

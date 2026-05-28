@@ -58,9 +58,18 @@ public class RaceManagementService
         return await _repository.GetRacesByStatusAsync(RaceStatus.Finished);
     }
 
-    // Rennen erstellen
-    public async Task<Race?> CreateRaceAsync(string name)
+    /// <summary>
+    /// Erstellt ein neues Rennen mit dem angegebenen Namen. Generiert einen Namen wenn keiner übergeben wird.
+    /// </summary>
+    /// <param name="name"></param>
+    /// <returns></returns>
+    public async Task<Race?> CreateRaceAsync(string? name = null)
     {
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            name = $"Neues Rennen {DateTime.Now.ToString("yyyyMMdd_HHmmss")}";
+        }
+
         return await _repository.AddRaceAsync(name);
     }
 
@@ -82,11 +91,6 @@ public class RaceManagementService
         return await _repository.DeleteRaceAsync(raceId);
     }
 
-    // Rennen starten
-    public async Task<bool> StartRaceAsync(Guid raceId, params IEnumerable<Guid> participantIds)
-    {
-        return await _repository.StartRaceAsync(raceId, DateTime.UtcNow, participantIds.ToList());
-    }
 
     // Zeitpunkte verwalten
     public async Task<IEnumerable<RaceTimePoint>> GetRaceTimePointsAsync(Guid raceId)
@@ -155,6 +159,12 @@ public class RaceManagementService
 
         await _repository.UpdateTimePointsAsync(raceId, reorderedTimePoints);
         return true;
+    }
+
+    // Rennen starten
+    public async Task<bool> StartRaceAsync(Guid raceId, params IEnumerable<Guid> participantIds)
+    {
+        return await _repository.StartRaceAsync(raceId, DateTime.UtcNow, participantIds.ToList());
     }
 
     // Status berechnen

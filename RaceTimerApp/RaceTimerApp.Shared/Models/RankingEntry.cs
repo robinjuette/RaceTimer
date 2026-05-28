@@ -1,4 +1,5 @@
-﻿using RaceTimer.Shared.Models;
+﻿using BlazorBootstrap;
+using RaceTimer.Shared.Models;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -19,6 +20,13 @@ namespace RaceTimerApp.Shared.Models
             get
             {
                 return Convert.ToDecimal(SplitTimes.Where(kvp => kvp.Value.HasValue).Count()) / SplitTimes.Count;
+            }
+        }
+        public double ProgressPercent
+        {
+            get
+            {
+                return Convert.ToDouble(Progress * 100);
             }
         }
         public TimeSpan CurrentPenaltyTime

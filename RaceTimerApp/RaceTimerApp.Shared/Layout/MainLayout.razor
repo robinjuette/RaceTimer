@@ -59,10 +59,25 @@
     private bool _hasRunningRace = false;
     private bool _hasUnassignedPoints = false;
 
+    private TimingServiceUpdateEndpoint? updateEndpoint;
+
     protected override async Task OnInitializedAsync()
     {
+        updateEndpoint = new(TimePointsChanged);
         await CheckRunningRaces();
+        if (_hasRunningRace)
+        {
+            Navigation.NavigateTo("/overview");
+        }
         _ = CheckHasUnassignedTimePointsAsync();
+        TimingService.RegisterForCallback(updateEndpoint);
+    }
+
+    private void TimePointsChanged(RaceParticipantTimePoint? changed)
+    {
+        _ = CheckRunningRaces();
+        _ = CheckHasUnassignedTimePointsAsync();
+        StateHasChanged();
     }
 
     private async Task CheckRunningRaces()
@@ -86,9 +101,7 @@
 
     private async Task CreateNewRace()
     {
-        // Erstelle einen eindeutigen Namen mit Timestamp
-        var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-        var newRace = await RaceService.CreateRaceAsync($"Neues Rennen {timestamp}");
+        var newRace = await RaceService.CreateRaceAsync();
 
         if (newRace != null)
         {

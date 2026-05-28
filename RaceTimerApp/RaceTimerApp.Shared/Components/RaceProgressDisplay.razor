@@ -1,0 +1,22 @@
+﻿<h3>RaceProgressDisplay</h3>
+<!-- Progress Bar mit Zeitpunkten -->
+
+
+@code {
+    /****
+     * <div class="progress-container">
+    <div class="progress-bar-wrapper">
+        @foreach (var timePoint in race.RaceTimePoints.OrderBy(tp => tp.Index))
+        {
+            var reached = HasReachedTimePoint(participant, timePoint, race);
+            var timePointTime = GetTimePointTime(participant, timePoint, race);
+            <div class="progress-dot @(reached ? "reached" : "pending")"
+                 title="@timePoint.DisplayName @(timePointTime.HasValue ? timePointTime.Value.ToLocalTime().ToString("G") : "")">
+            </div>
+        }
+    </div>
+</div>
+     * 
+     * 
+     * */
+}

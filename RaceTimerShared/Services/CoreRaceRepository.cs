@@ -426,7 +426,7 @@ public class CoreRaceRepository : IRaceRepository
         await CheckAndApplyMigrationsAsync();
         using RaceTimerDbContext _db = await dbContextFactory.CreateDbContextAsync();
 
-        return await _db.RaceParticipantTimePoints.Include(rptp => rptp.Participant).Where(rp => rp.RaceID == raceId).ToListAsync();
+        return await _db.RaceParticipantTimePoints.Include(rptp => rptp.RaceParticipant).ThenInclude(rptp => rptp.Participant).Where(rp => rp.RaceID == raceId).ToListAsync();
     }
 
     public async Task<bool> SetRaceParticipantTimePointPenaltyTime(Guid timePointId, TimeSpan penaltyTime)

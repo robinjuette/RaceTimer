@@ -1,6 +1,7 @@
 @page "/"
 @using RaceTimerApp.Shared.Services
 @inject RaceManagementService RaceService
+@inject TimingService TimingService
 @inject NavigationManager Navigation
 
 <PageTitle>RaceTimer - Home</PageTitle>
@@ -21,10 +22,27 @@
                         <span class="oi oi-play-circle" style="font-size: 2rem; color: #dc3545;"></span>
                     </h5>
                     <h4>Laufende Rennen</h4>
-                    <p class="card-text">Lädt...</p>
-                    <button class="btn btn-danger" @onclick="GoToOverview">
-                        Zur Rennübersicht
-                    </button>
+                    @if(RunningRaces == null)
+                    {
+                        <p class="card-text">Lädt...</p>
+                    }
+                    else
+                    {
+                        if(RunningRaces.Count == 0)
+                        {
+                            <p class="card-text">Gerade laufen keine Rennen.</p>
+                        }
+                        else
+                        {
+                            foreach(Race running in RunningRaces)
+                            {
+                                <p class="card-text">@running.Name</p>
+                            }
+                            <button class="btn btn-danger" @onclick="GoToOverview">
+                                Zur Rennübersicht
+                            </button>
+                        }
+                    }
                 </div>
             </div>
         </div>
@@ -129,12 +147,25 @@
     private void GoToTiming() => Navigation.NavigateTo("/timing");
     private void GoToSettings() => Navigation.NavigateTo("/settings");
 
+    private List<Race>? RunningRaces = null;
+
+    private TimingServiceUpdateEndpoint? updateEndpoint;
+
     protected override async Task OnInitializedAsync()
     {
-        var running = await RaceService.GetRunningRacesAsync();
-        if (running.Any())
-        {
-            Navigation.NavigateTo("/overview");
-        }
+        updateEndpoint = new(TimePointChanged);
+        _ = LoadRunningRaces();
+
+        TimingService.RegisterForCallback(updateEndpoint);
+    }
+
+    private async Task LoadRunningRaces()
+    {
+        RunningRaces = (await RaceService.GetRunningRacesAsync()).ToList();
+    }
+
+    private void TimePointChanged(RaceParticipantTimePoint? tp)
+    {
+        _ = LoadRunningRaces();
     }
 }

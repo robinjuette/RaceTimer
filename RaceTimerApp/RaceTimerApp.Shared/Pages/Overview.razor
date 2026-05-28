@@ -1,5 +1,6 @@
 @page "/overview"
 @page "/overview/{RaceId}"
+@using BlazorBootstrap
 @using RaceTimerApp.Shared.Services
 @using RaceTimerApp.Shared.Models
 @using RaceTimer.Shared.Models
@@ -104,21 +105,17 @@
                                         <span class="participant-number">@participant.ParticipantNr</span>
                                         <span class="participant-name">@participant.Participant?.DisplayName</span>
                                         <span class="participant-time">@FormatTimeSpan(ranking?.RunTime)</span>
+                                        @if(ranking != null)
+                                        {
+                                            <span>Position @ranking.Position</span>
+                                        }
                                     </div>
-
-                                    <!-- Progress Bar mit Zeitpunkten -->
-                                    <div class="progress-container">
-                                        <div class="progress-bar-wrapper">
-                                            @foreach (var timePoint in race.RaceTimePoints.OrderBy(tp => tp.Index))
-                                            {
-                                                var reached = HasReachedTimePoint(participant, timePoint, race);
-                                                var timePointTime = GetTimePointTime(participant, timePoint, race);
-                                                <div class="progress-dot @(reached ? "reached" : "pending")" 
-                                                     title="@timePoint.DisplayName @(timePointTime.HasValue ? timePointTime.Value.ToLocalTime().ToString("G") : "")">
-                                                </div>
-                                            }
-                                        </div>
-                                    </div>
+                                    @if (ranking != null)
+                                    {
+                                        <Progress Class="mb-3">
+                                            <ProgressBar Width="ranking.ProgressPercent"/>
+                                        </Progress>
+                                    }
                                 </div>
                             }
                         </div>
@@ -184,6 +181,8 @@
 
     protected override async Task OnInitializedAsync()
     {
+        TimingService.RegisterForCallback(new(TimePointChanged));
+
         await LoadRaces();
 
         if (Guid.TryParse(RaceId, out var raceId))
@@ -198,6 +197,11 @@
 
         // Auto-refresh
         _ = AutoRefresh();
+    }
+
+    private void TimePointChanged(RaceParticipantTimePoint? timePoint)
+    {
+        _ = LoadRaces();
     }
 
     private async Task LoadRaces()
@@ -223,8 +227,7 @@
     {
         while (true)
         {
-            await Task.Delay(2000); // Alle 5 Sekunden refresh
-            await LoadRaces();
+            await Task.Delay(1000);
             StateHasChanged();
         }
     }
