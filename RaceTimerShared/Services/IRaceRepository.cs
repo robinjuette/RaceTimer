@@ -13,6 +13,7 @@
         Task<IEnumerable<Participant>> GetAllParticipantsAsync();
         Task<IEnumerable<Race>> GetAllRacesAsync();
         Task<object> GetChangesSinceAsync(Guid raceId, DateTime sinceUtc);
+        Task<Participant?> TryFindParticipantAsync(string name);
         Task<Participant?> GetParticipantAsync(Guid id);
         Task<Race?> GetRaceAsync(Guid id);
         Task<IEnumerable<Race>> GetRacesByStatusAsync(RaceStatus status);

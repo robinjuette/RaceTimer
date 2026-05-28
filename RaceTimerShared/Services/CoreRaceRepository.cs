@@ -78,12 +78,20 @@ public class CoreRaceRepository : IRaceRepository
         return await _db.Participants.FindAsync(id);
     }
 
+    public async Task<Participant?> TryFindParticipantAsync(string name)
+    {
+        await CheckAndApplyMigrationsAsync();
+        using RaceTimerDbContext _db = await dbContextFactory.CreateDbContextAsync();
+
+        return await _db.Participants.FirstOrDefaultAsync(p => EF.Functions.Like(p.DisplayName,name));
+    }
+
     public async Task<Participant?> CreateParticipantAsync(string name)
     {
         await CheckAndApplyMigrationsAsync();
         using RaceTimerDbContext _db = await dbContextFactory.CreateDbContextAsync();
 
-        if (await _db.Participants.AnyAsync(p => p.DisplayName.Equals(name))) return null;
+        if (await _db.Participants.AnyAsync(p => EF.Functions.Like(p.DisplayName, name))) return null;
 
         Participant participant = new()
         {

@@ -28,11 +28,11 @@
             <h1>@CurrentRace.Name <button class="btn btn-sm btn-outline-secondary" @onclick="() => StartEditName()" title="Rennen umbenennen">✎</button></h1>
         }
     </div>
-    @if (Status == RaceStatus.Running)
+    @if (CurrentRace?.RaceStatus == RaceStatus.Running)
     {
         <a href="/overview/@RaceId" class="btn btn-primary">Zur Rennübersicht</a>
     }
-    @if (Status == RaceStatus.Running || Status == RaceStatus.Finished)
+    @if (CurrentRace?.RaceStatus != RaceStatus.Planned)
     {
         <a href="/standings/@RaceId" class="btn btn-primary">Zum Rennstand</a>
     }
@@ -61,7 +61,7 @@
         <h5>Rennzeitpunkte</h5>
     </div>
     <div class="card-body">
-        @if (Status == RaceStatus.Planned)
+        @if (CurrentRace?.RaceStatus == RaceStatus.Planned)
         {
             <div class="row mb-3">
                 <div class="col-md-9">
@@ -78,7 +78,7 @@
             <div class="timepoint-list">
                 @foreach (var tp in DisplayTimePoints)
                 {
-                    @if (EditingTimePointId == tp.Id && Status == RaceStatus.Planned)
+                    @if (EditingTimePointId == tp.Id && CurrentRace?.RaceStatus == RaceStatus.Planned)
                     {
                         <div class="timepoint-item editing">
                             <div class="timepoint-handle">⋮⋮</div>
@@ -95,11 +95,11 @@
                     }
                     else
                     {
-                        <div class="timepoint-item" draggable="@(Status == RaceStatus.Planned ? "true" : "false")" 
+                        <div class="timepoint-item" draggable="@(CurrentRace?.RaceStatus == RaceStatus.Planned ? "true" : "false")"
                              @ondragstart="@((DragEventArgs e) => OnDragStart(e, tp.Id))"
                              @ondrop="@((DragEventArgs e) => OnDrop(e, tp.Id))"
                              @ondragover="@((DragEventArgs e) => e.DataTransfer.DropEffect = "move")">
-                            @if (Status == RaceStatus.Planned)
+                            @if (CurrentRace?.RaceStatus == RaceStatus.Planned)
                             {
                                 <div class="timepoint-handle">⋮⋮</div>
                             }
@@ -110,7 +110,7 @@
                                 {
                                     <span class="timepoint-penalty" title="Strafzeit erforderlich">⏱️</span>
                                 }
-                                @if (Status == RaceStatus.Planned)
+                                @if (CurrentRace?.RaceStatus == RaceStatus.Planned)
                                 {
                                     <span class="timepoint-actions">
                                         <button class="btn btn-sm btn-outline-primary" @onclick="() => StartEditTimePoint(tp)">Bearbeiten</button>
@@ -125,7 +125,7 @@
         }
         else
         {
-            <div class="alert alert-info">Keine Zeitpunkte. @(Status == RaceStatus.Planned ? "Mindestens 2 sind erforderlich um zu starten." : "")</div>
+            <div class="alert alert-info">Keine Zeitpunkte. @(CurrentRace?.RaceStatus == RaceStatus.Planned ? "Mindestens 2 sind erforderlich um zu starten." : "")</div>
         }
     </div>
 </div>
@@ -136,7 +136,7 @@
         <h5>Teilnehmer</h5>
     </div>
     <div class="card-body">
-        @if (Status != RaceStatus.Finished)
+        @if (CurrentRace?.RaceStatus != RaceStatus.Finished)
         {
             <div class="mb-3">
                 <label class="form-label">Teilnehmer hinzufügen</label>
@@ -169,7 +169,7 @@
                     <tr>
                         <th>Nr.</th>
                         <th>Name</th>
-                        @if (Status != RaceStatus.Finished)
+                        @if (CurrentRace?.RaceStatus != RaceStatus.Finished)
                         {
                             <th style="width: 50px;"></th>
                         }
@@ -181,7 +181,7 @@
                         <tr>
                             <td>@rp.ParticipantNr</td>
                             <td>@rp.Participant?.DisplayName</td>
-                            @if (Status != RaceStatus.Finished)
+                            @if (CurrentRace?.RaceStatus != RaceStatus.Finished)
                             {
                                 <td>
                                     <button class="btn btn-sm btn-danger" @onclick="() => RemoveParticipant(rp.ParticipantID)">Entfernen</button>
@@ -199,7 +199,7 @@
     </div>
 </div>
 
-@if (Status == RaceStatus.Planned)
+@if (CurrentRace?.RaceStatus == RaceStatus.Planned)
 {
     <div class="mb-3">
         <button class="btn btn-lg btn-success" @onclick="PrepareStart">Rennstart vorbereiten</button>
@@ -211,7 +211,6 @@
     public string? RaceId { get; set; }
 
     private Race? CurrentRace;
-    private RaceStatus Status;
     private string NewTimePointName = "";
     private string NewParticipantName = "";
     private List<Participant> SearchResults = [];
@@ -246,7 +245,6 @@
             CurrentRace = await RaceService.GetRaceAsync(raceId);
             if (CurrentRace is not null)
             {
-                Status = RaceService.GetRaceStatus(CurrentRace);
                 UpdateDisplayTimePoints();
             }
         }
@@ -340,7 +338,7 @@
 
     private async Task OnDrop(DragEventArgs e, Guid targetTimePointId)
     {
-        if (DraggedTimePointId is null || CurrentRace is null || Status != RaceStatus.Planned)
+        if (DraggedTimePointId is null || CurrentRace is null || CurrentRace.RaceStatus != RaceStatus.Planned)
             return;
 
         if (DraggedTimePointId == targetTimePointId)
@@ -439,7 +437,7 @@
 
     private string GetStatusText()
     {
-        return Status switch
+        return CurrentRace?.RaceStatus switch
         {
             RaceStatus.Running => "Läuft",
             RaceStatus.Finished => "Beendet",
@@ -449,7 +447,7 @@
 
     private string GetStatusBadgeClass()
     {
-        return Status switch
+        return CurrentRace?.RaceStatus switch
         {
             RaceStatus.Running => "bg-danger",
             RaceStatus.Finished => "bg-success",

@@ -6,6 +6,7 @@
 @using RaceTimer.Shared.Models
 @inject RaceManagementService RaceService
 @inject RankingService RankingService
+@inject TimingService TimingService
 @inject NavigationManager Navigation
 
 <div class="page-header">
@@ -78,6 +79,8 @@
     private List<Race> DisplayedRaces = [];
     private Dictionary<Guid, List<RankingEntry>> rankings = new();
 
+    private TimingServiceUpdateEndpoint? updateEndpoint;
+
     private bool RunningRacesAvailable
     {
         get => (RunningRaces.Count == DisplayedRaces.Count &&
@@ -87,8 +90,15 @@
 
     protected override async Task OnInitializedAsync()
     {
+        updateEndpoint = new(TimePointUpdated);
+        TimingService.RegisterForCallback(updateEndpoint);
         await LoadRaces();
-        _ = AutoReload();
+    }
+
+    private async void TimePointUpdated(RaceParticipantTimePoint? tp)
+    {
+        await LoadRaces();
+        StateHasChanged();
     }
 
     private async Task LoadRaces()
@@ -152,20 +162,4 @@
         }
     }
 
-    private async Task AutoReload()
-    {
-        while (true)
-        {
-            TimeSpan delayTS = inactiveReloadDelay;
-
-            if(RunningRaces.Count > 0)
-            {
-                delayTS = activeReloadDelay;
-            }
-
-            await Task.Delay(activeReloadDelay);
-            await LoadRaces();
-            StateHasChanged();
-        }
-    }
 }

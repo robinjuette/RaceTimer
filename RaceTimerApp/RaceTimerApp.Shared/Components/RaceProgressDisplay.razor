@@ -1,9 +1,72 @@
-﻿<h3>RaceProgressDisplay</h3>
-<!-- Progress Bar mit Zeitpunkten -->
+﻿@using BlazorBootstrap
+@using RaceTimerApp.Shared.Models
 
+<div style="display:flex; flex-direction:column"> 
+    <div style="display:flex; flex-direction:row; justify-content:space-between">
+
+        <span class="participant-number">@RaceParticipant.ParticipantNr</span>
+        <span class="participant-name">@RaceParticipant.Participant?.DisplayName</span>
+        @if (RankingEntry.CompletelyFinished)
+        {
+            <p>Fertig!</p>
+        }
+        <span class="participant-time">@Format(RankingEntry.RunTime)</span>
+    </div>
+
+    <Progress>
+        <ProgressBar Width="RankingEntry.ProgressPercent"/>
+    </Progress>
+
+    <div style="display:flex; flex-direction:row; justify-content:space-between">
+        @foreach(RaceTimePoint raceTimePoint in RaceTimePoints)
+        {
+            <div style="display:flex; flex-direction:column">
+
+                <p>@raceTimePoint.DisplayName</p>
+                @if (raceTimePoint.Index > 1 && RankingEntry.SplitTimes[raceTimePoint.Index].HasValue)
+                {
+                    <p>@Format(RankingEntry.SplitTimes[raceTimePoint.Index]!.Value)</p>
+                    @if (raceTimePoint.HasPenaltyTime)
+                    {
+                        <p>@Format(RankingEntry.PenaltyTimes[raceTimePoint.Index])</p>
+                    }
+                }
+            </div>
+        }
+    </div>
+</div>
 
 @code {
+    [Parameter]
+    public required RaceParticipant RaceParticipant {get; set;}
+    [Parameter]
+    public required RankingEntry RankingEntry { get; set; }
+    [Parameter]
+    public required List<RaceTimePoint> RaceTimePoints { get; set; }
+
+    private string Format(TimeSpan? timeSpan)
+    {
+        if(timeSpan == null)
+        {
+            return " - ";
+        }
+
+        string format = @"mm\:ss";
+        if(timeSpan.Value.TotalHours > 1)
+        {
+            format = @"hh\:" + format;
+
+            if(timeSpan.Value.TotalDays > 1)
+            {
+                format = @"d\." + format;
+            }
+        }
+
+        return timeSpan.Value.ToString(format);
+    }
+
     /****
+<!-- Progress Bar mit Zeitpunkten -->
      * <div class="progress-container">
     <div class="progress-bar-wrapper">
         @foreach (var timePoint in race.RaceTimePoints.OrderBy(tp => tp.Index))

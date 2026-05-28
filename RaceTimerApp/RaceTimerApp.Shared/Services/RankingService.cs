@@ -78,7 +78,7 @@ public class RankingService(IRaceRepository raceRepository)
 
         for (int i = 0; i < rankingEntries.Count; i++)
         {
-            rankingEntries[i].Position = (uint)i;
+            rankingEntries[i].Position = (uint)i+1;
         }
 
         return rankingEntries;

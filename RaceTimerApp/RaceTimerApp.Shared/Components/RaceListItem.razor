@@ -23,6 +23,10 @@
                 </span>
             </div>
             <div class="col-md-2 text-end">
+                @if(Race.RaceStatus != RaceStatus.Planned)
+                {
+                    <button class="btn btn-primary btn-sm" @onclick="OnManage">Zwischenstand</button>
+                }
                 <button class="btn btn-primary btn-sm" @onclick="OnManage">Verwalten</button>
                 <button class="btn btn-danger btn-sm" @onclick="OnDelete">Löschen</button>
             </div>
@@ -35,6 +39,9 @@
     public Race Race { get; set; } = new();
 
     [Parameter]
+    public EventCallback OnShowStandings { get; set; }
+
+    [Parameter]
     public EventCallback OnManage { get; set; }
 
     [Parameter]
@@ -42,19 +49,20 @@
 
     private string GetStatusText()
     {
-        if (Race.FinishDateTimeUTC.HasValue)
-            return "Beendet";
-        if (Race.StartTimeUTC.HasValue)
-            return "Läuft";
-        return "Geplant";
+        return Race.RaceStatus switch
+        {
+            RaceStatus.Finished => "Beendet",
+            RaceStatus.Running => "AAAAHHHH ES LÄÄÄÄUUUUUFT!",
+            _ => "Geplant"
+        };
     }
 
     private string GetStatusBadgeClass()
     {
-        return GetStatusText() switch
+        return Race.RaceStatus switch
         {
-            "Beendet" => "bg-success",
-            "Läuft" => "bg-danger",
+            RaceStatus.Finished => "bg-success",
+            RaceStatus.Running => "bg-danger",
             _ => "bg-secondary"
         };
     }

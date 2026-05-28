@@ -167,15 +167,5 @@ public class RaceManagementService
         return await _repository.StartRaceAsync(raceId, DateTime.UtcNow, participantIds.ToList());
     }
 
-    // Status berechnen
-    public RaceStatus GetRaceStatus(Race race)
-    {
-        if (race.FinishDateTimeUTC.HasValue)
-            return RaceStatus.Finished;
-        if (race.StartTimeUTC.HasValue)
-            return RaceStatus.Running;
-        return RaceStatus.Planned;
-    }
-
 }
 

@@ -101,20 +101,9 @@
                             {
                                 var ranking = GetRankingEntry(race, participant);
                                 <div class="participant-item active">
-                                    <div class="participant-header">
-                                        <span class="participant-number">@participant.ParticipantNr</span>
-                                        <span class="participant-name">@participant.Participant?.DisplayName</span>
-                                        <span class="participant-time">@FormatTimeSpan(ranking?.RunTime)</span>
-                                        @if(ranking != null)
-                                        {
-                                            <span>Position @ranking.Position</span>
-                                        }
-                                    </div>
                                     @if (ranking != null)
                                     {
-                                        <Progress Class="mb-3">
-                                            <ProgressBar Width="ranking.ProgressPercent"/>
-                                        </Progress>
+                                        <RaceProgressDisplay RaceParticipant="participant" RankingEntry="ranking" RaceTimePoints="RaceTimePoints[race.Id]"/>
                                     }
                                 </div>
                             }
@@ -169,6 +158,7 @@
 
     private Dictionary<Guid, List<RankingEntry>> RaceRankings = new();
     private Dictionary<Guid, List<RaceParticipant>> RacesParticipants = new();
+    private Dictionary<Guid, List<RaceTimePoint>> RaceTimePoints = new();
     private IEnumerable<Race> DisplayRaces
     {
         get
@@ -179,9 +169,12 @@
         }
     }
 
+    private TimingServiceUpdateEndpoint? updateEndpoint;
+
     protected override async Task OnInitializedAsync()
     {
-        TimingService.RegisterForCallback(new(TimePointChanged));
+        updateEndpoint = new(TimePointChanged);
+        TimingService.RegisterForCallback(updateEndpoint);
 
         await LoadRaces();
 
@@ -196,7 +189,7 @@
         }
 
         // Auto-refresh
-        _ = AutoRefresh();
+        _ = UIRefresh();
     }
 
     private void TimePointChanged(RaceParticipantTimePoint? timePoint)
@@ -219,11 +212,16 @@
             var rankings = await RankingService.GetRankingsAsync(race.Id);
             RaceRankings[race.Id] = rankings;
         }
+        foreach (var race in loaded)
+        {
+            var rtps = await RaceService.GetRaceTimePointsAsync(race.Id);
+            RaceTimePoints[race.Id] = rtps?.ToList() ?? [];
+        }
 
-        RunningRaces = (await RaceService.GetRunningRacesAsync()).ToList();
+        RunningRaces = loaded.ToList();
     }
 
-    private async Task AutoRefresh()
+    private async Task UIRefresh()
     {
         while (true)
         {

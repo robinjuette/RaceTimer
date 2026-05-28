@@ -34,6 +34,11 @@ namespace RaceTimer.Shared.Services
             throw new NotImplementedException();
         }
 
+        public async Task<Participant?> TryFindParticipantAsync(string name)
+        {
+            throw new NotImplementedException();
+        }
+
         public Task<Participant?> CreateParticipantAsync(string name)
         {
             throw new NotImplementedException();

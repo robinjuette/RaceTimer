@@ -13,4 +13,14 @@ public class Race
     public byte[]? RowVersion { get; set; }
     public DateTime? FinishDateTimeUTC { get; set; }
     public DateTime? LastModifiedUtc { get; set; }
+
+    public RaceStatus RaceStatus
+    {
+        get
+        {
+            if (StartTimeUTC == null) return RaceStatus.Planned;
+            if (FinishDateTimeUTC == null) return RaceStatus.Running;
+            return RaceStatus.Finished;
+        }
+    }
 }

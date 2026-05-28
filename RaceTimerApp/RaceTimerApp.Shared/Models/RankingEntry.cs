@@ -19,7 +19,9 @@ namespace RaceTimerApp.Shared.Models
         {
             get
             {
-                return Convert.ToDecimal(SplitTimes.Where(kvp => kvp.Value.HasValue).Count()) / SplitTimes.Count;
+                decimal withValue = SplitTimes.Where(kvp => kvp.Value.HasValue).Count() - 1;
+                decimal total = SplitTimes.Count-1;
+                return withValue / total;
             }
         }
         public double ProgressPercent

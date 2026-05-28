@@ -33,19 +33,14 @@ public class ParticipantService
     public async Task<RaceParticipant?> AddParticipantToRaceAsync(
         Guid raceId,
         string displayName,
-        Participant? existingParticipant = null)
+        Participant? participant = null)
     {
-        Participant? participant;
+        // Versuchen zu laden falls keiner provided
+        participant ??= await _repository.TryFindParticipantAsync(displayName);
+        // Erstellen wenn keiner gefunden
+        participant ??= await _repository.CreateParticipantAsync(displayName);
 
-        if (existingParticipant is not null)
-        {
-            participant = existingParticipant;
-        }
-        else
-        {
-            var created = await _repository.CreateParticipantAsync(displayName);
-            participant = created;
-        }
+        if (participant == null) return null;
 
         // Zum Rennen hinzufügen
         return await _repository.AssignParticipantToRaceAsync(raceId, participant.Id);
