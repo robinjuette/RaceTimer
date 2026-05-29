@@ -2,6 +2,7 @@
 @using RaceTimerApp.Shared.Services
 @using RaceTimer.Shared.Models
 @inject RaceManagementService RaceService
+@inject ParticipantService ParticipantService
 @inject NavigationManager Navigation
 
 @if (CurrentRace is null)
@@ -16,30 +17,64 @@
         <h4 class="text-muted">Startvorbereitungen</h4>
     </div>
 
-    <div class="card mb-4">
-        <div class="card-header bg-primary text-white">
-            <h5 class="mb-0">Teilnehmer zum Starten (@SelectedParticipants.Count)</h5>
-        </div>
-        <div class="card-body">
-            @if (SelectedParticipants.Any())
-            {
-                <div class="list-group">
-                    @foreach (var p in SelectedParticipants.OrderBy(x => x.ParticipantNr))
+    <div class="row">
+
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Verfügbare Teilnehmer</h5>
+                </div>
+                <div class="card-body">
+                    @if (UnSelectedRaceParticipants.Any())
                     {
-                        <div class="list-group-item d-flex justify-content-between align-items-center">
-                            <span>
-                                <strong>#@p.ParticipantNr</strong>
-                                @p.Participant?.DisplayName
-                            </span>
-                            <button class="btn btn-danger btn-sm" @onclick="() => DeselectParticipant(p)">Abwählen</button>
+                        <div class="list-group">
+                            @foreach (var p in UnSelectedRaceParticipants.OrderBy(x => x.ParticipantNr))
+                            {
+                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                    <span>
+                                        <strong>#@p.ParticipantNr</strong>
+                                        @p.Participant?.DisplayName
+                                    </span>
+                                    <button class="btn btn-success btn-sm" @onclick="() => SelectParticipant(p)">Auswählen</button>
+                                </div>
+                            }
                         </div>
                     }
+                    else
+                    {
+                        <div class="alert alert-info">Keine Teilnehmer verfügbar</div>
+                    }
                 </div>
-            }
-            else
-            {
-                <div class="alert alert-info">Keine Teilnehmer ausgewählt</div>
-            }
+            </div>
+        </div>
+        <div class="col-md-6">
+
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Teilnehmer zum Starten (@SelectedParticipants.Count)</h5>
+                </div>
+                <div class="card-body">
+                    @if (SelectedParticipants.Any())
+                    {
+                        <div class="list-group">
+                            @foreach (var p in SelectedParticipants.OrderBy(x => x.ParticipantNr))
+                            {
+                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                    <span>
+                                        <strong>#@p.ParticipantNr</strong>
+                                        @p.Participant?.DisplayName
+                                    </span>
+                                    <button class="btn btn-danger btn-sm" @onclick="() => DeselectParticipant(p)">Abwählen</button>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-info">Keine Teilnehmer ausgewählt</div>
+                    }
+                </div>
+            </div>
         </div>
     </div>
 
@@ -61,24 +96,40 @@
     public string? RaceId { get; set; }
 
     private Race? CurrentRace;
+    private List<RaceParticipant> AllRaceParticipants = [];
     private List<RaceParticipant> SelectedParticipants = [];
+    private IEnumerable<RaceParticipant> UnSelectedRaceParticipants => AllRaceParticipants.Where(rp => !SelectedParticipants.Contains(rp));
 
     protected override async Task OnInitializedAsync()
     {
         if (Guid.TryParse(RaceId, out var raceId))
         {
             CurrentRace = await RaceService.GetRaceAsync(raceId);
-            if (CurrentRace is not null)
-            {
-                // Alle Teilnehmer sind initial ausgewählt
-                SelectedParticipants = CurrentRace.RaceParticipants.ToList();
-            }
+            _ = LoadRaceParticipantsAsync();
         }
+    }
+
+    private async Task LoadRaceParticipantsAsync()
+    {
+        SelectedParticipants = [];
+        AllRaceParticipants = [];
+
+        if(CurrentRace == null)
+        {
+            return;
+        }
+
+        AllRaceParticipants = (await ParticipantService.GetRaceParticipantsAsync(CurrentRace.Id)).ToList();
     }
 
     private void DeselectParticipant(RaceParticipant p)
     {
         SelectedParticipants.Remove(p);
+    }
+
+    private void SelectParticipant(RaceParticipant p)
+    {
+        SelectedParticipants.Add(p);
     }
 
     private async Task StartRace()

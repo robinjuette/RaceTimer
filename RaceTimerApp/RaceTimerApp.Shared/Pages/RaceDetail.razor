@@ -162,7 +162,7 @@
             </div>
         }
 
-        @if (CurrentRace.RaceParticipants.Any())
+        @if (CurrentRaceParticipants.Any())
         {
             <table class="table table-sm table-striped">
                 <thead>
@@ -176,7 +176,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var rp in CurrentRace.RaceParticipants.OrderBy(x => x.ParticipantNr))
+                    @foreach (var rp in CurrentRaceParticipants.OrderBy(x => x.ParticipantNr))
                     {
                         <tr>
                             <td>@rp.ParticipantNr</td>
@@ -214,6 +214,7 @@
     private string NewTimePointName = "";
     private string NewParticipantName = "";
     private List<Participant> SearchResults = [];
+    private List<RaceParticipant> CurrentRaceParticipants = new();
 
     // Für Rennen umbenennen
     private bool IsEditingName = false;
@@ -243,11 +244,18 @@
         if (Guid.TryParse(RaceId, out var raceId))
         {
             CurrentRace = await RaceService.GetRaceAsync(raceId);
+
             if (CurrentRace is not null)
             {
+                _ = LoadRaceParticipantsAsync(raceId);
                 UpdateDisplayTimePoints();
             }
         }
+    }
+
+    private async Task LoadRaceParticipantsAsync(Guid raceId)
+    {
+        CurrentRaceParticipants = (await ParticipantService.GetRaceParticipantsAsync(raceId)).ToList();
     }
 
     private void UpdateDisplayTimePoints()
@@ -401,7 +409,7 @@
     {
         if (CurrentRace is null) return;
         await ParticipantService.AddParticipantToRaceAsync(CurrentRace.Id, p.DisplayName, p);
-        CurrentRace = await RaceService.GetRaceAsync(CurrentRace.Id);
+        await LoadRaceParticipantsAsync(CurrentRace.Id);
         NewParticipantName = "";
         SearchResults.Clear();
     }
@@ -412,7 +420,7 @@
             return;
 
         await ParticipantService.AddParticipantToRaceAsync(CurrentRace.Id, NewParticipantName);
-        CurrentRace = await RaceService.GetRaceAsync(CurrentRace.Id);
+        await LoadRaceParticipantsAsync(CurrentRace.Id);
         NewParticipantName = "";
         SearchResults.Clear();
     }
@@ -421,7 +429,7 @@
     {
         if (CurrentRace is null) return;
         await ParticipantService.RemoveParticipantFromRaceAsync(CurrentRace.Id, participantId);
-        CurrentRace = await RaceService.GetRaceAsync(CurrentRace.Id);
+        await LoadRaceParticipantsAsync(CurrentRace.Id);
     }
 
     private async Task PrepareStart()
