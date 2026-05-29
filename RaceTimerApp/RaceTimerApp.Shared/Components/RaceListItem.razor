@@ -25,7 +25,7 @@
             <div class="col-md-2 text-end">
                 @if(Race.RaceStatus != RaceStatus.Planned)
                 {
-                    <button class="btn btn-primary btn-sm" @onclick="OnManage">Zwischenstand</button>
+                    <button class="btn btn-primary btn-sm" @onclick="OnShowStandings">Zwischenstand</button>
                 }
                 <button class="btn btn-primary btn-sm" @onclick="OnManage">Verwalten</button>
                 <button class="btn btn-danger btn-sm" @onclick="OnDelete">Löschen</button>

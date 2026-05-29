@@ -2,6 +2,7 @@
 @page "/overview/{RaceId}"
 @using BlazorBootstrap
 @using RaceTimerApp.Shared.Services
+@using RaceTimerApp.Shared.Helpers
 @using RaceTimerApp.Shared.Models
 @using RaceTimer.Shared.Models
 @inject RaceManagementService RaceService
@@ -131,9 +132,11 @@
                                         <span class="participant-number">@participant.ParticipantNr</span>
                                         <span class="participant-name">@participant.Participant?.DisplayName</span>
                                     </div>
-                                    <div class="participant-time">
-                                        @FormatTimeSpan(ranking?.RunTime)
-                                    </div>
+                                    <span class="badge badge-lg @(ranking!.CompletelyFinished ? "bg-success" : "bg-info")">
+
+                                        @ranking.RunTime.FormatShort()
+
+                                    </span>
                                 </div>
                             }
                         </div>

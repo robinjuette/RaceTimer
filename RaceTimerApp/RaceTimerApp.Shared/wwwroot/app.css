@@ -264,12 +264,12 @@ body {
     color: #0d6efd;
     min-width: 35px;
     text-align: center;
-    font-size: 13px;
+    font-size: 20px;
 }
 
 .participant-name {
     font-weight: 500;
-    font-size: 13px;
+    font-size: 20px;
     flex: 1;
     white-space: nowrap;
     overflow: hidden;
@@ -386,7 +386,6 @@ body {
 }
 
 .standings-list {
-    list-style: decimal;
     padding: 0;
     margin: 0;
 }
