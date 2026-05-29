@@ -65,7 +65,7 @@
                             {
                                 <div class="participant-item pending">
                                     <div class="participant-info">
-                                        <span class="participant-number">@participant.ParticipantNr</span>
+                                        <span class="participant-number">#@participant.ParticipantNr</span>
                                         <span class="participant-name">@participant.Participant?.DisplayName</span>
                                     </div>
                                     <div class="participant-actions">
@@ -129,7 +129,7 @@
                                 var ranking = GetRankingEntry(race, participant);
                                 <div class="participant-item finished">
                                     <div class="participant-info">
-                                        <span class="participant-number">@participant.ParticipantNr</span>
+                                        <span class="participant-number">#@participant.ParticipantNr</span>
                                         <span class="participant-name">@participant.Participant?.DisplayName</span>
                                     </div>
                                     <span class="badge badge-lg @(ranking!.CompletelyFinished ? "bg-success" : "bg-info")">

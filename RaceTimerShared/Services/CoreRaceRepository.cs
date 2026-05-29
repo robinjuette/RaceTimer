@@ -405,12 +405,11 @@ public class CoreRaceRepository : IRaceRepository
 
         if (race is null) return;
 
-        if (!await _db.Races.Where(r => r.Id == raceId).AllAsync(r => r.RaceParticipants.All(rp => rp.FinishDateTimeUTC != null))) return;
+        if (!await _db.Races.Where(r => r.Id == raceId).AllAsync(r => r.RaceParticipants.All(rp => rp.FinishDateTimeUTC != null && r.RaceParticipantTimePoints.All(rptp => rptp.RaceTimePoint != null && ( rptp.PenaltyTime != null || !rptp.RaceTimePoint.HasPenaltyTime))))) return;
 
         race.FinishDateTimeUTC = await _db.Races.Where(r => r.Id == raceId).Select(r => r.RaceParticipants.Max(rp => rp.FinishDateTimeUTC)).SingleAsync();
 
         await _db.SaveChangesAsync();
-
     }
 
     public async Task<IEnumerable<RaceParticipant>> GetRacesParticipantsAsync(Guid id)
@@ -449,6 +448,11 @@ public class CoreRaceRepository : IRaceRepository
         timePoint.PenaltyTime = penaltyTime;
 
         await _db.SaveChangesAsync();
+
+        if(timePoint.RaceID != null)
+        {
+            _ = CheckForRaceCompletionAsync(timePoint.RaceID.Value);
+        }
 
         return true;
     }

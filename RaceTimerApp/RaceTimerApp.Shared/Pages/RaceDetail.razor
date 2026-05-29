@@ -179,8 +179,8 @@
                     @foreach (var rp in CurrentRaceParticipants.OrderBy(x => x.ParticipantNr))
                     {
                         <tr>
-                            <td>@rp.ParticipantNr</td>
-                            <td>@rp.Participant?.DisplayName</td>
+                            <td class="participant-number">#@rp.ParticipantNr</td>
+                            <td class="participant-name">@rp.Participant?.DisplayName</td>
                             @if (CurrentRace?.RaceStatus != RaceStatus.Finished)
                             {
                                 <td>

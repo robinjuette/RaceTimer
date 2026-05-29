@@ -49,7 +49,7 @@
         {
             <div class="card">
                 <div class="card-header">
-                    <h5 class="mb-0">@SelectedPenalty.Participant?.DisplayName - Strafzeit eingeben</h5>
+                    <h5 class="mb-0">@SelectedPenalty.Participant?.DisplayName an @SelectedPenalty.RaceTimePoint?.DisplayName - Strafzeit eingeben</h5>
                 </div>
                 <div class="card-body">
                     <div class="mb-3">
@@ -82,6 +82,11 @@
         <table class="table table-striped table-hover penalty-table">
             <thead class="table-dark">
                 <tr>
+                    @if (_multipleRaces)
+                    {
+                        <th>Rennen</th>
+                    }
+                    <th>Startnummer</th>
                     <th>Teilnehmer</th>
                     <th>Zeitpunkt</th>
                     <th>Erfassungszeit</th>
@@ -93,8 +98,13 @@
                 @foreach (var penalty in AllPenalties)
                 {
                     <tr>
-                        <td class="fw-bold">@penalty.Participant?.DisplayName</td>
-                        <td>@penalty.RaceTimePoint?.DisplayName</td>
+                        @if (_multipleRaces)
+                        {
+                            <td>@penalty.Race?.Name</td>
+                        }
+                        <td class="participant-number">#@penalty.RaceParticipant?.ParticipantNr</td>
+                        <td class="participant-name">@penalty.Participant?.DisplayName</td>
+                        <td >@penalty.RaceTimePoint?.DisplayName</td>
                         <td>@penalty.TimePointUTC.ToLocalTime().ToString("HH:mm:ss")</td>
                         <td>@penalty.PenaltyTime.FormatShort()</td>
                         <td class="action-column">
@@ -159,6 +169,7 @@
     private string PenaltyInput = "";
     private TimingServiceUpdateEndpoint? updateEndpoint;
     private string PenaltyInputError = "";
+    private bool _multipleRaces = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -175,6 +186,7 @@
     private async Task LoadPenalties()
     {
         var runningRaces = (await RaceService.GetRunningRacesAsync()).ToList();
+        _multipleRaces = runningRaces.Count > 1;
 
         AllPenalties.Clear();
         OpenPenalties.Clear();
@@ -182,9 +194,13 @@
         // Sammle alle Strafzeiten
         foreach (var race in runningRaces)
         {
-            // Vereinfacht: alle TimePoints mit Strafzeiten prüfen
+            List<RaceTimePoint> raceTimePoints = (await RaceService.GetRaceTimePointsAsync(race.Id)).ToList();
+
             foreach (var rptp in await TimingService.GetTimePointsWithPenaltyAsync(race.Id))
             {
+                rptp.RaceTimePoint = raceTimePoints.FirstOrDefault(RaceTimePoint => RaceTimePoint.Index == rptp.RTPIndex);
+                rptp.Race = race;
+
                 AllPenalties.Add(rptp);
                 if (!rptp.PenaltyTime.HasValue)
                 {

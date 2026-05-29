@@ -88,8 +88,7 @@
 
     private async Task CheckHasUnassignedTimePointsAsync()
     {
-        await TimingService.LoadUnassignedTimePointsAsync();
-        _hasUnassignedPoints = TimingService.GetUnassignedTimePoints().Any();
+        _hasUnassignedPoints = (await TimingService.GetUnassignedTimePointsAsync()).Any();
     }
 
     private async Task RecordTimePoint()

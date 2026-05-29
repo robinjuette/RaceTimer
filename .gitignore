@@ -7,7 +7,7 @@
 *.odt#
 /*/obj
 /*/bin
-/**/bin/Debug
+/**/bin/
 /**/obj
 /~$nzept RaceTimer.odt
 /~$-Beschreibung RaceTimer.docx

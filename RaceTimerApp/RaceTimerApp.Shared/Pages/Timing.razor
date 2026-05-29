@@ -1,8 +1,11 @@
 @page "/timing"
 @using RaceTimerApp.Shared.Services
 @using RaceTimer.Shared.Models
+@using RaceTimerApp.Shared.Models
+@using RaceTimerApp.Shared.Helpers
 @inject RaceManagementService RaceService
 @inject ParticipantService ParticipantService
+@inject RankingService RankingService
 @inject TimingService TimingService
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
@@ -26,7 +29,7 @@
                                 <div>
                                     <strong>@tp.TimePointUTC.ToLocalTime().ToString("HH:mm:ss")</strong>
                                     <br />
-                                    <small class="text-muted">@((DateTime.UtcNow - tp.TimePointUTC).TotalSeconds) Sekunden alt</small>
+                                    <small class="text-muted">Erfasst vor @((DateTime.UtcNow - tp.TimePointUTC).FormatShort())</small>
                                 </div>
                                 <button class="btn btn-danger btn-sm" @onclick="() => DeleteTimePoint(tp.Id)">Löschen</button>
                             </div>
@@ -48,20 +51,28 @@
                 <h5 class="mb-0">Aktive Teilnehmer</h5>
             </div>
             <div class="card-body">
-                @if (ActiveParticipants.Any())
+                @if (AvailableFTPs.Any())
                 {
-                    <div class="list-group">
-                        @foreach (var (race, participant) in ActiveParticipants)
+                    <div style="display:flex; flex-direction:row; flex-wrap:wrap">
+                        @foreach (FutureRaceParticipantTimePoint ftp in AvailableFTPs)
                         {
-                            <div class="list-group-item d-flex justify-content-between align-items-center"
-                                 @onclick="() => SelectParticipant((race, participant))"
-                                 style="cursor: pointer; background-color: @(SelectedParticipant?.Item1.Id == race.Id && SelectedParticipant?.Item2.ParticipantID == participant.ParticipantID ? "#e7f3ff" : "")">
-                                <div>
-                                    <strong>#@participant.ParticipantNr - @participant.Participant?.DisplayName</strong>
-                                    @if (ActiveParticipants.Where(p => p.race.Id == race.Id).Count() > 1)
+                            <div @onclick="() => SelectFTP(ftp)"
+                                 class="participant-item active"
+                                 style="cursor: pointer; margin:1%; background-color: @(SelectedFTP?.Race.Id == ftp.Race.Id && SelectedFTP?.RaceParticipant.ParticipantID == ftp.RaceParticipant.ParticipantID ? "#e7f3ff" : "#cccccc33")">
+                                <div style="display:flex; flex-direction:column;">
+                                    
+                                    <div style="display:flex; flex-direction:row;">
+
+                                        <strong class="participant-number" style="align-self:center">#@ftp.RaceParticipant.ParticipantNr</strong>
+
+                                        <div style="display:flex; flex-direction:column;">
+                                            <span class="participant-name">@ftp.RaceParticipant.Participant.DisplayName</span>
+                                            <span>@ftp.RaceTimePoint.DisplayName</span>
+                                        </div>
+                                    </div>
+                                    @if (_multipleRaces)
                                     {
-                                        <br />
-                                        <small class="text-muted">@race.Name</small>
+                                        <strong style="text-align:center; text-wrap:auto">@ftp.Race.Name</strong>
                                     }
                                 </div>
                             </div>
@@ -75,7 +86,7 @@
             </div>
         </div>
 
-        @if (SelectedTimePoint is not null && SelectedParticipant is not null)
+        @if (SelectedTimePoint is not null && SelectedFTP is not null)
         {
             <div class="card">
                 <div class="card-body">
@@ -112,51 +123,69 @@
     border-radius: 6px;
     min-height: 50px;
 }
-<!--
-//@media (max-width: 768px) {
-    .timing-container {
-        grid-template-columns: 1fr;
-    }
-}-->
 </style>
 
 @code {
     private List<RaceParticipantTimePoint> UnassignedTimePoints = [];
     private RaceParticipantTimePoint? SelectedTimePoint;
-    private (Race, RaceParticipant)? SelectedParticipant;
-    private List<(Race race, RaceParticipant participant)> ActiveParticipants = [];
-    private List<Race> RunningRaces = [];
+    private FutureRaceParticipantTimePoint? SelectedFTP;
+    private List<FutureRaceParticipantTimePoint> AvailableFTPs = [];
+    private TimingServiceUpdateEndpoint? updateEndpoint;
+    private bool _multipleRaces = false;
 
     protected override async Task OnInitializedAsync()
     {
+        updateEndpoint = new(TimingPoint_Changed);
+        TimingService.RegisterForCallback(updateEndpoint);
         await LoadData();
-        _ = AutoRefresh();
+        _ = UIRefresh();
+    }
+
+    
+    private async Task UIRefresh()
+    {
+        while (true)
+        {
+            await Task.Delay(1000);
+            StateHasChanged();
+        }
+    }
+
+    private void TimingPoint_Changed(RaceParticipantTimePoint? changed)
+    {
+        _ = LoadData();
     }
 
     private async Task LoadData()
     {
-        RunningRaces = (await RaceService.GetRunningRacesAsync()).ToList();
+        List<Race> runningRaces = (await RaceService.GetRunningRacesAsync()).ToList();
 
-        ActiveParticipants.Clear();
-        foreach (var race in RunningRaces)
+        _multipleRaces = runningRaces.Count > 1;
+
+        AvailableFTPs.Clear();
+        foreach (Race race in runningRaces)
         {
-            foreach (var participant in (await ParticipantService.GetRaceParticipantsAsync(race.Id)).Where(rp => rp.StartTime.HasValue && !rp.FinishDateTimeUTC.HasValue))
+            List<RankingEntry> rankings = await RankingService.GetRankingsAsync(race.Id);
+            List<RaceTimePoint> raceTimePoints = (await RaceService.GetRaceTimePointsAsync(race.Id)).ToList();
+
+            foreach (RankingEntry rankingEntry in rankings.Where(re => re.SplitTimes.Any(s => s.Value.HasValue) && !re.SplitTimes.All(s => s.Value.HasValue)))
             {
-                ActiveParticipants.Add((race, participant));
+                uint minOpenIndex = rankingEntry.SplitTimes.Where(s => !s.Value.HasValue).Min(s => s.Key);
+
+                FutureRaceParticipantTimePoint ftp = new()
+                    {
+                        Race = race,
+                        RaceParticipant = rankingEntry.RaceParticipant,
+                        RaceTimePoint = raceTimePoints.First(rtp => rtp.Index == minOpenIndex)
+                    };
+
+                AvailableFTPs.Add(ftp);
             }
         }
 
-        UnassignedTimePoints = TimingService.GetUnassignedTimePoints().ToList();
-    }
+        UnassignedTimePoints = await TimingService.GetUnassignedTimePointsAsync();
 
-    private async Task AutoRefresh()
-    {
-        while (true)
-        {
-            await Task.Delay(2000); // Alle 2 Sekunden refresh
-            await LoadData();
-            StateHasChanged();
-        }
+        StateHasChanged();
     }
 
     private void SelectTimePoint(RaceParticipantTimePoint tp)
@@ -164,24 +193,24 @@
         SelectedTimePoint = tp.Id == SelectedTimePoint?.Id ? null : tp;
     }
 
-    private void SelectParticipant((Race, RaceParticipant) p)
+    private void SelectFTP(FutureRaceParticipantTimePoint p)
     {
-        SelectedParticipant = p.Item2.ParticipantID == SelectedParticipant?.Item2.ParticipantID ? null : p;
+        SelectedFTP = p;
     }
 
     private async Task AssignTimePoint()
     {
-        if (SelectedTimePoint is null || SelectedParticipant is null)
+        if (SelectedTimePoint is null || SelectedFTP is null)
             return;
 
         await TimingService.AssignTimePointAsync(
             SelectedTimePoint.Id,
-            SelectedParticipant.Value.Item2.RaceID,
-            SelectedParticipant.Value.Item2.ParticipantID);
+            SelectedFTP.Value.Race.Id,
+            SelectedFTP.Value.RaceParticipant.ParticipantID);
 
         await LoadData();
         SelectedTimePoint = null;
-        SelectedParticipant = null;
+        SelectedFTP = null;
     }
 
     private async Task DeleteTimePoint(Guid id)
@@ -191,5 +220,12 @@
             await TimingService.DeleteTimePointAsync(id);
             await LoadData();
         }
+    }
+
+    private struct FutureRaceParticipantTimePoint
+    {
+        public required RaceParticipant RaceParticipant { get; init; }
+        public required RaceTimePoint RaceTimePoint { get; init; }
+        public required Race Race { get; init; }
     }
 }

@@ -10,7 +10,6 @@ namespace RaceTimerApp.Shared.Services;
 public class TimingService
 {
     private readonly IRaceRepository _repository;
-    private List<RaceParticipantTimePoint> _unassignedTimePoints = [];
     private List<WeakReference<TimingServiceUpdateEndpoint>> weakUpdateCallbacks = new();
 
     public TimingService(IRaceRepository repository)
@@ -45,7 +44,6 @@ public class TimingService
 
         if (created is not null)
         {
-            _unassignedTimePoints.Add(created);
             UpdateCallbacks(created);
         }
 
@@ -53,9 +51,9 @@ public class TimingService
     }
 
     // Unzugeordnete Zeitpunkte abrufen
-    public IEnumerable<RaceParticipantTimePoint> GetUnassignedTimePoints()
+    public async Task<List<RaceParticipantTimePoint>> GetUnassignedTimePointsAsync()
     {
-        return _unassignedTimePoints.AsReadOnly();
+        return (await _repository.GetUnassignedTimepointsAsync())?.ToList() ?? [];
     }
 
     // Zeitpunkt einem Teilnehmer zuordnen
@@ -67,7 +65,6 @@ public class TimingService
         var success = await _repository.AssignTimePointToRaceParticipantAsync(timePointId, raceId, participantId);
         if (success)
         {
-            _unassignedTimePoints.RemoveAll(tp => tp.Id == timePointId);
             UpdateCallbacks(await _repository.GetRaceParticipantTimePointAsync(timePointId));
         }
 
@@ -80,7 +77,6 @@ public class TimingService
         var success = await _repository.DeleteRaceParticipantTimePointAsync(timePointId);
         if (success)
         {
-            _unassignedTimePoints.RemoveAll(tp => tp.Id == timePointId);
             UpdateCallbacks(null);
         }
 
@@ -99,16 +95,6 @@ public class TimingService
         return success;
     }
 
-    // Zeitpunkt abrufen
-    private async Task<RaceParticipantTimePoint?> GetTimePointAsync(Guid timePointId)
-    {
-        var unassigned = _unassignedTimePoints.FirstOrDefault(tp => tp.Id == timePointId);
-        if (unassigned is not null) return unassigned;
-
-        // Von API abrufen wenn nicht lokal vorhanden
-        // Dies würde eine erweiterte API-Methode benötigen
-        return null;
-    }
 
     // Nächsten offenen Zeitpunkt für Teilnehmer finden
     public RaceTimePoint? GetNextTimePointForParticipant(
@@ -155,21 +141,9 @@ public class TimingService
         return timePoints.Where(rptp => raceTimePointsWithPenalty.Any(rtp => rtp.Id == rptp.Id) && rptp.PenaltyTime == null);
     }
 
-    // Laden der unzugeordneten Zeitpunkte
-    public async Task LoadUnassignedTimePointsAsync()
-    {
-
-        _unassignedTimePoints.Clear();
-        IEnumerable<RaceParticipantTimePoint>? unassigneds = await _repository.GetUnassignedTimepointsAsync();
-        _unassignedTimePoints = unassigneds?.ToList() ?? [];
-    }
 }
 
 public class TimingServiceUpdateEndpoint(Action<RaceParticipantTimePoint?> updateCallback)
 {
     public Action<RaceParticipantTimePoint?> UpdateCallback => updateCallback;
-    ~TimingServiceUpdateEndpoint()
-    {
-
-    }
 }
