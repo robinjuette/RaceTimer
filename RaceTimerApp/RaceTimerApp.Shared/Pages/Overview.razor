@@ -317,7 +317,7 @@
         if (_preparedParticipant?.ParticipantID != participant.ParticipantID) 
             return;
 
-        await RaceService.StartRaceAsync(race.Id, participant.ParticipantID);
+        await TimingService.StartRaceAsync(race.Id, participant.ParticipantID);
         _preparedParticipant = null;
 
         await LoadRaces();

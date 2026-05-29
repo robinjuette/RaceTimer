@@ -37,6 +37,16 @@ public class TimingService
         }
     }
 
+    // Rennen starten
+    public async Task<bool> StartRaceAsync(Guid raceId, params IEnumerable<Guid> participantIds)
+    {
+        bool res = await _repository.StartRaceAsync(raceId, DateTime.UtcNow, participantIds.ToList());
+
+        if(res) UpdateCallbacks(null);
+
+        return res;
+    }
+
     // Neuen Zeitpunkt erfassen
     public async Task<RaceParticipantTimePoint?> RecordTimePointAsync()
     {

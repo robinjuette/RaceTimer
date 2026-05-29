@@ -161,11 +161,6 @@ public class RaceManagementService
         return true;
     }
 
-    // Rennen starten
-    public async Task<bool> StartRaceAsync(Guid raceId, params IEnumerable<Guid> participantIds)
-    {
-        return await _repository.StartRaceAsync(raceId, DateTime.UtcNow, participantIds.ToList());
-    }
 
 }
 

@@ -2,6 +2,7 @@
 @using RaceTimerApp.Shared.Services
 @using RaceTimer.Shared.Models
 @inject RaceManagementService RaceService
+@inject TimingService TimingService
 @inject ParticipantService ParticipantService
 @inject NavigationManager Navigation
 
@@ -137,7 +138,7 @@
         if (CurrentRace is null) return;
 
         var participantIds = SelectedParticipants.Select(p => p.ParticipantID);
-        await RaceService.StartRaceAsync(CurrentRace.Id, participantIds);
+        await TimingService.StartRaceAsync(CurrentRace.Id, participantIds);
         Navigation.NavigateTo($"/overview/{CurrentRace.Id}");
     }
 
