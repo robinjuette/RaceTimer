@@ -61,6 +61,18 @@
                 </div>
             </div>
         </div>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="form-check">
+                    <input type="checkbox" class="form-check-input" id="showCapturedTimes" 
+                           @onchange="@((ChangeEventArgs e) => { ShowCapturedTimes = (bool)e.Value!; })" 
+                           checked="@ShowCapturedTimes" />
+                    <label class="form-check-label" for="showCapturedTimes">
+                        Erfasste Zeitpunkte anzeigen
+                    </label>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -129,7 +141,7 @@
                                     {
                                         <small class="@(GetIsPositive(deltaValue.Value) ? "delta-positive" : "delta-negative")">@FormatSignedTimeSpan(deltaValue.Value)</small>
                                     }
-                                    @if (capturedTime.HasValue)
+                                    @if (ShowCapturedTimes && capturedTime.HasValue)
                                     {
                                         <small class="text-muted" style="display: block;">@capturedTime.Value.ToLocalTime().ToString("HH:mm:ss")</small>
                                     }
@@ -264,6 +276,7 @@
 
     private string TimeDisplayMode = "sector"; // "sector" oder "cumulative"
     private string DeltaMode = "first"; // "first" oder "previous"
+    private bool ShowCapturedTimes = false; // Standardmäßig ausgeblendet
 
     protected override async Task OnInitializedAsync()
     {
