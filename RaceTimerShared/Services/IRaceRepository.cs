@@ -31,5 +31,6 @@
         Task<IEnumerable<RaceTimePoint>> GetRaceTimePointsAsync(Guid raceId);
         Task<RaceTimePoint?> CreateRaceTimePointAsync(Guid raceId, string? name);
         Task<bool> DeleteRaceTimePointAsync(Guid timePointId);
+        Task CheckForRaceCompletionAsync(Guid raceId);
     }
 }

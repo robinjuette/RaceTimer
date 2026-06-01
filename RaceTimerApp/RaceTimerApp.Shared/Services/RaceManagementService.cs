@@ -161,6 +161,11 @@ public class RaceManagementService
         return true;
     }
 
-
+    // Überprüfung und Beendigung eines Rennens
+    public async Task CheckForRaceCompletionAsync(Guid raceId)
+    {
+        await _repository.CheckForRaceCompletionAsync(raceId);
+    }
 }
+
 

@@ -396,7 +396,7 @@ public class CoreRaceRepository : IRaceRepository
         return true;
     }
 
-    private async Task CheckForRaceCompletionAsync(Guid raceId)
+    public async Task CheckForRaceCompletionAsync(Guid raceId)
     {
         await CheckAndApplyMigrationsAsync();
         using RaceTimerDbContext _db = await dbContextFactory.CreateDbContextAsync();
@@ -405,7 +405,15 @@ public class CoreRaceRepository : IRaceRepository
 
         if (race is null) return;
 
-        if (!await _db.Races.Where(r => r.Id == raceId).AllAsync(r => r.RaceParticipants.All(rp => rp.FinishDateTimeUTC != null && r.RaceParticipantTimePoints.All(rptp => rptp.RaceTimePoint != null && ( rptp.PenaltyTime != null || !rptp.RaceTimePoint.HasPenaltyTime))))) return;
+        List<uint> indexesWithPenaltyTimes = await _db.RaceTimePoints.Where(r => r.RaceID == raceId && r.HasPenaltyTime).Select(rtp => rtp.Index).ToListAsync();
+
+        if (!await _db.Races.Where(r => r.Id == raceId)
+            .AllAsync(r => r.RaceParticipants
+                .All(rp => rp.FinishDateTimeUTC != null && 
+                            !r.RaceParticipantTimePoints.Any(rptp => indexesWithPenaltyTimes.Contains(rptp.RTPIndex.Value) && rptp.PenaltyTime == null))))
+        { 
+            return;
+        }
 
         race.FinishDateTimeUTC = await _db.Races.Where(r => r.Id == raceId).Select(r => r.RaceParticipants.Max(rp => rp.FinishDateTimeUTC)).SingleAsync();
 

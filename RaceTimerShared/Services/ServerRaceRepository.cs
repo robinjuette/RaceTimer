@@ -153,5 +153,11 @@ namespace RaceTimer.Shared.Services
         {
             throw new NotImplementedException();
         }
+
+        public Task CheckForRaceCompletionAsync(Guid raceId)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
+

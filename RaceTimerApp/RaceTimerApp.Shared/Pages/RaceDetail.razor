@@ -199,12 +199,19 @@
     </div>
 </div>
 
-@if (CurrentRace?.RaceStatus == RaceStatus.Planned)
-{
-    <div class="mb-3">
-        <button class="btn btn-lg btn-success" @onclick="PrepareStart">Rennstart vorbereiten</button>
-    </div>
-}
+    @if (CurrentRace?.RaceStatus == RaceStatus.Planned)
+    {
+        <div class="mb-3">
+            <button class="btn btn-lg btn-success" @onclick="PrepareStart">Rennstart vorbereiten</button>
+        </div>
+    }
+
+    @if (CurrentRace?.RaceStatus != RaceStatus.Planned)
+    {
+        <div class="mb-3">
+            <button class="btn btn-info" @onclick="CheckRaceCompletion">Rennbeendigung überprüfen</button>
+        </div>
+    }
 
 @code {
     [Parameter]
@@ -436,6 +443,13 @@
     {
         if (CurrentRace is null) return;
         Navigation.NavigateTo($"/races/{CurrentRace.Id}/start");
+    }
+
+    private async Task CheckRaceCompletion()
+    {
+        if (CurrentRace is null) return;
+        await RaceService.CheckForRaceCompletionAsync(CurrentRace.Id);
+        CurrentRace = await RaceService.GetRaceAsync(CurrentRace.Id);
     }
 
     private void GoBack()
