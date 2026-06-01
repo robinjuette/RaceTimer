@@ -1,0 +1,497 @@
+@page "/results/{RaceId}"
+@using RaceTimerApp.Shared.Services
+@using RaceTimerApp.Shared.Models
+@using RaceTimer.Shared.Models
+@using System.Collections.Generic
+@inject RaceManagementService RaceService
+@inject RankingService RankingService
+@inject NavigationManager Navigation
+
+@if (CurrentRace is null)
+{
+    <div class="alert alert-danger">Rennen nicht gefunden</div>
+    return;
+}
+
+<div class="page-header">
+    <div>
+        <h1>@CurrentRace.Name - Endergebnisse</h1>
+    </div>
+    <button class="btn btn-secondary" @onclick="GoBack">Zurück</button>
+</div>
+
+<!-- Status Badge -->
+<div class="mb-3">
+    <span class="badge badge-lg @GetStatusBadgeClass()">@GetStatusText()</span>
+</div>
+
+<!-- Anzeigemodi Steuerung -->
+<div class="card mb-3">
+    <div class="card-header">
+        <h5>Anzeigeoptionen</h5>
+    </div>
+    <div class="card-body">
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label class="form-label">Zeitmodus:</label>
+                <div class="btn-group" role="group">
+                    <input type="radio" class="btn-check" id="sectorMode" value="sector" 
+                           @onchange="@((ChangeEventArgs e) => { TimeDisplayMode = (string)e.Value!; })" 
+                           checked="@(TimeDisplayMode == "sector")" />
+                    <label class="btn btn-outline-primary" for="sectorMode">Sektorzeit</label>
+
+                    <input type="radio" class="btn-check" id="cumulativeMode" value="cumulative" 
+                           @onchange="@((ChangeEventArgs e) => { TimeDisplayMode = (string)e.Value!; })" 
+                           checked="@(TimeDisplayMode == "cumulative")" />
+                    <label class="btn btn-outline-primary" for="cumulativeMode">Kumulativ</label>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Delta-Modus:</label>
+                <div class="btn-group" role="group">
+                    <input type="radio" class="btn-check" id="deltaFirst" value="first" 
+                           @onchange="@((ChangeEventArgs e) => { DeltaMode = (string)e.Value!; })" 
+                           checked="@(DeltaMode == "first")" />
+                    <label class="btn btn-outline-success" for="deltaFirst">Zum Ersten</label>
+
+                    <input type="radio" class="btn-check" id="deltaPrevious" value="previous" 
+                           @onchange="@((ChangeEventArgs e) => { DeltaMode = (string)e.Value!; })" 
+                           checked="@(DeltaMode == "previous")" />
+                    <label class="btn btn-outline-success" for="deltaPrevious">Zum Vordermann</label>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Ergebnistabelle -->
+<div class="table-responsive">
+    <table class="table table-striped table-hover">
+        <thead class="table-dark">
+            <tr>
+                <th style="position: sticky; left: 0; z-index: 10; background-color: #212529;">Pos.</th>
+                <th style="position: sticky; left: 50px; z-index: 10; background-color: #212529;">Teilnehmer</th>
+                @foreach (var tp in RaceTimePoints.OrderBy(x => x.Index).Skip(1))
+                {
+                    <th class="time-point-column">
+                        <div>@tp.DisplayName</div>
+                        @if (tp.HasPenaltyTime)
+                        {
+                            <small class="text-warning">⏱️ Strafzeit</small>
+                        }
+                    </th>
+                }
+                <th>Fahrzeit</th>
+                <th>Schießzeit</th>
+                <th>Strafzeit</th>
+                <th>Gesamtzeit</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (ResultEntry entry in ResultEntries)
+            {
+                <tr class="@(entry.RankingEntry.CompletelyFinished ? "table-success" : "")">
+
+                    @{
+                        TimeSpan? drivingDelta = GetDrivingDeltaTime(entry);
+                        TimeSpan? shootingDelta = GetShootingDeltaTime(entry);
+                        TimeSpan? penaltyDelta = GetPenaltyDeltaTime(entry);
+                        TimeSpan? totalDelta = GetTotalDeltaTime(entry);
+                    }
+                    <td style="position: sticky; left: 0; z-index: 9; background-color: #aaaaaa;">
+                        <strong>@entry.RankingEntry.Position</strong>
+                    </td>
+                    <td style="position: sticky; left: 50px; z-index: 9; background-color: #aaaaaa;">
+                        <div>@entry.RankingEntry.RaceParticipant.Participant?.DisplayName</div>
+                        @if (entry.RankingEntry.RaceParticipant.StartTime.HasValue)
+                        {
+                            <small class="text-muted">@entry.RankingEntry.RaceParticipant.StartTime.Value.ToLocalTime().ToString("HH:mm:ss")</small>
+                        }
+                    </td>
+                    @foreach (var tp in RaceTimePoints.OrderBy(x => x.Index).Skip(1))
+                    {
+                        <td class="time-column">
+                            @{
+                                TimeSpan? timeValue = GetTimeValueWithPenalty(entry, tp);
+                                DateTime? capturedTime = GetCapturedTime(entry, tp);
+                                TimeSpan? deltaValue = GetDelta(entry, tp);
+                                TimeSpan? penaltyForThis = GetPenaltyForTimePoint(entry, tp);
+                            }
+                            @if (timeValue.HasValue)
+                            {
+                                <div>@FormatTimeSpan(timeValue.Value)</div>
+                                @if (penaltyForThis.HasValue && penaltyForThis.Value.TotalMilliseconds > 0)
+                                {
+                                    <div class="text-warning" style="font-size: 0.85em;">@FormatSignedTimeSpan(penaltyForThis.Value)</div>
+                                }
+                                @if (deltaValue.HasValue)
+                                {
+                                    <small class="@(GetIsPositive(deltaValue.Value) ? "delta-positive" : "delta-negative")">@FormatSignedTimeSpan(deltaValue.Value)</small>
+                                }
+                                @if (capturedTime.HasValue)
+                                {
+                                    <small class="text-muted">@capturedTime.Value.ToLocalTime().ToString("HH:mm:ss")</small>
+                                }
+                            }
+                            else
+                            {
+                                <span class="text-muted">-</span>
+                            }
+                        </td>
+                    }
+                    <td class="fw-bold">
+                        <div class="sum-column">
+                            @FormatTimeSpan(entry.DrivingTimeSpan)
+                            @if (drivingDelta.HasValue)
+                            {
+                                <small class="@(GetIsPositive(drivingDelta.Value) ? "delta-positive" : "delta-negative")">@FormatSignedTimeSpan(drivingDelta.Value)</small>
+                            }
+                        </div>
+                    </td>
+                    <td class="fw-bold">
+                        <div class="sum-column">
+                            @FormatTimeSpan(entry.ShootingTimeSpan)
+                            @if (shootingDelta.HasValue)
+                            {
+                                <small class="@(GetIsPositive(shootingDelta.Value) ? "delta-positive" : "delta-negative")">@FormatSignedTimeSpan(shootingDelta.Value)</small>
+                            }
+                        </div>
+                    </td>
+                    <td class="fw-bold">
+                        <div class="sum-column">
+                            @FormatTimeSpan(entry.PenaltyTimeSpan)
+                            @if (penaltyDelta.HasValue)
+                            {
+                                <small class="@(GetIsPositive(penaltyDelta.Value) ? "delta-positive" : "delta-negative")">@FormatSignedTimeSpan(penaltyDelta.Value)</small>
+                            }
+                        </div>
+                    </td>
+                    <td class="fw-bold text-primary">
+                        <div class="sum-column">
+                            @FormatTimeSpan(entry.TotalTimeSpan)
+                            @if (totalDelta.HasValue)
+                            {
+                                <small class="@(GetIsPositive(totalDelta.Value) ? "delta-positive" : "delta-negative")">@FormatSignedTimeSpan(totalDelta.Value)</small>
+                            }
+                        </div>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<style>
+    .time-point-column {
+        background-color: #f8f9fa;
+        text-align: center;
+        min-width: 100px;
+    }
+
+    .time-column {
+        text-align: right;
+        padding-right: 15px;
+        font-family: 'Courier New', monospace;
+    }
+
+    .delta-positive {
+        color: #dc3545;
+        font-weight: bold;
+    }
+
+    .delta-negative {
+        color: #28a745;
+        font-weight: bold;
+    }
+
+    .table-responsive {
+        margin-top: 20px;
+    }
+
+    thead th {
+        text-align: center;
+        vertical-align: middle;
+    }
+
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #dee2e6;
+    }
+
+    .badge-lg {
+        font-size: 0.9rem;
+        padding: 8px 16px;
+    }
+
+    .text-warning {
+        color: #bb8807 !important;
+    }
+
+    .sum-column{
+        display:flex;
+        flex-direction: column;
+    }
+</style>
+
+@code {
+    [Parameter]
+    public string? RaceId { get; set; }
+
+    private Race? CurrentRace;
+    private List<ResultEntry> ResultEntries = [];
+    private List<RaceTimePoint> RaceTimePoints = [];
+
+    private string TimeDisplayMode = "sector"; // "sector" oder "cumulative"
+    private string DeltaMode = "first"; // "first" oder "previous"
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Guid.TryParse(RaceId, out var raceId))
+        {
+            CurrentRace = await RaceService.GetRaceAsync(raceId);
+
+            if (CurrentRace is not null)
+            {
+                RaceTimePoints = CurrentRace.RaceTimePoints.OrderBy(x => x.Index).ToList();
+                ResultEntries = await RankingService.GetResultsAsync(raceId);
+            }
+        }
+    }
+
+    private TimeSpan? GetTimeValueWithPenalty(ResultEntry entry, RaceTimePoint tp)
+    {
+        if (!entry.ResultEntryPoints.TryGetValue(tp.Index, out ResultEntryPoint? entryPoint))
+            return null;
+
+
+        if (TimeDisplayMode == "cumulative")
+            return entryPoint.CummulativeTimeSpan;
+
+        return entryPoint.SplitTimeSpan + (entryPoint.PenaltyTimeSpan ?? TimeSpan.Zero);
+    }
+
+    private DateTime? GetCapturedTime(ResultEntry entry, RaceTimePoint tp)
+    {
+        return entry.RankingEntry.RaceParticipantTimePoints.FirstOrDefault(rptp => rptp.RTPIndex == tp.Index)?.TimePointUTC;
+    }
+
+    private TimeSpan? GetPenaltyForTimePoint(ResultEntry entry, RaceTimePoint tp)
+    {
+        if (entry.ResultEntryPoints.TryGetValue(tp.Index, out var entryPoint))
+        {
+            return entryPoint.PenaltyTimeSpan;
+        }
+        return null;
+    }
+
+    private TimeSpan? GetDelta(ResultEntry entry, RaceTimePoint tp)
+    {
+        var currentTime = GetTimeValueWithPenalty(entry, tp);
+        if (!currentTime.HasValue)
+            return null;
+
+        TimeSpan referenceTime;
+
+        if (DeltaMode == "first")
+        {
+            // Delta zum Ersten
+            var firstEntry = ResultEntries.FirstOrDefault();
+            if (firstEntry is null ||firstEntry == entry)
+                return null;
+
+            var firstTime = GetTimeValueWithPenalty(firstEntry, tp);
+            if (!firstTime.HasValue)
+                return null;
+
+            referenceTime = firstTime.Value;
+        }
+        else // "previous"
+        {
+            // Delta zum Vordermann
+            var currentIndex = ResultEntries.IndexOf(entry);
+            if (currentIndex <= 0)
+                return null;
+
+            var previousEntry = ResultEntries[currentIndex - 1];
+            var previousTime = GetTimeValueWithPenalty(previousEntry, tp);
+            if (!previousTime.HasValue)
+                return null;
+
+            referenceTime = previousTime.Value;
+        }
+
+        return currentTime.Value - referenceTime;
+    }
+
+    private bool GetIsPositive(TimeSpan timeSpan)
+    {
+        return timeSpan.TotalMilliseconds >= 0;
+    }
+
+    private bool GetDeltaIsPositive(ResultEntry entry, RaceTimePoint tp)
+    {
+        return (GetDelta(entry, tp) ?? TimeSpan.Zero).TotalMilliseconds >= 0;
+    }
+
+    private TimeSpan GetDrivingDeltaTime(ResultEntry entry)
+    {
+        TimeSpan referenceTime;
+
+        if (DeltaMode == "first")
+        {
+            var firstEntry = ResultEntries.FirstOrDefault();
+            if (firstEntry is null || firstEntry == entry)
+                return TimeSpan.Zero;
+
+            referenceTime = firstEntry.DrivingTimeSpan;
+        }
+        else // "previous"
+        {
+            var currentIndex = ResultEntries.IndexOf(entry);
+            if (currentIndex <= 0)
+                return TimeSpan.Zero;
+
+            var previousEntry = ResultEntries[currentIndex - 1];
+
+            referenceTime = previousEntry.DrivingTimeSpan;
+        }
+
+        return referenceTime - entry.DrivingTimeSpan;
+    }
+
+    private TimeSpan GetShootingDeltaTime(ResultEntry entry)
+    {
+        TimeSpan referenceTime;
+
+        if (DeltaMode == "first")
+        {
+            var firstEntry = ResultEntries.FirstOrDefault();
+            if (firstEntry is null || firstEntry == entry)
+                return TimeSpan.Zero;
+
+            referenceTime = firstEntry.ShootingTimeSpan;
+        }
+        else // "previous"
+        {
+            var currentIndex = ResultEntries.IndexOf(entry);
+            if (currentIndex <= 0)
+                return TimeSpan.Zero;
+
+            var previousEntry = ResultEntries[currentIndex - 1];
+
+            referenceTime = previousEntry.ShootingTimeSpan;
+        }
+
+        return referenceTime - entry.ShootingTimeSpan;
+    }
+
+    private TimeSpan GetPenaltyDeltaTime(ResultEntry entry)
+    {
+        TimeSpan referenceTime;
+
+        if (DeltaMode == "first")
+        {
+            var firstEntry = ResultEntries.FirstOrDefault();
+            if (firstEntry is null || firstEntry == entry)
+                return TimeSpan.Zero;
+
+            referenceTime = firstEntry.PenaltyTimeSpan;
+        }
+        else // "previous"
+        {
+            var currentIndex = ResultEntries.IndexOf(entry);
+            if (currentIndex <= 0)
+                return TimeSpan.Zero;
+
+            var previousEntry = ResultEntries[currentIndex - 1];
+
+            referenceTime = previousEntry.PenaltyTimeSpan;
+        }
+
+        return referenceTime - entry.PenaltyTimeSpan;
+    }
+
+    private TimeSpan GetTotalDeltaTime(ResultEntry entry)
+    {
+        TimeSpan referenceTime;
+
+        if (DeltaMode == "first")
+        {
+            var firstEntry = ResultEntries.FirstOrDefault();
+            if (firstEntry is null || firstEntry == entry)
+                return TimeSpan.Zero;
+
+            referenceTime = firstEntry.TotalTimeSpan;
+        }
+        else // "previous"
+        {
+            var currentIndex = ResultEntries.IndexOf(entry);
+            if (currentIndex <= 0)
+                return TimeSpan.Zero;
+
+            var previousEntry = ResultEntries[currentIndex - 1];
+
+            referenceTime = previousEntry.TotalTimeSpan;
+        }
+
+        return referenceTime - entry.TotalTimeSpan;
+    }
+
+    private string FormatSignedTimeSpan(TimeSpan ts)
+    {
+        if (ts.TotalSeconds < 0)
+        {
+            return $"-{FormatTimeSpan(TimeSpan.FromSeconds(-ts.TotalSeconds))}";
+        }
+        else
+        {
+            return $"+{FormatTimeSpan(ts)}";
+        }
+    }
+
+    private string FormatTimeSpan(TimeSpan ts)
+    {
+        if (ts.TotalSeconds < 0)
+        {
+            return $"-{FormatTimeSpan(TimeSpan.FromSeconds(-ts.TotalSeconds))}";
+        }
+
+        if (ts.TotalHours >= 1)
+        {
+            return ts.ToString(@"h\:mm\:ss\.ff");
+        }
+        else
+        {
+            return ts.ToString(@"mm\:ss\.ff");
+        }
+    }
+
+    private void GoBack()
+    {
+        Navigation.NavigateTo($"/races/{RaceId}");
+    }
+
+    private string GetStatusText()
+    {
+        return CurrentRace?.RaceStatus switch
+        {
+            RaceStatus.Running => "Läuft",
+            RaceStatus.Finished => "Beendet",
+            _ => "Geplant"
+        };
+    }
+
+    private string GetStatusBadgeClass()
+    {
+        return CurrentRace?.RaceStatus switch
+        {
+            RaceStatus.Running => "bg-danger",
+            RaceStatus.Finished => "bg-success",
+            _ => "bg-secondary"
+        };
+    }
+}

@@ -24,8 +24,12 @@
     @foreach (var race in DisplayedRaces)
     {
         <div class="card">
-            <div class="card-header bg-primary text-white">
+            <div class="card-header bg-primary text-white" style="display: flex; justify-content: space-between; align-items: center;">
                 <h5 class="mb-0">@race.Name</h5>
+                @if (race.RaceStatus == RaceStatus.Finished)
+                {
+                    <a href="/results/@race.Id" class="btn btn-sm btn-success">Ergebnisse</a>
+                }
             </div>
             <div class="card-body">
                 @if (rankings.TryGetValue(race.Id, out List<RankingEntry>? ranks))

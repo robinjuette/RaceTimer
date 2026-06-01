@@ -9,6 +9,57 @@ namespace RaceTimerApp.Shared.Services;
 /// </summary>
 public class RankingService(IRaceRepository raceRepository)
 {
+    public async Task<List<ResultEntry>> GetResultsAsync(Guid raceId)
+    {
+        List<RankingEntry> rankingEntries = await GetRankingsAsync(raceId);
+        List<RaceParticipantTimePoint>? rptps = (await raceRepository.GetRaceParticipantTimePointsForRaceAsync(raceId))?.ToList();
+
+        if (!rankingEntries.Any() || rptps == null)
+        {
+            return [];
+        }
+
+        List<ResultEntry> resultEntries = new();
+
+        uint minIndex = rankingEntries.First().SplitTimes.Keys.Min();
+        uint maxIndex = rankingEntries.First().SplitTimes.Keys.Max();
+
+        foreach(RankingEntry rankingEntry in rankingEntries)
+        {
+            TimeSpan cummulative = TimeSpan.Zero;
+            Dictionary<uint, ResultEntryPoint> resultEntryPoints = new();
+
+            for(uint i = minIndex; i <= maxIndex; i++)
+            {
+                TimeSpan? penalty = rankingEntry.PenaltyTimes[i];
+                TimeSpan split = rankingEntry.SplitTimes[i] ?? TimeSpan.Zero;
+                cummulative += (penalty ?? TimeSpan.Zero) + split;
+
+                ResultEntryPoint resultEntryPoint = new()
+                {
+                    PenaltyTimeSpan = penalty,
+                    SplitTimeSpan = split,
+                    RaceParticipantTimePoint = rankingEntry.RaceParticipantTimePoints.Single(rptp => rptp.RTPIndex == i),
+                    CummulativeTimeSpan = cummulative
+                };
+
+                resultEntryPoints[i] = resultEntryPoint;
+            }
+
+            ResultEntry resultEntry = new()
+            {
+                DrivingTimeSpan = new(resultEntryPoints.Values.Where(v => v.PenaltyTimeSpan == null).Sum(v => v.SplitTimeSpan.Ticks)),
+                PenaltyTimeSpan = new(resultEntryPoints.Values.Where(v => v.PenaltyTimeSpan != null).Sum(v => v.PenaltyTimeSpan!.Value.Ticks)),
+                ShootingTimeSpan = new(resultEntryPoints.Values.Where(v => v.PenaltyTimeSpan != null).Sum(v => v.SplitTimeSpan.Ticks)),
+                RankingEntry = rankingEntry,
+                ResultEntryPoints = resultEntryPoints
+            };
+
+            resultEntries.Add(resultEntry);
+        }
+
+        return resultEntries;
+    }
 
     public async Task<List<RankingEntry>> GetRankingsAsync(Guid raceId)
     {
@@ -108,7 +159,8 @@ public class RankingService(IRaceRepository raceRepository)
 
         return new(raceParticipant, 
             splitTimes, 
-            raceTimePoints.ToDictionary(rtp => rtp.Index, rtp => rtp.HasPenaltyTime ? tps.FirstOrDefault(rptp => rptp.RTPIndex == rtp.Index)?.PenaltyTime : TimeSpan.Zero));
+            raceTimePoints.ToDictionary(rtp => rtp.Index, rtp => rtp.HasPenaltyTime ? tps.FirstOrDefault(rptp => rptp.RTPIndex == rtp.Index)?.PenaltyTime : null),
+            tps);
     }
 
 }

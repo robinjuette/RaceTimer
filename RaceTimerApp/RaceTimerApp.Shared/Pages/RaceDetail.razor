@@ -36,6 +36,10 @@
     {
         <a href="/standings/@RaceId" class="btn btn-primary">Zum Rennstand</a>
     }
+    @if (CurrentRace?.RaceStatus == RaceStatus.Finished)
+    {
+        <a href="/results/@RaceId" class="btn btn-success">Zu den Ergebnissen</a>
+    }
 
     <button class="btn btn-secondary" @onclick="GoBack">Zurück</button>
 </div>

@@ -8,11 +8,13 @@ namespace RaceTimerApp.Shared.Models
 {
     public class RankingEntry(RaceParticipant raceParticipant,
         Dictionary<uint, TimeSpan?> splitTimes,
-        Dictionary<uint, TimeSpan?> penaltyTimes)
+        Dictionary<uint, TimeSpan?> penaltyTimes,
+        List<RaceParticipantTimePoint> raceParticipantTimePoints)
     {
         public RaceParticipant RaceParticipant => raceParticipant;
         public Dictionary<uint, TimeSpan?> SplitTimes => splitTimes;
         public Dictionary<uint, TimeSpan?> PenaltyTimes => penaltyTimes;
+        public List<RaceParticipantTimePoint> RaceParticipantTimePoints => raceParticipantTimePoints;
         public uint Position { get; set; }
 
         public decimal Progress
