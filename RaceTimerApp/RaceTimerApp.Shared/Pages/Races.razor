@@ -39,7 +39,11 @@
     {
         @foreach (var race in DisplayedRaces)
         {
-            <RaceListItem Race="race" OnShowStandings="() => ShowRaceStandings(race.Id)" OnManage="() => ManageRace(race.Id)" OnDelete="() => DeleteRace(race.Id)" />
+            <RaceListItem Race="race" 
+                         OnShowStandings="() => ShowRaceStandings(race.Id)" 
+                         OnShowResults="() => ShowRaceResults(race.Id)"
+                         OnManage="() => ManageRace(race.Id)" 
+                         OnDelete="() => DeleteRace(race.Id)" />
         }
     }
     else
@@ -109,6 +113,11 @@
     private void ShowRaceStandings(Guid raceId)
     {
         Navigation.NavigateTo($"/standings/{raceId}");
+    }
+
+    private void ShowRaceResults(Guid raceId)
+    {
+        Navigation.NavigateTo($"/results/{raceId}");
     }
 
     private async Task DeleteRace(Guid raceId)

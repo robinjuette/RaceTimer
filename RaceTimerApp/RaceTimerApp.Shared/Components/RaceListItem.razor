@@ -23,12 +23,18 @@
                 </span>
             </div>
             <div class="col-md-2 text-end">
-                @if(Race.RaceStatus != RaceStatus.Planned)
-                {
-                    <button class="btn btn-primary btn-sm" @onclick="OnShowStandings">Zwischenstand</button>
-                }
-                <button class="btn btn-primary btn-sm" @onclick="OnManage">Verwalten</button>
-                <button class="btn btn-danger btn-sm" @onclick="OnDelete">Löschen</button>
+                <div class="btn-group" role="group" style="width: 100%; display: flex; gap: 5px; flex-wrap: wrap; justify-content: flex-end;">
+                    @if (Race.RaceStatus == RaceStatus.Finished)
+                    {
+                        <button class="btn btn-success btn-sm" @onclick="OnShowResults" title="Endergebnisse ansehen">Ergebnisse</button>
+                    }
+                    else if (Race.RaceStatus == RaceStatus.Running)
+                    {
+                        <button class="btn btn-primary btn-sm" @onclick="OnShowStandings" title="Zwischenstand ansehen">Zwischenstand</button>
+                    }
+                    <button class="btn btn-primary btn-sm" @onclick="OnManage" title="Rennen verwalten">Verwalten</button>
+                    <button class="btn btn-danger btn-sm" @onclick="OnDelete" title="Rennen löschen">Löschen</button>
+                </div>
             </div>
         </div>
     </div>
@@ -40,6 +46,9 @@
 
     [Parameter]
     public EventCallback OnShowStandings { get; set; }
+
+    [Parameter]
+    public EventCallback OnShowResults { get; set; }
 
     [Parameter]
     public EventCallback OnManage { get; set; }

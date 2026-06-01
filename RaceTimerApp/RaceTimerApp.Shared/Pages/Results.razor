@@ -111,32 +111,34 @@
                     @foreach (var tp in RaceTimePoints.OrderBy(x => x.Index).Skip(1))
                     {
                         <td class="time-column">
-                            @{
-                                TimeSpan? timeValue = GetTimeValueWithPenalty(entry, tp);
-                                DateTime? capturedTime = GetCapturedTime(entry, tp);
-                                TimeSpan? deltaValue = GetDelta(entry, tp);
-                                TimeSpan? penaltyForThis = GetPenaltyForTimePoint(entry, tp);
-                            }
-                            @if (timeValue.HasValue)
-                            {
-                                <div>@FormatTimeSpan(timeValue.Value)</div>
-                                @if (penaltyForThis.HasValue && penaltyForThis.Value.TotalMilliseconds > 0)
-                                {
-                                    <div class="text-warning" style="font-size: 0.85em;">@FormatSignedTimeSpan(penaltyForThis.Value)</div>
+                            <div class="time-column-div">
+                                @{
+                                    TimeSpan? timeValue = GetTimeValueWithPenalty(entry, tp);
+                                    DateTime? capturedTime = GetCapturedTime(entry, tp);
+                                    TimeSpan? deltaValue = GetDelta(entry, tp);
+                                    TimeSpan? penaltyForThis = GetPenaltyForTimePoint(entry, tp);
                                 }
-                                @if (deltaValue.HasValue)
+                                @if (timeValue.HasValue)
                                 {
-                                    <small class="@(GetIsPositive(deltaValue.Value) ? "delta-positive" : "delta-negative")">@FormatSignedTimeSpan(deltaValue.Value)</small>
+                                    <div>@FormatTimeSpan(timeValue.Value)</div>
+                                    @if (penaltyForThis.HasValue && penaltyForThis.Value.TotalMilliseconds > 0)
+                                    {
+                                        <div class="text-warning" style="font-size: 0.85em;">@FormatSignedTimeSpan(penaltyForThis.Value)</div>
+                                    }
+                                    @if (deltaValue.HasValue)
+                                    {
+                                        <small class="@(GetIsPositive(deltaValue.Value) ? "delta-positive" : "delta-negative")">@FormatSignedTimeSpan(deltaValue.Value)</small>
+                                    }
+                                    @if (capturedTime.HasValue)
+                                    {
+                                        <small class="text-muted" style="display: block;">@capturedTime.Value.ToLocalTime().ToString("HH:mm:ss")</small>
+                                    }
                                 }
-                                @if (capturedTime.HasValue)
+                                else
                                 {
-                                    <small class="text-muted">@capturedTime.Value.ToLocalTime().ToString("HH:mm:ss")</small>
+                                    <span class="text-muted">-</span>
                                 }
-                            }
-                            else
-                            {
-                                <span class="text-muted">-</span>
-                            }
+                            </div>
                         </td>
                     }
                     <td class="fw-bold">
@@ -192,6 +194,21 @@
         text-align: right;
         padding-right: 15px;
         font-family: 'Courier New', monospace;
+        font-size: 0.9em;
+    }
+    .time-column-div{
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 2px;
+    }
+
+    .time-column div {
+        line-height: 1.2;
+    }
+
+    .time-column small {
+        line-height: 1.2;
     }
 
     .delta-positive {
@@ -329,15 +346,10 @@
 
     private bool GetIsPositive(TimeSpan timeSpan)
     {
-        return timeSpan.TotalMilliseconds >= 0;
+        return timeSpan.TotalMilliseconds > 0;
     }
 
-    private bool GetDeltaIsPositive(ResultEntry entry, RaceTimePoint tp)
-    {
-        return (GetDelta(entry, tp) ?? TimeSpan.Zero).TotalMilliseconds >= 0;
-    }
-
-    private TimeSpan GetDrivingDeltaTime(ResultEntry entry)
+    private TimeSpan? GetDrivingDeltaTime(ResultEntry entry)
     {
         TimeSpan referenceTime;
 
@@ -345,7 +357,7 @@
         {
             var firstEntry = ResultEntries.FirstOrDefault();
             if (firstEntry is null || firstEntry == entry)
-                return TimeSpan.Zero;
+                return null;
 
             referenceTime = firstEntry.DrivingTimeSpan;
         }
@@ -353,17 +365,17 @@
         {
             var currentIndex = ResultEntries.IndexOf(entry);
             if (currentIndex <= 0)
-                return TimeSpan.Zero;
+                return null;
 
             var previousEntry = ResultEntries[currentIndex - 1];
 
             referenceTime = previousEntry.DrivingTimeSpan;
         }
 
-        return referenceTime - entry.DrivingTimeSpan;
+        return entry.DrivingTimeSpan - referenceTime;
     }
 
-    private TimeSpan GetShootingDeltaTime(ResultEntry entry)
+    private TimeSpan? GetShootingDeltaTime(ResultEntry entry)
     {
         TimeSpan referenceTime;
 
@@ -371,7 +383,7 @@
         {
             var firstEntry = ResultEntries.FirstOrDefault();
             if (firstEntry is null || firstEntry == entry)
-                return TimeSpan.Zero;
+                return null;
 
             referenceTime = firstEntry.ShootingTimeSpan;
         }
@@ -379,17 +391,17 @@
         {
             var currentIndex = ResultEntries.IndexOf(entry);
             if (currentIndex <= 0)
-                return TimeSpan.Zero;
+                return null;
 
             var previousEntry = ResultEntries[currentIndex - 1];
 
             referenceTime = previousEntry.ShootingTimeSpan;
         }
 
-        return referenceTime - entry.ShootingTimeSpan;
+        return entry.ShootingTimeSpan - referenceTime;
     }
 
-    private TimeSpan GetPenaltyDeltaTime(ResultEntry entry)
+    private TimeSpan? GetPenaltyDeltaTime(ResultEntry entry)
     {
         TimeSpan referenceTime;
 
@@ -397,7 +409,7 @@
         {
             var firstEntry = ResultEntries.FirstOrDefault();
             if (firstEntry is null || firstEntry == entry)
-                return TimeSpan.Zero;
+                return null;
 
             referenceTime = firstEntry.PenaltyTimeSpan;
         }
@@ -405,17 +417,17 @@
         {
             var currentIndex = ResultEntries.IndexOf(entry);
             if (currentIndex <= 0)
-                return TimeSpan.Zero;
+                return null;
 
             var previousEntry = ResultEntries[currentIndex - 1];
 
             referenceTime = previousEntry.PenaltyTimeSpan;
         }
 
-        return referenceTime - entry.PenaltyTimeSpan;
+        return entry.PenaltyTimeSpan - referenceTime;
     }
 
-    private TimeSpan GetTotalDeltaTime(ResultEntry entry)
+    private TimeSpan? GetTotalDeltaTime(ResultEntry entry)
     {
         TimeSpan referenceTime;
 
@@ -423,7 +435,7 @@
         {
             var firstEntry = ResultEntries.FirstOrDefault();
             if (firstEntry is null || firstEntry == entry)
-                return TimeSpan.Zero;
+                return null;
 
             referenceTime = firstEntry.TotalTimeSpan;
         }
@@ -431,19 +443,19 @@
         {
             var currentIndex = ResultEntries.IndexOf(entry);
             if (currentIndex <= 0)
-                return TimeSpan.Zero;
+                return null;
 
             var previousEntry = ResultEntries[currentIndex - 1];
 
             referenceTime = previousEntry.TotalTimeSpan;
         }
 
-        return referenceTime - entry.TotalTimeSpan;
+        return entry.TotalTimeSpan - referenceTime;
     }
 
     private string FormatSignedTimeSpan(TimeSpan ts)
     {
-        if (ts.TotalSeconds < 0)
+        if (ts.TotalSeconds <= 0)
         {
             return $"-{FormatTimeSpan(TimeSpan.FromSeconds(-ts.TotalSeconds))}";
         }
