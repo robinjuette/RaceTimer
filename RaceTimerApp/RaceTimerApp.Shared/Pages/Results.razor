@@ -49,7 +49,7 @@
                     <input type="radio" class="btn-check" id="cumulativeMode" value="cumulative" 
                            @onchange="@((ChangeEventArgs e) => { TimeDisplayMode = (string)e.Value!; })" 
                            checked="@(TimeDisplayMode == "cumulative")" />
-                    <label class="btn btn-outline-primary" for="cumulativeMode">Kumulativ</label>
+                    <label class="btn btn-outline-primary" for="cumulativeMode">Gesamtzeit</label>
                 </div>
             </div>
             <div class="col-md-6">
@@ -58,12 +58,12 @@
                     <input type="radio" class="btn-check" id="deltaFirst" value="first" 
                            @onchange="@((ChangeEventArgs e) => { DeltaMode = (string)e.Value!; })" 
                            checked="@(DeltaMode == "first")" />
-                    <label class="btn btn-outline-success" for="deltaFirst">Zum Ersten</label>
+                    <label class="btn btn-outline-success" for="deltaFirst">Gesamt</label>
 
                     <input type="radio" class="btn-check" id="deltaPrevious" value="previous" 
                            @onchange="@((ChangeEventArgs e) => { DeltaMode = (string)e.Value!; })" 
                            checked="@(DeltaMode == "previous")" />
-                    <label class="btn btn-outline-success" for="deltaPrevious">Zum Vordermann</label>
+                    <label class="btn btn-outline-success" for="deltaPrevious">Intervall</label>
                 </div>
             </div>
         </div>
@@ -124,7 +124,7 @@
                     </td>
                     <td style="position: sticky; left: 50px; z-index: 9; background-color: #aaaaaa;">
                         <div>@entry.RankingEntry.RaceParticipant.Participant?.DisplayName</div>
-                        @if (entry.RankingEntry.RaceParticipant.StartTime.HasValue)
+                        @if (ShowCapturedTimes && entry.RankingEntry.RaceParticipant.StartTime.HasValue)
                         {
                             <small class="text-muted">@entry.RankingEntry.RaceParticipant.StartTime.Value.ToLocalTime().ToString("HH:mm:ss")</small>
                         }
