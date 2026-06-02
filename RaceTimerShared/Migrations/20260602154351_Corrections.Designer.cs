@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using RaceTimer.Shared.Data;
 
@@ -10,9 +11,11 @@ using RaceTimer.Shared.Data;
 namespace RaceTimer.Shared.Migrations
 {
     [DbContext(typeof(RaceTimerDbContext))]
-    partial class RaceTimerDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260602154351_Corrections")]
+    partial class Corrections
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.8");

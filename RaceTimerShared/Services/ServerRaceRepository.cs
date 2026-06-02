@@ -158,6 +158,16 @@ namespace RaceTimer.Shared.Services
         {
             throw new NotImplementedException();
         }
+
+        public Task<bool> CorrectTimePointAsync(Guid timePointId, DateTime correctedTimeUTC, string reason, string? correctedByUser = null)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<bool> UndoTimePointCorrectionAsync(Guid timePointId)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
 

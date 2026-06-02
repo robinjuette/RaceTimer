@@ -145,7 +145,8 @@ public class RankingService(IRaceRepository raceRepository)
 
         for(uint i = 2; i <= raceTimePoints.Max(rtp => rtp.Index); i++)
         {
-            DateTime? curDateTimeUTC = tps.FirstOrDefault(rptp => rptp.RTPIndex == i)?.TimePointUTC;
+            // Nutze GetEffectiveTimePoint() um korrigierte oder originale Zeit zu verwenden
+            DateTime? curDateTimeUTC = tps.FirstOrDefault(rptp => rptp.RTPIndex == i)?.GetEffectiveTimePoint();
             if(prevDateTimeUTC.HasValue && curDateTimeUTC.HasValue)
             {
                 splitTimes[i] = curDateTimeUTC.Value - prevDateTimeUTC.Value;

@@ -579,4 +579,48 @@ public class CoreRaceRepository : IRaceRepository
         await _db.SaveChangesAsync();
         return true;
     }
+
+    public async Task<bool> CorrectTimePointAsync(Guid timePointId, DateTime correctedTimeUTC, string reason, string? correctedByUser = null)
+    {
+        await CheckAndApplyMigrationsAsync();
+        using RaceTimerDbContext _db = await dbContextFactory.CreateDbContextAsync();
+
+        var existing = await _db.RaceParticipantTimePoints.FindAsync(timePointId);
+        if (existing is null) return false;
+
+        existing.OriginalTimePointUTC = existing.TimePointUTC;
+        existing.CorrectedTimePointUTC = correctedTimeUTC;
+        existing.CorrectionReason = reason;
+        existing.CorrectedByUser = correctedByUser ?? "System";
+        existing.CorrectionTimestamp = DateTime.UtcNow;
+        existing.IsCorrected = true;
+        existing.LastModifiedUtc = DateTime.UtcNow;
+
+        _db.RaceParticipantTimePoints.Update(existing);
+        await _db.SaveChangesAsync();
+
+        return true;
+    }
+
+    public async Task<bool> UndoTimePointCorrectionAsync(Guid timePointId)
+    {
+        await CheckAndApplyMigrationsAsync();
+        using RaceTimerDbContext _db = await dbContextFactory.CreateDbContextAsync();
+
+        var existing = await _db.RaceParticipantTimePoints.FindAsync(timePointId);
+        if (existing is null || !existing.IsCorrected) return false;
+
+        existing.CorrectedTimePointUTC = null;
+        existing.OriginalTimePointUTC = null;
+        existing.CorrectionReason = null;
+        existing.CorrectedByUser = null;
+        existing.CorrectionTimestamp = null;
+        existing.IsCorrected = false;
+        existing.LastModifiedUtc = DateTime.UtcNow;
+
+        _db.RaceParticipantTimePoints.Update(existing);
+        await _db.SaveChangesAsync();
+
+        return true;
+    }
 }

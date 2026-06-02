@@ -52,14 +52,7 @@ namespace RaceTimerApp.Shared.Models
         {
             get
             {
-                if (RaceParticipant.StartTime.HasValue)
-                {
-                    DateTime curEnd = RaceParticipant.FinishDateTimeUTC ?? DateTime.UtcNow;
-
-                    return (curEnd - RaceParticipant.StartTime.Value) + CurrentPenaltyTime;
-                }
-
-                return TimeSpan.Zero;
+                return new(SplitTimes.Values.Sum(v => v?.Ticks ?? 0) + PenaltyTimes.Values.Sum(v => v?.Ticks ?? 0));
             }
         }
 

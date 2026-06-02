@@ -30,6 +30,7 @@ namespace RaceTimerApp
             builder.Services.AddSingleton<TimingService>();
             builder.Services.AddScoped<RankingService>();
             builder.Services.AddScoped<SettingsService>();
+            builder.Services.AddScoped<TimepointCorrectionService>();
             builder.Services.AddBlazorBootstrap();
 #if DEBUG
             builder.Services.AddBlazorWebViewDeveloperTools();

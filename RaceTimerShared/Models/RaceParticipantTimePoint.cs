@@ -17,5 +17,21 @@ namespace RaceTimer.Shared.Models
         public RaceTimePoint? RaceTimePoint { get; set; }
         public DateTime? LastModifiedUtc { get; set; }
         public RaceParticipant? RaceParticipant { get; set; }
+
+        // Korrektur-Felder
+        public DateTime? OriginalTimePointUTC { get; set; }
+        public DateTime? CorrectedTimePointUTC { get; set; }
+        public string? CorrectionReason { get; set; }
+        public string? CorrectedByUser { get; set; }
+        public DateTime? CorrectionTimestamp { get; set; }
+        public bool IsCorrected { get; set; } = false;
+
+        /// <summary>
+        /// Gibt den effektiven Zeitpunkt zurück (korrigiert oder original)
+        /// </summary>
+        public DateTime GetEffectiveTimePoint() 
+            => IsCorrected && CorrectedTimePointUTC.HasValue 
+                ? CorrectedTimePointUTC.Value 
+                : TimePointUTC;
     }
 }

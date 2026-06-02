@@ -5,6 +5,7 @@
 @using System.Collections.Generic
 @inject RaceManagementService RaceService
 @inject RankingService RankingService
+@inject TimepointCorrectionService CorrectionService
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
 
@@ -138,10 +139,18 @@
                                     DateTime? capturedTime = GetCapturedTime(entry, tp);
                                     TimeSpan? deltaValue = GetDelta(entry, tp);
                                     TimeSpan? penaltyForThis = GetPenaltyForTimePoint(entry, tp);
+                                    var rptp = GetRaceParticipantTimePoint(entry, tp);
                                 }
                                 @if (timeValue.HasValue)
                                 {
-                                    <div>@FormatTimeSpan(timeValue.Value)</div>
+                                    <div style="cursor: pointer; display: flex; align-items: center; gap: 4px;" 
+                                         @onclick="() => OpenCorrectionModal(rptp!)">
+                                        <span>@FormatTimeSpan(timeValue.Value)</span>
+                                        @if (rptp?.IsCorrected ?? false)
+                                        {
+                                            <span class="correction-badge" title="Diese Zeit wurde korrigiert">⚠️</span>
+                                        }
+                                    </div>
                                     @if (penaltyForThis.HasValue && penaltyForThis.Value.TotalMilliseconds > 0)
                                     {
                                         <div class="text-warning" style="font-size: 0.85em;">@FormatSignedTimeSpan(penaltyForThis.Value)</div>
@@ -280,7 +289,106 @@
         display:flex;
         flex-direction: column;
     }
+
+    .correction-badge {
+        font-size: 1em;
+        opacity: 0.8;
+    }
+
+    .correction-info {
+        background-color: #fff3cd;
+        border-left: 4px solid #ffc107;
+        padding: 8px 12px;
+        border-radius: 4px;
+        margin-bottom: 12px;
+        font-size: 0.9em;
+    }
+
+    .modal-backdrop {
+        background-color: rgba(0, 0, 0, 0.5);
+    }
+
 </style>
+
+<!-- Korrektur-Modal -->
+@if (ShowCorrectionModal && SelectedTimePoint != null)
+{
+    <div class="modal fade show d-block" role="dialog" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Zeitpunkt korrigieren</h5>
+                    <button type="button" class="btn-close" @onclick="CloseCorrectionModal"></button>
+                </div>
+                <div class="modal-body">
+                    @if (SelectedTimePoint != null)
+                    {
+                        <div class="correction-info">
+                            <strong>Teilnehmer:</strong> @GetSelectedParticipantName()<br/>
+                            <strong>Sektor:</strong> @GetSelectedTimePointName()
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Aktueller Zeitpunkt (UTC):</label>
+                            <div class="alert alert-secondary mb-2">
+                                @SelectedTimePoint.GetEffectiveTimePoint().ToString("HH:mm:ss.fff")
+                            </div>
+                            @if (SelectedTimePoint.IsCorrected && SelectedTimePoint.OriginalTimePointUTC.HasValue)
+                            {
+                                <small class="text-muted d-block mb-2">
+                                    Original: @SelectedTimePoint.OriginalTimePointUTC.Value.ToLocalTime().ToString("HH:mm:ss.fff")
+                                </small>
+                            }
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Neuer Zeitpunkt (UTC):</label>
+                            <input type="datetime-local" 
+                                   step="1"
+                                   class="form-control" 
+                                   @bind="CorrectionRequest.CorrectedTimeUTC" 
+                                   placeholder="Neuen Zeitpunkt eingeben" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Grund der Korrektur:</label>
+                            <select class="form-select" @bind="CorrectionRequest.SelectedReason">
+                                <option value="">-- Bitte wählen --</option>
+                                @foreach (var reason in AvailableReasons)
+                                {
+                                    <option value="@reason">@reason</option>
+                                }
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Zusätzliche Notizen (optional):</label>
+                            <textarea class="form-control" 
+                                      rows="3" 
+                                      @bind="CorrectionRequest.AdditionalNotes"
+                                      placeholder="z.B. Zusätzliche Informationen zur Korrektur..."></textarea>
+                        </div>
+
+                        @if (!string.IsNullOrEmpty(ErrorMessage))
+                        {
+                            <div class="alert alert-danger">@ErrorMessage</div>
+                        }
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseCorrectionModal">Abbrechen</button>
+                    <button type="button" class="btn btn-primary" @onclick="SaveCorrection" disabled="@(string.IsNullOrEmpty(CorrectionRequest.SelectedReason))">
+                        Speichern
+                    </button>
+                    @if (SelectedTimePoint?.IsCorrected ?? false)
+                    {
+                        <button type="button" class="btn btn-warning" @onclick="UndoCorrection">Rückgängig</button>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
 
 @code {
     [Parameter]
@@ -290,9 +398,16 @@
     private List<ResultEntry> ResultEntries = [];
     private List<RaceTimePoint> RaceTimePoints = [];
 
-    private string TimeDisplayMode = "sector"; // "sector" oder "cumulative"
-    private string DeltaMode = "first"; // "first" oder "previous"
-    private bool ShowCapturedTimes = false; // Standardmäßig ausgeblendet
+    private string TimeDisplayMode = "sector";
+    private string DeltaMode = "first";
+    private bool ShowCapturedTimes = false;
+
+    // Korrektur-Modal Properties
+    private bool ShowCorrectionModal = false;
+    private RaceParticipantTimePoint? SelectedTimePoint;
+    private TimePointCorrectionRequest CorrectionRequest = new();
+    private List<string> AvailableReasons = [];
+    private string? ErrorMessage;
 
     protected override async Task OnInitializedAsync()
     {
@@ -549,5 +664,140 @@
         {
             System.Diagnostics.Debug.WriteLine($"PDF Export fehlgeschlagen: {ex.Message}");
         }
+    }
+
+    // Korrektur-Modal Methoden
+    private void OpenCorrectionModal(RaceParticipantTimePoint timePoint)
+    {
+        if (timePoint == null) return;
+
+        SelectedTimePoint = timePoint;
+        CorrectionRequest = new TimePointCorrectionRequest
+        {
+            TimePointId = timePoint.Id,
+            CurrentTimeUTC = timePoint.GetEffectiveTimePoint(),
+            OriginalTimeUTC = timePoint.OriginalTimePointUTC,
+            CorrectedTimeUTC = timePoint.CorrectedTimePointUTC ?? timePoint.TimePointUTC,
+            IsCorrected = timePoint.IsCorrected,
+            SelectedReason = timePoint.CorrectionReason ?? string.Empty
+        };
+        ErrorMessage = null;
+        ShowCorrectionModal = true;
+        AvailableReasons = CorrectionService.GetCorrectionReasons();
+    }
+
+    private void CloseCorrectionModal()
+    {
+        ShowCorrectionModal = false;
+        SelectedTimePoint = null;
+        CorrectionRequest = new();
+        ErrorMessage = null;
+    }
+
+    private async Task SaveCorrection()
+    {
+        if (SelectedTimePoint == null || string.IsNullOrEmpty(CorrectionRequest.SelectedReason))
+        {
+            ErrorMessage = "Bitte füllen Sie alle erforderlichen Felder aus.";
+            return;
+        }
+
+        try
+        {
+            var reason = CorrectionRequest.SelectedReason;
+            if (!string.IsNullOrEmpty(CorrectionRequest.AdditionalNotes))
+            {
+                reason += $" | {CorrectionRequest.AdditionalNotes}";
+            }
+
+            var success = await CorrectionService.CorrectTimePointAsync(
+                SelectedTimePoint.Id,
+                CorrectionRequest.CorrectedTimeUTC,
+                reason);
+
+            if (success)
+            {
+                CloseCorrectionModal();
+                // Ergebnisse neu laden
+                if (Guid.TryParse(RaceId, out var raceId))
+                {
+                    CurrentRace = await RaceService.GetRaceAsync(raceId);
+                    if (CurrentRace is not null)
+                    {
+                        RaceTimePoints = CurrentRace.RaceTimePoints.OrderBy(x => x.Index).ToList();
+                        ResultEntries = await RankingService.GetResultsAsync(raceId);
+                    }
+                }
+            }
+            else
+            {
+                ErrorMessage = "Die Speicherung der Korrektur ist fehlgeschlagen.";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Fehler beim Speichern: {ex.Message}";
+        }
+    }
+
+    private async Task UndoCorrection()
+    {
+        if (SelectedTimePoint == null)
+            return;
+
+        try
+        {
+            var success = await CorrectionService.UndoTimePointCorrectionAsync(SelectedTimePoint.Id);
+
+            if (success)
+            {
+                CloseCorrectionModal();
+                // Ergebnisse neu laden
+                if (Guid.TryParse(RaceId, out var raceId))
+                {
+                    CurrentRace = await RaceService.GetRaceAsync(raceId);
+                    if (CurrentRace is not null)
+                    {
+                        RaceTimePoints = CurrentRace.RaceTimePoints.OrderBy(x => x.Index).ToList();
+                        ResultEntries = await RankingService.GetResultsAsync(raceId);
+                    }
+                }
+            }
+            else
+            {
+                ErrorMessage = "Das Rückgängigmachen ist fehlgeschlagen.";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Fehler beim Rückgängigmachen: {ex.Message}";
+        }
+    }
+
+    private RaceParticipantTimePoint? GetRaceParticipantTimePoint(ResultEntry entry, RaceTimePoint tp)
+    {
+        return entry.RankingEntry.RaceParticipantTimePoints.FirstOrDefault(rptp => rptp.RTPIndex == tp.Index);
+    }
+
+    private string GetSelectedParticipantName()
+    {
+        if (SelectedTimePoint?.Participant != null)
+            return SelectedTimePoint.Participant.DisplayName;
+
+        // Fallback: suche in ResultEntries
+        var entry = ResultEntries.FirstOrDefault(e => 
+            e.RankingEntry.RaceParticipantTimePoints.Any(rptp => rptp.Id == SelectedTimePoint?.Id));
+
+        return entry?.RankingEntry.RaceParticipant.Participant?.DisplayName ?? "Unbekannt";
+    }
+
+    private string GetSelectedTimePointName()
+    {
+        if (SelectedTimePoint?.RTPIndex != null)
+        {
+            var tp = RaceTimePoints.FirstOrDefault(x => x.Index == SelectedTimePoint.RTPIndex);
+            return tp?.DisplayName ?? $"Sektor {SelectedTimePoint.RTPIndex}";
+        }
+        return "Unbekannt";
     }
 }

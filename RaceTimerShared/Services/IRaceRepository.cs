@@ -32,5 +32,7 @@
         Task<RaceTimePoint?> CreateRaceTimePointAsync(Guid raceId, string? name);
         Task<bool> DeleteRaceTimePointAsync(Guid timePointId);
         Task CheckForRaceCompletionAsync(Guid raceId);
+        Task<bool> CorrectTimePointAsync(Guid timePointId, DateTime correctedTimeUTC, string reason, string? correctedByUser = null);
+        Task<bool> UndoTimePointCorrectionAsync(Guid timePointId);
     }
 }
