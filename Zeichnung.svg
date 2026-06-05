@@ -1,0 +1,268 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="210mm"
+   height="297mm"
+   viewBox="0 0 210 297"
+   version="1.1"
+   id="svg1"
+   inkscape:version="1.4.3 (0d15f75, 2025-12-25)"
+   sodipodi:docname="Zeichnung.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="mm"
+     inkscape:zoom="0.74016561"
+     inkscape:cx="380.99581"
+     inkscape:cy="650.53009"
+     inkscape:window-width="1437"
+     inkscape:window-height="1361"
+     inkscape:window-x="888"
+     inkscape:window-y="45"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="layer1" />
+  <defs
+     id="defs1" />
+  <g
+     inkscape:label="Ebene 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <g
+       id="g1"
+       transform="translate(11.438881,-121.53811)">
+      <rect
+         style="fill:#ff0000;stroke-width:4.96965"
+         id="rect1"
+         width="186.54129"
+         height="83.013741"
+         x="0.75829965"
+         y="131.94383"
+         rx="0" />
+      <text
+         xml:space="preserve"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.52778px;line-height:1.25;font-family:Sans;-inkscape-font-specification:'Sans, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:center;letter-spacing:0px;word-spacing:0px;text-anchor:middle;stroke-width:0.264583"
+         x="94.059448"
+         y="142.08386"
+         id="text1"
+         inkscape:label="text1"><tspan
+           sodipodi:role="line"
+           id="tspan1"
+           style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.52778px;font-family:Sans;-inkscape-font-specification:'Sans, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;stroke-width:0.264583"
+           x="94.059448"
+           y="142.08386">Server</tspan></text>
+    </g>
+    <rect
+       style="fill:#ff0000;stroke-width:3.36219"
+       id="rect2"
+       width="196.60577"
+       height="148.70546"
+       x="8.2216949"
+       y="131.54715" />
+    <g
+       id="g11">
+      <rect
+         style="fill:#dc8282;fill-opacity:1;stroke:#000000;stroke-width:2.5;stroke-opacity:1;stroke-dasharray:2.5,7.5;stroke-dashoffset:0"
+         id="rect10"
+         width="185.88182"
+         height="63.98624"
+         x="14.298601"
+         y="76.85498" />
+      <text
+         xml:space="preserve"
+         style="font-size:3.52777px;line-height:1.25;font-family:Sans;-inkscape-font-specification:'Sans, Normal';text-align:center;letter-spacing:0px;word-spacing:0px;text-anchor:middle;stroke-width:0.264583"
+         x="103.30741"
+         y="85.076675"
+         id="text11"><tspan
+           sodipodi:role="line"
+           id="tspan11"
+           style="stroke-width:0.264583"
+           x="103.30741"
+           y="85.076675">Server wenn verbunden, lokal wenn nicht</tspan></text>
+    </g>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.52778px;line-height:1.25;font-family:Sans;-inkscape-font-specification:'Sans, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:center;letter-spacing:0px;word-spacing:0px;text-anchor:middle;stroke-width:0.264583"
+       x="103.95353"
+       y="274.53314"
+       id="text2"><tspan
+         sodipodi:role="line"
+         id="tspan2"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.52778px;font-family:Sans;-inkscape-font-specification:'Sans, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;stroke-width:0.264583"
+         x="103.95353"
+         y="274.53314">Client</tspan></text>
+    <g
+       id="g5">
+      <rect
+         style="fill:#12ff00;fill-opacity:1;stroke:none;stroke-width:1.26269"
+         id="rect5-5"
+         width="55.407082"
+         height="17.873253"
+         x="144.83107"
+         y="206.66666" />
+      <text
+         xml:space="preserve"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.52778px;line-height:1.25;font-family:Sans;-inkscape-font-specification:'Sans, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:center;letter-spacing:0px;word-spacing:0px;text-anchor:middle;fill:#000000;fill-opacity:1;stroke-width:0.264583"
+         x="172.46405"
+         y="216.457"
+         id="text5"><tspan
+           sodipodi:role="line"
+           id="tspan5">Page 1</tspan></text>
+    </g>
+    <g
+       id="g5-18"
+       transform="translate(-33.093636,-93.812432)">
+      <rect
+         style="fill:#12ff00;fill-opacity:1;stroke:none;stroke-width:1.30002"
+         id="rect5-5-9"
+         width="55.407082"
+         height="18.94565"
+         x="144.83107"
+         y="206.66666" />
+      <text
+         xml:space="preserve"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.52778px;line-height:1.25;font-family:Sans;-inkscape-font-specification:'Sans, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:center;letter-spacing:0px;word-spacing:0px;text-anchor:middle;fill:#000000;fill-opacity:1;stroke-width:0.264583"
+         x="172.37939"
+         y="217.0567"
+         id="text5-27"><tspan
+           sodipodi:role="line"
+           id="tspan12"
+           x="172.37939"
+           y="217.0567">Logik</tspan></text>
+    </g>
+    <g
+       id="g5-18-0"
+       transform="translate(-95.629306,-93.926029)">
+      <rect
+         style="fill:#12ff00;fill-opacity:1;stroke:none;stroke-width:1.30002"
+         id="rect5-5-9-0"
+         width="55.407082"
+         height="18.94565"
+         x="144.83107"
+         y="206.66666" />
+      <text
+         xml:space="preserve"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.52778px;line-height:1.25;font-family:Sans;-inkscape-font-specification:'Sans, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:center;letter-spacing:0px;word-spacing:0px;text-anchor:middle;fill:#000000;fill-opacity:1;stroke-width:0.264583"
+         x="172.37939"
+         y="217.0567"
+         id="text5-27-6"><tspan
+           sodipodi:role="line"
+           id="tspan15"
+           x="172.37939"
+           y="217.0567">Notifier</tspan></text>
+    </g>
+    <g
+       id="g5-1"
+       transform="translate(0.19131084,21.361988)">
+      <rect
+         style="fill:#12ff00;fill-opacity:1;stroke:none;stroke-width:1.26269"
+         id="rect5-5-5"
+         width="55.407082"
+         height="17.873253"
+         x="144.83107"
+         y="206.66666" />
+      <text
+         xml:space="preserve"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.52778px;line-height:1.25;font-family:Sans;-inkscape-font-specification:'Sans, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:center;letter-spacing:0px;word-spacing:0px;text-anchor:middle;fill:#000000;fill-opacity:1;stroke-width:0.264583"
+         x="172.46405"
+         y="216.457"
+         id="text5-2"><tspan
+           sodipodi:role="line"
+           id="tspan6">Page 2</tspan></text>
+    </g>
+    <g
+       id="g5-3"
+       transform="translate(-0.47551351,44.203486)">
+      <rect
+         style="fill:#12ff00;fill-opacity:1;stroke:none;stroke-width:1.26269"
+         id="rect5-5-2"
+         width="55.407082"
+         height="17.873253"
+         x="144.83107"
+         y="206.66666" />
+      <text
+         xml:space="preserve"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.52778px;line-height:1.25;font-family:Sans;-inkscape-font-specification:'Sans, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:center;letter-spacing:0px;word-spacing:0px;text-anchor:middle;fill:#000000;fill-opacity:1;stroke-width:0.264583"
+         x="172.46405"
+         y="216.457"
+         id="text5-21"><tspan
+           sodipodi:role="line"
+           id="tspan7">Page 3</tspan></text>
+    </g>
+    <g
+       id="g5-3-2-9"
+       transform="translate(-72.819993,-118.13042)">
+      <rect
+         style="fill:#12ff00;fill-opacity:1;stroke:none;stroke-width:1.26269"
+         id="rect5-5-2-3-8"
+         width="55.407082"
+         height="17.873253"
+         x="144.83107"
+         y="206.66666" />
+      <text
+         xml:space="preserve"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.52778px;line-height:1.25;font-family:Sans;-inkscape-font-specification:'Sans, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:center;letter-spacing:0px;word-spacing:0px;text-anchor:middle;fill:#000000;fill-opacity:1;stroke-width:0.264583"
+         x="172.46405"
+         y="216.457"
+         id="text5-21-3-6"><tspan
+           sodipodi:role="line"
+           id="tspan14">ConfiguredDb</tspan></text>
+    </g>
+    <g
+       id="g5-3-2-9-0"
+       transform="translate(-64.634566,23.630378)">
+      <rect
+         style="fill:#12ff00;fill-opacity:1;stroke:none;stroke-width:1.26269"
+         id="rect5-5-2-3-8-2"
+         width="55.407082"
+         height="17.873253"
+         x="144.83107"
+         y="206.66666" />
+      <text
+         xml:space="preserve"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.52778px;line-height:1.25;font-family:Sans;-inkscape-font-specification:'Sans, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:center;letter-spacing:0px;word-spacing:0px;text-anchor:middle;fill:#000000;fill-opacity:1;stroke-width:0.264583"
+         x="172.46405"
+         y="216.457"
+         id="text5-21-3-6-4"><tspan
+           sodipodi:role="line"
+           id="tspan13"
+           x="172.46405"
+           y="216.457">RunningRacesService</tspan></text>
+    </g>
+    <g
+       id="g5-3-2-9-0-4"
+       transform="translate(-131.109,23.5349)">
+      <rect
+         style="fill:#12ff00;fill-opacity:1;stroke:none;stroke-width:1.26269"
+         id="rect5-5-2-3-8-2-4"
+         width="55.407082"
+         height="17.873253"
+         x="144.83107"
+         y="206.66666" />
+      <text
+         xml:space="preserve"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.52778px;line-height:1.25;font-family:Sans;-inkscape-font-specification:'Sans, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:center;letter-spacing:0px;word-spacing:0px;text-anchor:middle;fill:#000000;fill-opacity:1;stroke-width:0.264583"
+         x="172.46405"
+         y="216.457"
+         id="text5-21-3-6-4-6"><tspan
+           sodipodi:role="line"
+           id="tspan16"
+           x="172.46405"
+           y="216.457">Settings/ConfigService</tspan></text>
+    </g>
+  </g>
+  <g
+     inkscape:groupmode="layer"
+     id="layer2"
+     inkscape:label="Ebene 2" />
+</svg>

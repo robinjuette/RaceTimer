@@ -7,7 +7,9 @@ namespace RaceTimer.Shared.Services
 {
     public class ServerRaceRepository : IRaceRepository
     {
+
         private readonly RaceTimerApiClient raceTimerApiClient;
+        private readonly SignalRSyncService signalRSyncService;
 
         public Task<Race?> AddRaceAsync(string name)
         {
