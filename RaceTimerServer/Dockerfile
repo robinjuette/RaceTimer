@@ -13,6 +13,7 @@ FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 COPY ["RaceTimerServer/RaceTimerServer.csproj", "RaceTimerServer/"]
+COPY ["RaceTimerShared/RaceTimerShared.csproj", "RaceTimerShared/"]
 RUN dotnet restore "./RaceTimerServer/RaceTimerServer.csproj"
 COPY . .
 WORKDIR "/src/RaceTimerServer"
