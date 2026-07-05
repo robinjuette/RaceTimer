@@ -19,5 +19,5 @@
   </Project>
   <Project Path="RaceTimerServer/RaceTimerServer.csproj" />
   <Project Path="RaceTimerShared/RaceTimerShared.csproj" />
-  <Project Path="RacheTimerSharedStartupApp/RacheTimerSharedStartupApp.csproj" Id="9f24dd26-0e38-4240-94f2-84afbd6320db" />
+  <Project Path="RaceTimerSharedStartupApp/RaceTimerSharedStartupApp.csproj" Id="9f24dd26-0e38-4240-94f2-84afbd6320db" />
 </Solution>
