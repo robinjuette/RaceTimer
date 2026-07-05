@@ -35,6 +35,7 @@ public static class SharedServiceCollectionExtensions
         return services;
     }
 
+    /*
     /// <summary>
     /// Registriert SignalR Sync Service mit optionalem Server.
     /// </summary>
@@ -48,7 +49,7 @@ public static class SharedServiceCollectionExtensions
         }
 
         return services;
-    }
+    }*/
 
     /// <summary>
     /// Registriert alle lokalen Services für MAUI-App.
@@ -59,7 +60,7 @@ public static class SharedServiceCollectionExtensions
         string? serverUrl = null)
     {
         services.AddLocalRaceServices(dbPath);
-        services.AddSignalRSync(serverUrl);
+        //services.AddSignalRSync(serverUrl);
 
         return services;
     }
