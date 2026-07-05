@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using RaceTimer.Shared.Services;
 using RaceTimerApp.Shared.Models;
 
@@ -12,11 +13,16 @@ public class AppConfigService
     private AppSettings _settings;
     private readonly Action<AppSettings>? _savePersistence;
     private readonly Func<AppSettings>? _loadPersistence;
+    private readonly ILogger<SignalRSyncService>? _logger;
 
-    public AppConfigService(Action<AppSettings>? savePersistence = null, Func<AppSettings>? loadPersistence = null)
+    public AppConfigService(
+        Action<AppSettings>? savePersistence = null, 
+        Func<AppSettings>? loadPersistence = null,
+        ILogger<SignalRSyncService>? logger = null)
     {
         _savePersistence = savePersistence;
         _loadPersistence = loadPersistence;
+        _logger = logger;
         _settings = _loadPersistence?.Invoke() ?? new AppSettings();
     }
 
@@ -53,7 +59,13 @@ public class AppConfigService
 
         try
         {
-            _signalRSync = new SignalRSyncService(serverUrl);
+            if (_logger == null)
+            {
+                System.Diagnostics.Debug.WriteLine("Warning: Logger not provided to AppConfigService, SignalRSyncService will run without logging");
+                return false;
+            }
+
+            _signalRSync = new SignalRSyncService(serverUrl, _logger);
             var connected = await _signalRSync.ConnectAsync();
 
             if (connected)
@@ -101,7 +113,7 @@ public class AppConfigService
     {
         if (_signalRSync?.IsConnected ?? false)
         {
-            await _signalRSync.SubscribeToRaceAsync(raceId);
+            await _signalRSync.SubscribeToRaceChangesAsync(raceId);
         }
     }
 
@@ -112,7 +124,7 @@ public class AppConfigService
     {
         if (_signalRSync?.IsConnected ?? false)
         {
-            await _signalRSync.UnsubscribeFromRaceAsync(raceId);
+            await _signalRSync.UnsubscribeFromRaceChangesAsync(raceId);
         }
     }
 }

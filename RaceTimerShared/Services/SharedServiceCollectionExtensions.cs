@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using RaceTimer.Shared.Data;
+using RaceTimer.Shared.Http;
 
 namespace RaceTimer.Shared.Services;
 
@@ -35,33 +37,62 @@ public static class SharedServiceCollectionExtensions
         return services;
     }
 
-    /*
     /// <summary>
-    /// Registriert SignalR Sync Service mit optionalem Server.
+    /// Registriert Server-basierte Race Services mit REST-API und SignalR.
+    /// Für Online-Betrieb mit Server-Synchronisation.
     /// </summary>
-    public static IServiceCollection AddSignalRSync(
+    public static IServiceCollection AddServerRaceServices(
         this IServiceCollection services,
-        string? serverUrl = null)
+        string serverUrl)
     {
-        if (!string.IsNullOrEmpty(serverUrl))
+        if (string.IsNullOrEmpty(serverUrl))
+            throw new ArgumentNullException(nameof(serverUrl), "Server-URL erforderlich für Server-basierte Services");
+
+        // Registriere HTTP-Client für die API
+        services.AddHttpClient<IRaceTimerApiClient, RaceTimerApiClient>(client =>
         {
-            services.AddSingleton(new SignalRSyncService(serverUrl));
-        }
+            client.BaseAddress = new Uri(serverUrl);
+        });
+
+        // Registriere SignalR Sync Service als Singleton (eine Verbindung pro App-Instanz)
+        services.AddSingleton<SignalRSyncService>(provider =>
+        {
+            var logger = provider.GetRequiredService<ILogger<SignalRSyncService>>();
+            var hubUrl = $"{serverUrl}/hubs/racetimer";
+            return new SignalRSyncService(hubUrl, logger);
+        });
+
+        // Registriere Server-basiertes Repository
+        services.AddScoped<IRaceRepository>(provider =>
+        {
+            var apiClient = provider.GetRequiredService<IRaceTimerApiClient>();
+            var signalRSync = provider.GetRequiredService<SignalRSyncService>();
+            var logger = provider.GetRequiredService<ILogger<ServerRaceRepository>>();
+            return new ServerRaceRepository(apiClient, signalRSync, logger);
+        });
 
         return services;
-    }*/
+    }
 
     /// <summary>
-    /// Registriert alle lokalen Services für MAUI-App.
+    /// Registriert alle lokalen Services für MAUI-App (Offline-Modus).
     /// </summary>
     public static IServiceCollection AddMauiRaceServices(
         this IServiceCollection services,
-        string? dbPath = null,
-        string? serverUrl = null)
+        string? dbPath = null)
     {
         services.AddLocalRaceServices(dbPath);
-        //services.AddSignalRSync(serverUrl);
+        return services;
+    }
 
+    /// <summary>
+    /// Registriert alle Server-basierten Services für MAUI-App (Online-Modus).
+    /// </summary>
+    public static IServiceCollection AddMauiServerRaceServices(
+        this IServiceCollection services,
+        string serverUrl)
+    {
+        services.AddServerRaceServices(serverUrl);
         return services;
     }
 }
