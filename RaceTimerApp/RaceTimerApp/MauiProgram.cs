@@ -18,11 +18,20 @@ namespace RaceTimerApp
 
             builder.Services.AddMauiBlazorWebView();
 
-            // Register configuration service first
-            builder.Services.AddSingleton<AppConfigService>();
+            // Register local Race Services with SQLite (offline-first)
+            builder.Services.AddLocalRaceServices();
 
-            // Register local Race Services (offline-first)
-            builder.Services.AddMauiRaceServices();
+            // Register ConfiguredConnectionRepository as runtime switcher singleton
+            builder.Services.AddConfiguredConnectionRepository();
+
+            // Register configuration service with DI provider and configured repository
+            builder.Services.AddSingleton<AppConfigService>(provider =>
+            {
+                var configuredRepo = provider.GetRequiredService<ConfiguredConnectionRepository>();
+                var logger = provider.GetService<ILogger<SignalRSyncService>>();
+                return new AppConfigService(
+                    null, null, logger, provider, configuredRepo);
+            });
 
             // Register app-specific services
             builder.Services.AddScoped<RaceManagementService>();
@@ -32,6 +41,7 @@ namespace RaceTimerApp
             builder.Services.AddScoped<SettingsService>();
             builder.Services.AddScoped<TimepointCorrectionService>();
             builder.Services.AddBlazorBootstrap();
+
 #if DEBUG
             builder.Services.AddBlazorWebViewDeveloperTools();
             builder.Logging.AddDebug();

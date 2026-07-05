@@ -11,7 +11,8 @@ builder.Services.AddRazorComponents()
     .AddInteractiveWebAssemblyComponents();
 
 // Register RaceTimer services
-builder.Services.AddMauiRaceServices();
+builder.Services.AddLocalRaceServices();
+builder.Services.AddConfiguredConnectionRepository();
 builder.Services.AddScoped<SettingsService>();
 builder.Services.AddScoped<TimingService>();
 builder.Services.AddScoped<RaceManagementService>();

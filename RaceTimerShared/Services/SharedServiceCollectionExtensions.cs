@@ -75,24 +75,52 @@ public static class SharedServiceCollectionExtensions
     }
 
     /// <summary>
-    /// Registriert alle lokalen Services für MAUI-App (Offline-Modus).
+    /// Registriert ConfiguredConnectionRepository als Runtime-switcher Singleton.
+    /// Dies erlaubt der App, zur Laufzeit zwischen lokalen und Server-basierten Repositories zu wechseln.
+    /// Wird meist mit AddLocalRaceServices() initialisiert, kann aber später umgeschaltet werden.
     /// </summary>
-    public static IServiceCollection AddMauiRaceServices(
+    public static IServiceCollection AddConfiguredConnectionRepository(
         this IServiceCollection services,
-        string? dbPath = null)
+        IRaceRepository? initialRepository = null)
     {
-        services.AddLocalRaceServices(dbPath);
+        // Wenn kein initiales Repository bereitgestellt, nutze das zuletzt registrierte
+        services.AddSingleton<ConfiguredConnectionRepository>(provider =>
+        {
+            var repo = initialRepository ?? provider.GetService<IRaceRepository>();
+            if (repo == null)
+                throw new InvalidOperationException("No initial IRaceRepository configured. Call AddLocalRaceServices() or AddServerRaceServices() first.");
+
+            var changeNotifier = repo as IRepositoryChangeNotifier;
+            var logger = provider.GetService<ILogger<ConfiguredConnectionRepository>>();
+            return new ConfiguredConnectionRepository(repo, changeNotifier, logger);
+        });
+
+        // Registriere ConfiguredConnectionRepository auch als IRaceRepository
+        // Damit erhalten Consumers automatisch den Switcher
+        services.AddSingleton<IRaceRepository>(provider =>
+            provider.GetRequiredService<ConfiguredConnectionRepository>());
+
+        // Registriere auch als IRepositoryChangeNotifier
+        services.AddSingleton<IRepositoryChangeNotifier>(provider =>
+            provider.GetRequiredService<ConfiguredConnectionRepository>());
+
         return services;
     }
 
     /// <summary>
-    /// Registriert alle Server-basierten Services für MAUI-App (Online-Modus).
+    /// Registriert alle Services für MAUI-App mit Runtime-Umschaltung (Offline zu Online).
+    /// Nutzt ConfiguredConnectionRepository als zentralen Proxy.
     /// </summary>
-    public static IServiceCollection AddMauiServerRaceServices(
+    public static IServiceCollection AddMauiRaceServicesWithSwitch(
         this IServiceCollection services,
-        string serverUrl)
+        string? dbPath = null)
     {
-        services.AddServerRaceServices(serverUrl);
+        // Registriere lokale Services als Initial-Setup
+        services.AddLocalRaceServices(dbPath);
+
+        // Registriere ConfiguredConnectionRepository als Runtime-Switcher
+        services.AddConfiguredConnectionRepository();
+
         return services;
     }
 }
