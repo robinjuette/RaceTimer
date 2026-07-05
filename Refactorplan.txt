@@ -1,0 +1,93 @@
+Ziel:
+- Die ClientApp soll zur Laufzeit wahlweise ein lokales (CoreRaceRepository) oder ein serverbasiertes IRaceRepository verwenden können.
+- Alle Repository-Implementierungen sollen Änderungsbenachrichtigungen (Änderungsereignisse und optional differenzielle Abfragen) bereitstellen.
+- Die Konfiguration soll zur Laufzeit gewechselt werden können; dabei müssen Aufrufe, Events und Subscriptions sauber umgeschaltet werden (kein Ressourcen-Leak, kein doppeltes Empfangen).
+
+Kurzüberblick der vorgeschlagenen Vorgehensweise
+- Einführung eines klaren Change-Notification-Contracts (IRepositoryChangeNotifier) statt direkter Änderung der bestehenden IRaceRepository-Signatur.
+- CoreRaceRepository implementiert diesen Contract und feuert Events bei Änderungen.
+- Server-Komponente stellt REST-API (RaceTimerController) bereit; zusätzlich ein SignalR-Hub zum Pushen von Änderungen.
+- RaceTimerAPIClient kapselt REST-Aufrufe; SignalRSyncService verwaltet SignalR-Verbindung und übersetzt eingehende Notifications.
+- ServerRaceRepository kombiniert API-Client und SignalRSyncService und implementiert IRaceRepository sowie IRepositoryChangeNotifier.
+- ConfiguredConnectionRepository delegiert Aufrufe und Change-Subscriptions an das aktuelle Repository und kann zur Laufzeit sauber wechseln.
+
+Detaillierter Plan (schrittweise, ausführbare Tasks)
+
+0) Definition: Change-Notification Contract (klein und stabil)
+   - Neuer Typ: IRepositoryChangeNotifier
+	   - Event: event EventHandler<RepositoryChangedEventArgs>? RepositoryChanged
+	   - Optional: Task SubscribeAsync(CancellationToken) / UnsubscribeAsync(CancellationToken) für serverseitige Subscriptions
+   - Repository-Implementierungen sollen diese Schnittstelle implementieren, nicht IRaceRepository selbst verändern.
+   - RepositoryChangedEventArgs enthält: ChangeType (enum), EntityType (string), EntityId (Guid?), TimestampUtc, evtl. Payload/summary.
+   - Akzeptanzkriterien: Services können sich gegen IRepositoryChangeNotifier registrieren und konsistent Benachrichtigungen empfangen.
+
+1) CoreRaceRepository: Änderungsbenachrichtigungen hinzufügen
+   - Implementiert IRepositoryChangeNotifier.
+   - An geeigneten Stellen (Add/Update/Delete/Assign/Start/Correct/Undo etc.) RepositoryChanged-Event feuern.
+   - Events müssen thread-safe sein und LastModifiedUtc als Quelle für differenzielle Abfragen setzen.
+   - Tests: Unittests prüfen, dass nach einer DB-Operation ein Event mit korrektem Payload ausgesendet wird.
+
+2) Server: REST-API und API-Client
+   - Vorgehensweise: OpenAPI/Swagger als Single Source of Truth; REST-API-Spec (JSON/YAML) wird serverseitig erzeugt und als Quelle für Client-/Stub-Generierung verwendet.
+   - RaceTimerServer: RaceTimerController implementieren und mit Swashbuckle (oder äquivalent) OpenAPI-Spec exportieren (z. B. /swagger/v1/swagger.yaml).
+   - RaceTimerShared: RaceTimerApiClient automatisch aus der OpenAPI-Spec generieren (z. B. NSwag/AutoRest/OpenAPI Generator). Generierter C#-Client wird als typed HttpClient / DI-registrierter Client genutzt.
+   - Integration: Code-Generation in CI oder als MSBuild-Schritt (nswag-msbuild / autorest task) konfigurieren; Entscheidung treffen: generated code einchecken vs. zur Build-Zeit generieren.
+   - Akzeptanzkriterien: API-Coverage für alle IRaceRepository-Methoden, kompatible DTOs, regenerierbarer Client bei API-Änderungen.
+   - Tests: Integrationstestendpunkte, Contract-Tests zwischen Client und Server; CI prüft erfolgreiche Regeneration bzw. Konsistenz der Spec.
+
+3) SignalR: Änderungsbenachrichtigungen transportieren
+   - Server: SignalR-Hub (RaceTimerHub) mit Methode BroadcastChange(RepositoryChangedEventArgs) nach internen Änderungen.
+   - CoreRaceRepository auf Serverseite feuert intern ebenfalls die Hub-Events (oder ein zentraler Notifier triggert Hub und DB-Events).
+   - Client: SignalRSyncService verwaltet HubConnection, übersetzt Hub-Events zu RepositoryChangedEventArgs und emittiert lokale Events.
+   - Akzeptanzkriterien: Clients erhalten Änderungen in <1s bei normaler Netzwerkverbindung; Verbindungsunterbrechung/Retry-Strategie vorhanden.
+
+4) ServerRaceRepository: Wrapper für API-Client + SignalRSyncService
+   - Implementiert IRaceRepository und IRepositoryChangeNotifier.
+   - IRaceRepository-Methoden delegieren an RaceTimerApiClient.
+   - SignalRSyncService-Events werden an RepositoryChanged weitergereicht.
+   - Implementiert sauberes Lifecycle-Management (Start/Stop/Dispose) und Backoff-Strategie für SignalR.
+   - Tests: Unittests für Methodendelegation, Integrationstest für Event-Forwarding via SignalR.
+
+5) ConfiguredConnectionRepository: Laufzeitumschaltung
+   - Implementiert IRaceRepository und IRepositoryChangeNotifier.
+   - Hält interne Referenz auf aktives IRaceRepository (Core oder Server) und auf dessen IRepositoryChangeNotifier-Subscription.
+   - On configuration change: unsubscribe vom alten Repository, dispose falls notwendig, subscribe zum neuen Repository, forward events.
+   - Transition muss transactional und thread-safe sein; aktive Aufrufe sollten fehlerfrei an das neue Repository gehen oder kontrolliert fehlschlagen.
+   - Akzeptanzkriterien: Kein doppeltes Eventempfangen, keine verlorenen Events während der Umschaltung (so weit möglich), deterministisches Verhalten dokumentiert.
+
+6) Migration und Kompatibilität
+   - IRaceRepository-Signatur unverändert halten; neue Functionality über RepositoryChangeNotifier ausliefern.
+   - Bestehende Services (TimingService, RankingService, UI) schrittweise an IRepositoryChangeNotifier adaptieren.
+   - Fall-back: wenn kein IRepositoryChangeNotifier vorhanden, Periodic-Polling als Fallback-Mechanismus implementieren.
+
+7) Tests und Verifikation
+   - Unittests: CoreRaceRepository-Events, ServerRaceRepository-Delegation, ConfiguredConnectionRepository-Switching.
+   - Integrationstests: Server-API <-> API-Client, SignalR End-to-End zwischen Server und Client.
+   - Manueller Testplan: lokale DB-Test, Server lokal starten, Client verbinden, Konfig-Wechsel testen, Netzwerkunterbrechung testen.
+
+8) Beobachtungen, Risiken und Empfehlungen
+   - RaceTimerDbContext SaveChanges muss LastModifiedUtc konsistent setzen; Events sollten LastModifiedUtc nutzen.
+   - Änderungen in CoreRaceRepository müssen performant sein; Events dürfen keine synchrone Blockade des DB-Flows verursachen (Fire-and-forget mit robustem Fehler-Handling empfohlen).
+   - SignalR kann Nachrichtenreihenfolge und Delivery-Garantien nicht vollkommen gewährleisten; kritische Operationen weiterhin via REST bestätigen.
+
+Akzeptanzkriterien (gesamt):
+- Feature parity: IRaceRepository-Funktionalität verfügbar lokal und serverseitig.
+- Change Notification: Jeder relevante DB-Änderungsvorgang erzeugt ein RepositoryChanged-Event mit konsistenten Metadaten.
+- Runtime-Config: Umschaltung zwischen lokal und server funktioniert ohne Neustart, Events werden korrekt weitergeleitet.
+- Tests: Automatisierte Unit- und Integrationstests belegen Funktionalität.
+
+Nächste Schritte (konkrete Arbeitspakete für Implementierung):
+1. Anlegen von IRepositoryChangeNotifier und RepositoryChangedEventArgs.
+2. CoreRaceRepository implementieren: Events an den Stellen, an denen DB-Änderungen passieren.
+3. RaceTimerController + API-Client aufsetzen (Contracts/DTOs prüfen).
+4. SignalR-Hub und SignalRSyncService implementieren.
+5. ServerRaceRepository und ConfiguredConnectionRepository implementieren.
+6. Tests schreiben und CI-Integration prüfen.
+
+Zeitlicher Vorschlag: 2-4 Werktage pro Hauptschritt (je nach Umfang der Tests und Review), Gesamtschätzung 3-6 Wochen inklusive Integrationstests.
+
+Referenzen im Codebase-Kontext:
+- IRaceRepository: RaceTimerShared\Services\IRaceRepository.cs
+- CoreRaceRepository: RaceTimerShared\Services\CoreRaceRepository.cs
+
+Wenn gewünscht, kann ich als nächsten Schritt die Datei für IRepositoryChangeNotifier erzeugen und CoreRaceRepository so anpassen, dass Events an den relevanten Stellen ausgelöst werden.
