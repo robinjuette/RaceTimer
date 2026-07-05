@@ -1,6 +1,6 @@
 using System;
 
-namespace RaceTimerShared.Services
+namespace RaceTimer.Shared.Services
 {
     public enum RepositoryChangeType
     {

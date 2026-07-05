@@ -5,8 +5,32 @@ using System.Diagnostics;
 
 namespace RaceTimer.Shared.Services;
 
-public class CoreRaceRepository : IRaceRepository
+public class CoreRaceRepository : IRaceRepository, IRepositoryChangeNotifier
 {
+    public event EventHandler<RepositoryChangedEventArgs>? RepositoryChanged;
+
+    public Task SubscribeAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
+
+    public Task UnsubscribeAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
+
+    private void OnRepositoryChanged(RepositoryChangeType changeType, string entityType, Guid? entityId = null, object? payload = null)
+    {
+        try
+        {
+            RepositoryChanged?.Invoke(this, new RepositoryChangedEventArgs
+            {
+                ChangeType = changeType,
+                EntityType = entityType,
+                EntityId = entityId,
+                TimestampUtc = DateTime.UtcNow,
+                Payload = payload
+            });
+        }
+        catch
+        {
+            // swallow - notifier must not break repository flow
+        }
+    }
     private readonly IDbContextFactory<RaceTimerDbContext> dbContextFactory;
 
     private TaskCompletionSource? migrationCheckTCS;
@@ -101,6 +125,8 @@ public class CoreRaceRepository : IRaceRepository
         _db.Participants.Add(participant);
         await _db.SaveChangesAsync();
 
+        OnRepositoryChanged(RepositoryChangeType.Created, nameof(Participant), participant.Id, participant);
+
         return participant;
     }
 
@@ -113,6 +139,8 @@ public class CoreRaceRepository : IRaceRepository
         if (existing is null) return;
         _db.Entry(existing).CurrentValues.SetValues(participant);
         await _db.SaveChangesAsync();
+
+        OnRepositoryChanged(RepositoryChangeType.Updated, nameof(Participant), participant.Id, participant);
     }
 
     public async Task DeleteParticipantAsync(Guid id)
@@ -124,6 +152,8 @@ public class CoreRaceRepository : IRaceRepository
         if (existing is null) return;
         _db.Participants.Remove(existing);
         await _db.SaveChangesAsync();
+
+        OnRepositoryChanged(RepositoryChangeType.Deleted, nameof(Participant), id);
     }
 
     public async Task<IEnumerable<Race>> GetAllRacesAsync()
@@ -171,6 +201,9 @@ public class CoreRaceRepository : IRaceRepository
         _db.Races.Add(newRace);
         await _db.SaveChangesAsync();
 
+        // notify
+        OnRepositoryChanged(RepositoryChangeType.Created, nameof(Race), newRace.Id, newRace);
+
         return newRace;
     }
 
@@ -188,6 +221,7 @@ public class CoreRaceRepository : IRaceRepository
         try
         {
             await _db.SaveChangesAsync();
+            OnRepositoryChanged(RepositoryChangeType.Updated, nameof(Race), race.Id, race);
         }
         catch (Microsoft.EntityFrameworkCore.DbUpdateConcurrencyException)
         {
@@ -221,6 +255,7 @@ public class CoreRaceRepository : IRaceRepository
         }
         _db.Races.Remove(existing);
         await _db.SaveChangesAsync();
+        OnRepositoryChanged(RepositoryChangeType.Deleted, nameof(Race), id);
         return true;
     }
 
@@ -236,6 +271,7 @@ public class CoreRaceRepository : IRaceRepository
         var rp = new RaceParticipant { RaceID = raceId, ParticipantID = participantId, ParticipantNr = nr };
         _db.RaceParticipants.Add(rp);
         await _db.SaveChangesAsync();
+        OnRepositoryChanged(RepositoryChangeType.Assigned, nameof(RaceParticipant), rp.ParticipantID, rp);
         return rp;
     }
 
@@ -250,6 +286,8 @@ public class CoreRaceRepository : IRaceRepository
         if (rp is null) return false;
         _db.RaceParticipants.Remove(rp);
         await _db.SaveChangesAsync();
+
+        OnRepositoryChanged(RepositoryChangeType.Unassigned, nameof(RaceParticipant), participantId);
 
         return true;
     }
@@ -295,6 +333,7 @@ public class CoreRaceRepository : IRaceRepository
         _db.RaceParticipantTimePoints.Add(tp);
         await _db.SaveChangesAsync();
         // broadcast to all clients that an unassigned timepoint exists
+        OnRepositoryChanged(RepositoryChangeType.Created, nameof(RaceParticipantTimePoint), tp.Id, tp);
         return tp;
     }
 
@@ -340,6 +379,7 @@ public class CoreRaceRepository : IRaceRepository
 
             _db.RaceParticipantTimePoints.Add(raceParticipantTimePoint);
             await _db.SaveChangesAsync();
+            OnRepositoryChanged(RepositoryChangeType.Created, nameof(RaceParticipantTimePoint), raceParticipantTimePoint.Id, raceParticipantTimePoint);
         }
 
         return true;
@@ -392,6 +432,8 @@ public class CoreRaceRepository : IRaceRepository
         {
             await CheckForRaceCompletionAsync(affectedRP.RaceID);
         }
+
+        OnRepositoryChanged(RepositoryChangeType.Updated, nameof(RaceParticipant), affectedRP.ParticipantID, affectedRP);
 
         return true;
     }
@@ -599,6 +641,8 @@ public class CoreRaceRepository : IRaceRepository
         _db.RaceParticipantTimePoints.Update(existing);
         await _db.SaveChangesAsync();
 
+        OnRepositoryChanged(RepositoryChangeType.Corrected, nameof(RaceParticipantTimePoint), existing.Id, existing);
+
         return true;
     }
 
@@ -620,6 +664,8 @@ public class CoreRaceRepository : IRaceRepository
 
         _db.RaceParticipantTimePoints.Update(existing);
         await _db.SaveChangesAsync();
+
+        OnRepositoryChanged(RepositoryChangeType.Undone, nameof(RaceParticipantTimePoint), existing.Id, existing);
 
         return true;
     }
