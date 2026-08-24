@@ -6,13 +6,13 @@
   xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
   IgnorableNamespaces="uap rescap">
 
-  <Identity Name="RaceTimer" Publisher="CN=Robin Jütte" Version="0.0.0.0" />
+  <Identity Name="RaceTimer" Publisher="CN=Robson" Version="1.0.0.0" />
 
   <mp:PhoneIdentity PhoneProductId="110563CF-BBE1-455B-97CB-45FDEB854BD5" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
 
   <Properties>
     <DisplayName>$placeholder$</DisplayName>
-    <PublisherDisplayName>User Name</PublisherDisplayName>
+    <PublisherDisplayName>Robin Jütte</PublisherDisplayName>
     <Logo>$placeholder$.png</Logo>
   </Properties>
 
