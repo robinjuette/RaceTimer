@@ -15,11 +15,16 @@ namespace RaceTimer.Shared.Services
         /// Optional: Subscribe to server-side change stream (SignalR etc.).
         /// Implementations that don't require an explicit subscription may be no-ops.
         /// </summary>
-        Task SubscribeAsync(CancellationToken cancellationToken = default);
+        Task SubscribeAsync(Guid RaceId, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Optional: Unsubscribe from server-side change stream.
         /// </summary>
-        Task UnsubscribeAsync(CancellationToken cancellationToken = default);
+        Task UnsubscribeAllAsync(CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Optional: Unsubscribe from server-side change stream.
+        /// </summary>
+        Task UnsubscribeAsync(Guid RaceId, CancellationToken cancellationToken = default);
     }
 }

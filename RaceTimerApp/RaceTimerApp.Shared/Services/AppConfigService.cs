@@ -16,16 +16,16 @@ public class AppConfigService
     private AppSettings _settings;
     private readonly Action<AppSettings>? _savePersistence;
     private readonly Func<AppSettings>? _loadPersistence;
-    private readonly ILogger<SignalRSyncService>? _logger;
+    private readonly ILogger<AppConfigService>? _logger;
     private readonly IServiceProvider? _serviceProvider;
-    private readonly ConfiguredConnectionRepository? _configuredRepository;
+    private readonly ConfiguredConnectionRepository _configuredRepository;
 
     public AppConfigService(
+        ConfiguredConnectionRepository configuredRepository,
         Action<AppSettings>? savePersistence = null, 
         Func<AppSettings>? loadPersistence = null,
-        ILogger<SignalRSyncService>? logger = null,
-        IServiceProvider? serviceProvider = null,
-        ConfiguredConnectionRepository? configuredRepository = null)
+        ILogger<AppConfigService>? logger = null,
+        IServiceProvider? serviceProvider = null)
     {
         _savePersistence = savePersistence;
         _loadPersistence = loadPersistence;
@@ -33,6 +33,8 @@ public class AppConfigService
         _serviceProvider = serviceProvider;
         _configuredRepository = configuredRepository;
         _settings = _loadPersistence?.Invoke() ?? new AppSettings();
+
+        _ = InitFromSettingsAsync();
     }
 
     /// <summary>
@@ -46,6 +48,18 @@ public class AppConfigService
     public bool IsServerConnected => _signalRSync?.IsConnected ?? false;
 
     // ===== Konfiguration =====
+
+    private async Task InitFromSettingsAsync()
+    {
+        if (_settings.Mode.Equals("Online"))
+        {
+            await ConnectToServerAsync(_settings.ServerUrl);
+        }
+        else
+        {
+            await DisconnectFromServerAsync();
+        }
+    }
 
     /// <summary>
     /// Einstellungen speichern
@@ -75,24 +89,6 @@ public class AppConfigService
                 return await SwitchToServerRepositoryAsync(serverUrl);
             }
 
-            // Fallback: Nur SignalR verbinden (alte Methode)
-            if (_logger == null)
-            {
-                System.Diagnostics.Debug.WriteLine("Warning: Logger not provided to AppConfigService, SignalRSyncService will run without logging");
-                return false;
-            }
-
-            _signalRSync = new SignalRSyncService(serverUrl, _logger);
-            var connected = await _signalRSync.ConnectAsync();
-
-            if (connected)
-            {
-                _settings.ServerUrl = serverUrl;
-                _settings.Mode = "Online";
-                SaveSettings(_settings);
-                return true;
-            }
-
             return false;
         }
         catch (Exception ex)
@@ -112,30 +108,17 @@ public class AppConfigService
 
         try
         {
-            // Erstelle Server-Repository-Instanzen
-            var apiClient = _serviceProvider.GetRequiredService(typeof(IRaceTimerApiClient)) as IRaceTimerApiClient;
-            if (apiClient == null)
+            ServerRaceRepository? serverRaceRepository = _serviceProvider.GetService<ServerRaceRepository>();
+            if(serverRaceRepository == null)
             {
-                System.Diagnostics.Debug.WriteLine("IRaceTimerApiClient not registered in DI");
+                System.Diagnostics.Debug.WriteLine("ServerRaceRepository not registered in DI");
                 return false;
             }
 
-            var signaRLogger = (_serviceProvider.GetRequiredService(typeof(ILogger<SignalRSyncService>)) as ILogger<SignalRSyncService>) 
-                ?? _logger 
-                ?? new SimpleLogger<SignalRSyncService>();
-
-            var signalRSync = new SignalRSyncService(
-                $"{serverUrl}/hubs/racetimer",
-                signaRLogger);
-
-            var serverLogger = (_serviceProvider.GetRequiredService(typeof(ILogger<ServerRaceRepository>)) as ILogger<ServerRaceRepository>)
-                ?? _logger as ILogger<ServerRaceRepository>
-                ?? new SimpleLogger<ServerRaceRepository>();
-
-            var serverRepository = new ServerRaceRepository(apiClient, signalRSync, serverLogger);
+            serverRaceRepository.ServerUri = new(serverUrl);
 
             // Schalte um zu Server-Repository
-            await _configuredRepository.SwitchRepositoryAsync(serverRepository, serverRepository);
+            await _configuredRepository.SwitchRepositoryAsync(serverRaceRepository, serverRaceRepository);
 
             _settings.ServerUrl = serverUrl;
             _settings.Mode = "Online";
@@ -163,12 +146,6 @@ public class AppConfigService
             {
                 await SwitchToLocalRepositoryAsync();
             }
-            else if (_signalRSync != null)
-            {
-                // Fallback: Nur SignalR trennen
-                await _signalRSync.DisconnectAsync();
-                _signalRSync = null;
-            }
 
             _settings.Mode = "Offline";
             _settings.ServerUrl = null;
@@ -191,16 +168,7 @@ public class AppConfigService
 
         try
         {
-            // Erstelle lokales Repository
-            var dbContextFactory = _serviceProvider.GetRequiredService(typeof(Microsoft.EntityFrameworkCore.IDbContextFactory<RaceTimer.Shared.Data.RaceTimerDbContext>)) 
-                as Microsoft.EntityFrameworkCore.IDbContextFactory<RaceTimer.Shared.Data.RaceTimerDbContext>;
-            if (dbContextFactory == null)
-            {
-                System.Diagnostics.Debug.WriteLine("IDbContextFactory not registered in DI");
-                return;
-            }
-
-            var coreRepository = new CoreRaceRepository(dbContextFactory);
+            var coreRepository = _serviceProvider.GetRequiredService<CoreRaceRepository>();
 
             // Schalte um zu lokalem Repository
             await _configuredRepository.SwitchRepositoryAsync(coreRepository, coreRepository);
@@ -213,11 +181,6 @@ public class AppConfigService
             throw;
         }
     }
-
-    /// <summary>
-    /// SignalR-Service abrufen (wenn verbunden)
-    /// </summary>
-    public SignalRSyncService? GetSignalRSync() => _signalRSync;
 
     /// <summary>
     /// Ein Rennen abonnieren für Server-Updates

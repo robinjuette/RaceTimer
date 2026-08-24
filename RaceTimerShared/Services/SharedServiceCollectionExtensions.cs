@@ -32,7 +32,7 @@ public static class SharedServiceCollectionExtensions
         services.AddDbContextFactory<RaceTimerDbContext>(options =>
             options.UseSqlite($"Data Source={dbPath}"));
 
-        services.AddScoped<IRaceRepository, CoreRaceRepository>();
+        services.AddScoped<CoreRaceRepository>();
 
         return services;
     }
@@ -42,34 +42,16 @@ public static class SharedServiceCollectionExtensions
     /// Für Online-Betrieb mit Server-Synchronisation.
     /// </summary>
     public static IServiceCollection AddServerRaceServices(
-        this IServiceCollection services,
-        string serverUrl)
+        this IServiceCollection services)
     {
-        if (string.IsNullOrEmpty(serverUrl))
-            throw new ArgumentNullException(nameof(serverUrl), "Server-URL erforderlich für Server-basierte Services");
-
         // Registriere HTTP-Client für die API
-        services.AddHttpClient<IRaceTimerApiClient, RaceTimerApiClient>(client =>
-        {
-            client.BaseAddress = new Uri(serverUrl);
-        });
+        services.AddHttpClient<IRaceTimerApiClient, RaceTimerApiClient>();
 
         // Registriere SignalR Sync Service als Singleton (eine Verbindung pro App-Instanz)
-        services.AddSingleton<SignalRSyncService>(provider =>
-        {
-            var logger = provider.GetRequiredService<ILogger<SignalRSyncService>>();
-            var hubUrl = $"{serverUrl}/hubs/racetimer";
-            return new SignalRSyncService(hubUrl, logger);
-        });
+        services.AddSingleton<SignalRSyncService>();
 
         // Registriere Server-basiertes Repository
-        services.AddScoped<IRaceRepository>(provider =>
-        {
-            var apiClient = provider.GetRequiredService<IRaceTimerApiClient>();
-            var signalRSync = provider.GetRequiredService<SignalRSyncService>();
-            var logger = provider.GetRequiredService<ILogger<ServerRaceRepository>>();
-            return new ServerRaceRepository(apiClient, signalRSync, logger);
-        });
+        services.AddScoped<ServerRaceRepository>();
 
         return services;
     }
@@ -84,24 +66,15 @@ public static class SharedServiceCollectionExtensions
         IRaceRepository? initialRepository = null)
     {
         // Wenn kein initiales Repository bereitgestellt, nutze das zuletzt registrierte
-        services.AddSingleton<ConfiguredConnectionRepository>(provider =>
-        {
-            var repo = initialRepository ?? provider.GetService<IRaceRepository>();
-            if (repo == null)
-                throw new InvalidOperationException("No initial IRaceRepository configured. Call AddLocalRaceServices() or AddServerRaceServices() first.");
-
-            var changeNotifier = repo as IRepositoryChangeNotifier;
-            var logger = provider.GetService<ILogger<ConfiguredConnectionRepository>>();
-            return new ConfiguredConnectionRepository(repo, changeNotifier, logger);
-        });
+        services.AddScoped<ConfiguredConnectionRepository>();
 
         // Registriere ConfiguredConnectionRepository auch als IRaceRepository
         // Damit erhalten Consumers automatisch den Switcher
-        services.AddSingleton<IRaceRepository>(provider =>
+        services.AddScoped<IRaceRepository>(provider =>
             provider.GetRequiredService<ConfiguredConnectionRepository>());
 
         // Registriere auch als IRepositoryChangeNotifier
-        services.AddSingleton<IRepositoryChangeNotifier>(provider =>
+        services.AddScoped<IRepositoryChangeNotifier>(provider =>
             provider.GetRequiredService<ConfiguredConnectionRepository>());
 
         return services;

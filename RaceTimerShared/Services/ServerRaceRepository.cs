@@ -21,8 +21,23 @@ public class ServerRaceRepository : IRaceRepository, IRepositoryChangeNotifier, 
     private readonly object _subscriptionLock = new();
 
     private bool _isConnected = false;
-    private bool _isSubscribed = false;
-    private Guid _currentRaceId = Guid.Empty;
+    private bool _isSubscribed => _raceSubscriptions.Count > 0;
+
+    private List<Guid> _raceSubscriptions = new();
+
+    public Uri ServerUri
+    {
+        set
+        {
+            if (_isConnected || _isSubscribed)
+            {
+                throw new InvalidOperationException("Unsubscribe first!");
+            }
+
+            _apiClient.ServerUri = value;
+            _signalRSync.ServerUri = value;
+        }
+    }
 
     public event EventHandler<RepositoryChangedEventArgs>? RepositoryChanged;
 
@@ -44,16 +59,38 @@ public class ServerRaceRepository : IRaceRepository, IRepositoryChangeNotifier, 
     /// <summary>
     /// Verbindet sich mit dem Server und SignalR-Hub.
     /// </summary>
-    public async Task SubscribeAsync(CancellationToken cancellationToken = default)
+    public async Task SubscribeAsync(Guid RaceId, CancellationToken cancellationToken = default)
     {
-        lock (_subscriptionLock)
+        if (_raceSubscriptions.Contains(RaceId))
         {
-            if (_isSubscribed)
-            {
-                _logger.LogInformation("Already subscribed to server changes");
-                return;
-            }
+            throw new InvalidOperationException("Already subscribed!");
         }
+
+        try
+        {
+            if (!_isConnected)
+            {
+                await ConnectAsync(cancellationToken);
+            }
+
+            await _signalRSync.SubscribeToRaceChangesAsync(RaceId, cancellationToken);
+
+            lock (_subscriptionLock)
+            {
+                _raceSubscriptions.Add(RaceId);
+            }
+
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to subscribe to race changes");
+            throw;
+        }
+
+    }
+
+    private async Task ConnectAsync(CancellationToken cancellationToken = default)
+    {
 
         try
         {
@@ -67,22 +104,45 @@ public class ServerRaceRepository : IRaceRepository, IRepositoryChangeNotifier, 
             lock (_subscriptionLock)
             {
                 _isConnected = true;
-                _isSubscribed = true;
             }
 
-            _logger.LogInformation("Subscribed to server repository changes");
+            _logger.LogInformation("Connected to signalR");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to subscribe to server changes");
+            _logger.LogError(ex, "Failed to connect to signalR server");
             throw;
+        }
+    }
+
+    private async Task DisconnectAsync(CancellationToken cancellationToken = default)
+    {
+        if (_isSubscribed)
+        {
+            throw new InvalidOperationException("Unsubscribe from races first!");
+        }
+
+        try
+        {
+            await _signalRSync.DisconnectAsync();
+
+            lock (_subscriptionLock)
+            {
+                _isConnected = false;
+            }
+
+            _logger.LogInformation("Disconnected from signalR");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during disconnection from server");
         }
     }
 
     /// <summary>
     /// Trennt die Verbindung zum Server.
     /// </summary>
-    public async Task UnsubscribeAsync(CancellationToken cancellationToken = default)
+    public async Task UnsubscribeAllAsync(CancellationToken cancellationToken = default)
     {
         lock (_subscriptionLock)
         {
@@ -92,21 +152,50 @@ public class ServerRaceRepository : IRaceRepository, IRepositoryChangeNotifier, 
 
         try
         {
-            if (_currentRaceId != Guid.Empty)
+            foreach(Guid raceId in _raceSubscriptions.ToList())
             {
-                await _signalRSync.UnsubscribeFromRaceChangesAsync(_currentRaceId, cancellationToken);
+                await UnsubscribeAsync(raceId, cancellationToken);
             }
 
-            await _signalRSync.DisconnectAsync();
+            _logger.LogInformation("Unsubscribed from all server repository changes");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during unsubscription from server");
+        }
+    }
+
+    /// <summary>
+    /// Trennt die Verbindung zum Server.
+    /// </summary>
+    public async Task UnsubscribeAsync(Guid raceID, CancellationToken cancellationToken = default)
+    {
+        lock (_subscriptionLock)
+        {
+            if (!_isSubscribed)
+                return;
+        }
+
+        if (!_raceSubscriptions.Contains(raceID))
+        {
+            throw new InvalidOperationException("Not subscribed!");
+        }
+
+        try
+        {
+            await _signalRSync.UnsubscribeFromRaceChangesAsync(raceID, cancellationToken);
 
             lock (_subscriptionLock)
             {
-                _isConnected = false;
-                _isSubscribed = false;
-                _currentRaceId = Guid.Empty;
+                _raceSubscriptions.Remove(raceID);
             }
 
             _logger.LogInformation("Unsubscribed from server repository changes");
+
+            if (!_isSubscribed)
+            {
+                await DisconnectAsync();
+            }
         }
         catch (Exception ex)
         {
@@ -319,39 +408,13 @@ public class ServerRaceRepository : IRaceRepository, IRepositoryChangeNotifier, 
         RepositoryChanged?.Invoke(this, e);
     }
 
-    /// <summary>
-    /// Setzt die aktuell überwachte Race ID und managed SignalR-Subscriptions.
-    /// </summary>
-    private async Task SetCurrentRaceIdAsync(Guid raceId)
-    {
-        lock (_subscriptionLock)
-        {
-            if (raceId == _currentRaceId)
-                return;
-
-            if (_currentRaceId != Guid.Empty)
-            {
-                // Unsubscribe from old race
-                _ = _signalRSync.UnsubscribeFromRaceChangesAsync(_currentRaceId);
-            }
-
-            _currentRaceId = raceId;
-        }
-
-        if (raceId != Guid.Empty && _isConnected)
-        {
-            // Subscribe to new race
-            await _signalRSync.SubscribeToRaceChangesAsync(raceId);
-        }
-    }
-
     #endregion
 
     #region Disposal
 
     public async ValueTask DisposeAsync()
     {
-        await UnsubscribeAsync();
+        await UnsubscribeAllAsync();
         _signalRSync.RepositoryChanged -= OnSignalRChanged;
         GC.SuppressFinalize(this);
     }

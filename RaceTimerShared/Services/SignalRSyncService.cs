@@ -13,7 +13,6 @@ namespace RaceTimer.Shared.Services;
 public class SignalRSyncService
 {
     private HubConnection? _connection;
-    private readonly string _serverUrl;
     private readonly ILogger<SignalRSyncService> _logger;
     private readonly object _connectionLock = new object();
 
@@ -28,14 +27,27 @@ public class SignalRSyncService
         }
     }
 
+    private Uri? serverUri;
+    public Uri ServerUri
+    {
+        set
+        {
+            if (IsConnected)
+            {
+                throw new InvalidOperationException("Disconnect first!");
+            }
+
+            serverUri = value;
+        }
+    }
+
     /// <summary>
     /// Event wird ausgelöst, wenn ein Event vom Server empfangen wird.
     /// </summary>
     public event EventHandler<RepositoryChangedEventArgs>? RepositoryChanged;
 
-    public SignalRSyncService(string serverUrl, ILogger<SignalRSyncService> logger)
+    public SignalRSyncService(ILogger<SignalRSyncService> logger)
     {
-        _serverUrl = serverUrl;
         _logger = logger;
     }
 
@@ -53,9 +65,14 @@ public class SignalRSyncService
             }
         }
 
+        if (serverUri == null)
+        {
+            throw new InvalidOperationException("Set ServerURI first!");
+        }
+
         try
         {
-            var hubUrl = new Uri(new Uri(_serverUrl), "/hubs/racetimer").ToString();
+            var hubUrl = new Uri(serverUri, "/hubs/racetimer").ToString();
 
             lock (_connectionLock)
             {

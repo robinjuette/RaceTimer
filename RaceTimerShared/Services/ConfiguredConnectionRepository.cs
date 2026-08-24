@@ -27,12 +27,11 @@ namespace RaceTimer.Shared.Services
         /// Initializes with an initial repository (e.g., CoreRaceRepository or ServerRaceRepository).
         /// </summary>
         public ConfiguredConnectionRepository(
-            IRaceRepository initialRepository,
-            IRepositoryChangeNotifier? initialChangeNotifier = null,
-            ILogger<ConfiguredConnectionRepository>? logger = null)
+            CoreRaceRepository coreRaceRepository,
+            ILogger<ConfiguredConnectionRepository> logger)
         {
-            _currentRepository = initialRepository ?? throw new ArgumentNullException(nameof(initialRepository));
-            _currentChangeNotifier = initialChangeNotifier ?? (initialRepository as IRepositoryChangeNotifier);
+            _currentRepository = coreRaceRepository;
+            _currentChangeNotifier = coreRaceRepository;
             _logger = logger;
 
             if (_logger == null)
@@ -113,7 +112,7 @@ namespace RaceTimer.Shared.Services
             {
                 try
                 {
-                    await _currentChangeNotifier.SubscribeAsync(cancellationToken);
+                    //await _currentChangeNotifier.SubscribeAsync(cancellationToken);
                     _logger.LogInformation("Successfully subscribed to new repository changes");
                 }
                 catch (Exception ex)
@@ -129,28 +128,11 @@ namespace RaceTimer.Shared.Services
         /// </summary>
         public event EventHandler<RepositoryChangedEventArgs>? RepositoryChanged;
 
-        /// <summary>
-        /// Subscribes to change notifications from the current repository.
-        /// For ConfiguredConnectionRepository, this is handled during repository switch.
-        /// </summary>
-        public async Task SubscribeAsync(CancellationToken cancellationToken = default)
-        {
-            lock (_switchLock)
-            {
-                if (_disposed)
-                    throw new ObjectDisposedException(nameof(ConfiguredConnectionRepository));
-            }
-
-            if (_currentChangeNotifier != null)
-            {
-                await _currentChangeNotifier.SubscribeAsync(cancellationToken);
-            }
-        }
 
         /// <summary>
         /// Unsubscribes from change notifications from the current repository.
         /// </summary>
-        public async Task UnsubscribeAsync(CancellationToken cancellationToken = default)
+        public async Task UnsubscribeAllAsync(CancellationToken cancellationToken = default)
         {
             lock (_switchLock)
             {
@@ -160,7 +142,7 @@ namespace RaceTimer.Shared.Services
 
             if (_currentChangeNotifier != null)
             {
-                await _currentChangeNotifier.UnsubscribeAsync(cancellationToken);
+                await _currentChangeNotifier.UnsubscribeAllAsync(cancellationToken);
             }
         }
 
@@ -511,6 +493,34 @@ namespace RaceTimer.Shared.Services
             }
 
             _logger.LogInformation("ConfiguredConnectionRepository disposed");
+        }
+
+        public async Task SubscribeAsync(Guid RaceId, CancellationToken cancellationToken = default)
+        {
+            lock (_switchLock)
+            {
+                if (_disposed)
+                    throw new ObjectDisposedException(nameof(ConfiguredConnectionRepository));
+            }
+
+            if (_currentChangeNotifier != null)
+            {
+                await _currentChangeNotifier.SubscribeAsync(RaceId, cancellationToken);
+            }
+        }
+
+        public async Task UnsubscribeAsync(Guid RaceId, CancellationToken cancellationToken = default)
+        {
+            lock (_switchLock)
+            {
+                if (_disposed)
+                    throw new ObjectDisposedException(nameof(ConfiguredConnectionRepository));
+            }
+
+            if (_currentChangeNotifier != null)
+            {
+                await _currentChangeNotifier.UnsubscribeAsync(RaceId, cancellationToken);
+            }
         }
     }
 }

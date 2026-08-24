@@ -21,17 +21,13 @@ namespace RaceTimerApp
             // Register local Race Services with SQLite (offline-first)
             builder.Services.AddLocalRaceServices();
 
+            builder.Services.AddServerRaceServices();
+
             // Register ConfiguredConnectionRepository as runtime switcher singleton
             builder.Services.AddConfiguredConnectionRepository();
 
             // Register configuration service with DI provider and configured repository
-            builder.Services.AddSingleton<AppConfigService>(provider =>
-            {
-                var configuredRepo = provider.GetRequiredService<ConfiguredConnectionRepository>();
-                var logger = provider.GetService<ILogger<SignalRSyncService>>();
-                return new AppConfigService(
-                    null, null, logger, provider, configuredRepo);
-            });
+            builder.Services.AddSingleton<AppConfigService>();
 
             // Register app-specific services
             builder.Services.AddScoped<RaceManagementService>();

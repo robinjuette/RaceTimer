@@ -16,6 +16,9 @@ builder.Services.AddSignalR(options =>
     options.ClientTimeoutInterval = TimeSpan.FromSeconds(30);
 });
 
+builder.Services.AddLocalRaceServices();
+builder.Services.AddTransient<IRaceRepository>(sp => sp.GetRequiredService<CoreRaceRepository>());
+
 // Add repository change notification service for SignalR broadcasting
 builder.Services.AddScoped<RepositoryChangeNotificationService>();
 

@@ -1,5 +1,6 @@
 using RaceTimer.Shared.Models;
 using System.Net.Http.Json;
+using static System.Net.WebRequestMethods;
 
 namespace RaceTimer.Shared.Http;
 
@@ -10,6 +11,11 @@ namespace RaceTimer.Shared.Http;
 /// </summary>
 public interface IRaceTimerApiClient
 {
+    public Uri ServerUri
+    {
+        set;
+    }
+
     // Races
     Task<IEnumerable<Race>> GetRacesAsync(CancellationToken cancellationToken = default);
     Task<Race?> GetRaceAsync(Guid id, CancellationToken cancellationToken = default);
@@ -62,6 +68,14 @@ internal class RaceTimerApiClient : IRaceTimerApiClient
 {
     private readonly HttpClient _http;
     private const string BasePath = "api/racetimer";
+
+    public Uri ServerUri
+    {
+        set
+        {
+            _http.BaseAddress = value; 
+        }
+    }
 
     public RaceTimerApiClient(HttpClient http)
     {

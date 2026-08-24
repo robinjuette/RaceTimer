@@ -9,12 +9,14 @@ public class CoreRaceRepository : IRaceRepository, IRepositoryChangeNotifier
 {
     public event EventHandler<RepositoryChangedEventArgs>? RepositoryChanged;
 
-    public Task SubscribeAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
-
-    public Task UnsubscribeAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
-
     private void OnRepositoryChanged(RepositoryChangeType changeType, string entityType, Guid? entityId = null, object? payload = null)
     {
+        if(nameof(Race).Equals(entityType) && (entityId == null || !_raceSubscriptions.Contains(entityId.Value)))
+        {
+            //Only notify for subscribed Races!
+            return;
+        }
+
         try
         {
             RepositoryChanged?.Invoke(this, new RepositoryChangedEventArgs
@@ -668,5 +670,38 @@ public class CoreRaceRepository : IRaceRepository, IRepositoryChangeNotifier
         OnRepositoryChanged(RepositoryChangeType.Undone, nameof(RaceParticipantTimePoint), existing.Id, existing);
 
         return true;
+    }
+
+    private List<Guid> _raceSubscriptions = new List<Guid>();
+
+    public Task SubscribeAsync(Guid RaceId, CancellationToken cancellationToken = default)
+    {
+        if (_raceSubscriptions.Contains(RaceId))
+        {
+            throw new InvalidOperationException("Already subscribed!");
+        }
+
+        _raceSubscriptions.Add(RaceId);
+
+        return Task.CompletedTask;
+    }
+
+    public Task UnsubscribeAsync(Guid RaceId, CancellationToken cancellationToken = default)
+    {
+        if (!_raceSubscriptions.Contains(RaceId))
+        {
+            throw new InvalidOperationException("Not subscribed!");
+        }
+
+        _raceSubscriptions.Remove(RaceId);
+
+        return Task.CompletedTask;
+    }
+
+    public Task UnsubscribeAllAsync(CancellationToken cancellationToken = default)
+    {
+        _raceSubscriptions.Clear();
+
+        return Task.CompletedTask;
     }
 }
