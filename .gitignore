@@ -12,3 +12,6 @@
 /~$nzept RaceTimer.odt
 /~$-Beschreibung RaceTimer.docx
 *.tmp
+/RaceTimerApp/RaceTimerApp/AppPackages
+/**/*.pfx
+/RaceTimerApp/RaceTimerApp/RaceTimerApp_TemporaryKey.pfx
