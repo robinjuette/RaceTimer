@@ -1,0 +1,25 @@
+services:
+  racetimer-server:
+    build:
+      context: .
+      dockerfile: RaceTimerServer/Dockerfile
+    environment:
+      ASPNETCORE_URLS: http://+:8080
+    ports:
+      - "8081:8080"
+    volumes:
+      - racetimer-server-data:/home/app/.local/share/RaceTimer
+
+  racetimer-web:
+    build:
+      context: .
+      dockerfile: RaceTimerApp/RaceTimerApp.Web/Dockerfile
+    environment:
+      ASPNETCORE_URLS: http://+:8080
+    ports:
+      - "8080:8080"
+    depends_on:
+      - racetimer-server
+
+volumes:
+  racetimer-server-data:

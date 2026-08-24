@@ -19,20 +19,23 @@ public class AppConfigService
     private readonly ILogger<AppConfigService>? _logger;
     private readonly IServiceProvider? _serviceProvider;
     private readonly ConfiguredConnectionRepository _configuredRepository;
+    private readonly SettingsService? _settingsService;
 
     public AppConfigService(
         ConfiguredConnectionRepository configuredRepository,
         Action<AppSettings>? savePersistence = null, 
         Func<AppSettings>? loadPersistence = null,
         ILogger<AppConfigService>? logger = null,
-        IServiceProvider? serviceProvider = null)
+        IServiceProvider? serviceProvider = null,
+        SettingsService? settingsService = null)
     {
         _savePersistence = savePersistence;
         _loadPersistence = loadPersistence;
         _logger = logger;
         _serviceProvider = serviceProvider;
         _configuredRepository = configuredRepository;
-        _settings = _loadPersistence?.Invoke() ?? new AppSettings();
+        _settingsService = settingsService;
+        _settings = _loadPersistence?.Invoke() ?? _settingsService?.GetSettings() ?? new AppSettings();
 
         _ = InitFromSettingsAsync();
     }
@@ -68,6 +71,10 @@ public class AppConfigService
     {
         _settings = settings;
         _savePersistence?.Invoke(settings);
+        if (_settingsService is not null)
+        {
+            _ = _settingsService.SaveSettingsAsync(settings);
+        }
     }
 
     // ===== Server-Verbindung =====
@@ -116,6 +123,7 @@ public class AppConfigService
             }
 
             serverRaceRepository.ServerUri = new(serverUrl);
+            _signalRSync = _serviceProvider.GetService<SignalRSyncService>();
 
             // Schalte um zu Server-Repository
             await _configuredRepository.SwitchRepositoryAsync(serverRaceRepository, serverRaceRepository);

@@ -52,7 +52,20 @@ namespace RaceTimerApp.Shared.Models
         {
             get
             {
-                return new(SplitTimes.Values.Sum(v => v?.Ticks ?? 0) + PenaltyTimes.Values.Sum(v => v?.Ticks ?? 0));
+                long recordedTicks = SplitTimes.Values.Sum(v => v?.Ticks ?? 0) + PenaltyTimes.Values.Sum(v => v?.Ticks ?? 0);
+                if (!CompletelyFinished && RaceParticipant.Race?.RaceStatus == RaceStatus.Running)
+                {
+                    DateTime? lastTimePoint = RaceParticipantTimePoints
+                        .OrderByDescending(tp => tp.RTPIndex)
+                        .FirstOrDefault()?.GetEffectiveTimePoint() ?? RaceParticipant.StartTime;
+
+                    if (lastTimePoint.HasValue)
+                    {
+                        recordedTicks += Math.Max(0, (DateTime.UtcNow - lastTimePoint.Value).Ticks);
+                    }
+                }
+
+                return new(recordedTicks);
             }
         }
 

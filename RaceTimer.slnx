@@ -11,6 +11,7 @@
     <File Path="UI-Beschreibung RaceTimer.odt" />
     <File Path="UI-Beschreibung RaceTimer.rtf" />
     <File Path="UI-Beschreibung RaceTimer.txt" />
+    <File Path="Änderungswünsche.txt" />
   </Folder>
   <Project Path="RaceTimerApp/RaceTimerApp.Shared/RaceTimerApp.Shared.csproj" Id="723cb0af-46bf-4f44-86c7-b60dc087f462" />
   <Project Path="RaceTimerApp/RaceTimerApp.Web.Client/RaceTimerApp.Web.Client.csproj" Id="7954b435-1372-4b8f-a8cd-282b580c4555" />

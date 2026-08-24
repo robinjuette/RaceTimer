@@ -27,6 +27,7 @@ namespace RaceTimerApp
             builder.Services.AddConfiguredConnectionRepository();
 
             // Register configuration service with DI provider and configured repository
+            builder.Services.AddSingleton<SettingsService>();
             builder.Services.AddSingleton<AppConfigService>();
 
             // Register app-specific services
@@ -34,7 +35,6 @@ namespace RaceTimerApp
             builder.Services.AddScoped<ParticipantService>();
             builder.Services.AddSingleton<TimingService>();
             builder.Services.AddScoped<RankingService>();
-            builder.Services.AddScoped<SettingsService>();
             builder.Services.AddScoped<TimepointCorrectionService>();
             builder.Services.AddBlazorBootstrap();
 

@@ -118,7 +118,10 @@
 
         foreach (Race RunningRace in displayedRaces)
         {
-            rankings[RunningRace.Id] = await RankingService.GetRankingsAsync(RunningRace.Id);
+            rankings[RunningRace.Id] = (await RankingService.GetRankingsAsync(RunningRace.Id))
+                .Where(ranking => ranking.RaceParticipant.StartTime.HasValue &&
+                                  !ranking.RaceParticipant.FinishDateTimeUTC.HasValue)
+                .ToList();
         }
         raceTimePoints.Clear();
 

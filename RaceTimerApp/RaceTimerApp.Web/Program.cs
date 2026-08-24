@@ -13,12 +13,14 @@ builder.Services.AddRazorComponents()
 // Register RaceTimer services
 builder.Services.AddLocalRaceServices();
 builder.Services.AddConfiguredConnectionRepository();
-builder.Services.AddScoped<SettingsService>();
+        builder.Services.AddSingleton<SettingsService>();
 builder.Services.AddScoped<TimingService>();
 builder.Services.AddScoped<RaceManagementService>();
 builder.Services.AddScoped<ParticipantService>();
 builder.Services.AddScoped<RankingService>();
 builder.Services.AddScoped<TimepointCorrectionService>();
+builder.Services.AddSingleton<SettingsService>();
+builder.Services.AddScoped<AppConfigService>();
 builder.Services.AddBlazorBootstrap();
 
 var app = builder.Build();

@@ -66,6 +66,11 @@ public class TimingService
         return (await _repository.GetUnassignedTimepointsAsync())?.ToList() ?? [];
     }
 
+    public async Task<List<RaceParticipantTimePoint>> GetTimePointsForRaceAsync(Guid raceId)
+    {
+        return (await _repository.GetRaceParticipantTimePointsForRaceAsync(raceId))?.ToList() ?? [];
+    }
+
     // Zeitpunkt einem Teilnehmer zuordnen
     public async Task<bool> AssignTimePointAsync(
         Guid timePointId,

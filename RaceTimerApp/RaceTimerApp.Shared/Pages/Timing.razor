@@ -18,20 +18,29 @@
                 <h5 class="mb-0">Offene Zeitpunkte <span class="badge bg-danger">@UnassignedTimePoints.Count</span></h5>
             </div>
             <div class="card-body">
-                @if (UnassignedTimePoints.Any())
+                @if (TimelineTimePoints.Any())
                 {
-                    <div class="list-group">
-                        @foreach (var tp in UnassignedTimePoints)
+                    <div class="timing-timeline">
+                        @foreach (var tp in TimelineTimePoints.OrderBy(tp => tp.TimePointUTC))
                         {
-                            <div class="list-group-item d-flex justify-content-between align-items-center"
-                                 @onclick="() => SelectTimePoint(tp)" 
-                                 style="cursor: pointer; background-color: @(SelectedTimePoint?.Id == tp.Id ? "#e7f3ff" : "")">
+                            <div class="timing-timeline-item d-flex justify-content-between align-items-center"
+                                 @onclick="() => SelectTimePoint(tp)"
+                                 style="cursor: @(tp.RaceID.HasValue ? "default" : "pointer"); background-color: @(SelectedTimePoint?.Id == tp.Id ? "#e7f3ff" : "")">
+                                <span class="timing-timeline-marker"></span>
                                 <div>
                                     <strong>@tp.TimePointUTC.ToLocalTime().ToString("HH:mm:ss")</strong>
                                     <br />
+                                    <small>@(tp.Race?.Name ?? "Nicht zugeordnet")</small>
+                                    @if (tp.Participant is not null)
+                                    {
+                                        <small class="d-block">#@(tp.RaceParticipant?.ParticipantNr) @tp.Participant.DisplayName</small>
+                                    }
                                     <small class="text-muted">Erfasst vor @((DateTime.UtcNow - tp.TimePointUTC).FormatShort())</small>
                                 </div>
-                                <button class="btn btn-danger btn-sm" @onclick="() => DeleteTimePoint(tp.Id)">Löschen</button>
+                                @if (!tp.RaceID.HasValue)
+                                {
+                                    <button class="btn btn-danger btn-sm" @onclick="() => DeleteTimePoint(tp.Id)">Löschen</button>
+                                }
                             </div>
                         }
                     </div>
@@ -54,28 +63,28 @@
                 @if (AvailableFTPs.Any())
                 {
                     <div style="display:flex; flex-direction:row; flex-wrap:wrap">
-                        @foreach (FutureRaceParticipantTimePoint ftp in AvailableFTPs)
+                        @foreach (var raceGroup in AvailableFTPs.GroupBy(ftp => ftp.Race.Id))
                         {
-                            <div @onclick="() => SelectFTP(ftp)"
-                                 class="participant-item active"
-                                 style="cursor: pointer; margin:1%; background-color: @(SelectedFTP?.Race.Id == ftp.Race.Id && SelectedFTP?.RaceParticipant.ParticipantID == ftp.RaceParticipant.ParticipantID ? "#e7f3ff" : "#cccccc33")">
-                                <div style="display:flex; flex-direction:column;">
-                                    
-                                    <div style="display:flex; flex-direction:row;">
-
-                                        <strong class="participant-number" style="align-self:center">#@ftp.RaceParticipant.ParticipantNr</strong>
-
-                                        <div style="display:flex; flex-direction:column;">
-                                            <span class="participant-name">@ftp.RaceParticipant.Participant.DisplayName</span>
-                                            <span>@ftp.RaceTimePoint.DisplayName</span>
+                            @if (_multipleRaces)
+                            {
+                                <h6 class="w-100 mt-2">@raceGroup.First().Race.Name</h6>
+                            }
+                            @foreach (FutureRaceParticipantTimePoint ftp in raceGroup)
+                            {
+                                <div @onclick="() => SelectFTP(ftp)"
+                                     class="participant-item active"
+                                     style="cursor: pointer; margin:1%; background-color: @(SelectedFTP?.Race.Id == ftp.Race.Id && SelectedFTP?.RaceParticipant.ParticipantID == ftp.RaceParticipant.ParticipantID ? "#e7f3ff" : "#cccccc33")">
+                                    <div style="display:flex; flex-direction:column;">
+                                        <div style="display:flex; flex-direction:row;">
+                                            <strong class="participant-number" style="align-self:center">#@ftp.RaceParticipant.ParticipantNr</strong>
+                                            <div style="display:flex; flex-direction:column;">
+                                                <span class="participant-name">@ftp.RaceParticipant.Participant.DisplayName</span>
+                                                <span>@ftp.RaceTimePoint.DisplayName</span>
+                                            </div>
                                         </div>
                                     </div>
-                                    @if (_multipleRaces)
-                                    {
-                                        <strong style="text-align:center; text-wrap:auto">@ftp.Race.Name</strong>
-                                    }
                                 </div>
-                            </div>
+                            }
                         }
                     </div>
                 }
@@ -123,10 +132,43 @@
     border-radius: 6px;
     min-height: 50px;
 }
+
+.timing-timeline {
+    position: relative;
+    padding-left: 1.5rem;
+}
+
+.timing-timeline::before {
+    content: "";
+    position: absolute;
+    left: .45rem;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #ffc107;
+}
+
+.timing-timeline-item {
+    position: relative;
+    min-height: 4rem;
+    padding: .75rem;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.timing-timeline-marker {
+    position: absolute;
+    left: -1.3rem;
+    width: .8rem;
+    height: .8rem;
+    border-radius: 50%;
+    background: #ffc107;
+    border: 2px solid white;
+}
 </style>
 
 @code {
     private List<RaceParticipantTimePoint> UnassignedTimePoints = [];
+    private List<RaceParticipantTimePoint> TimelineTimePoints = [];
     private RaceParticipantTimePoint? SelectedTimePoint;
     private FutureRaceParticipantTimePoint? SelectedFTP;
     private List<FutureRaceParticipantTimePoint> AvailableFTPs = [];
@@ -163,12 +205,25 @@
         _multipleRaces = runningRaces.Count > 1;
 
         AvailableFTPs.Clear();
+        TimelineTimePoints = [];
         foreach (Race race in runningRaces)
         {
             List<RankingEntry> rankings = await RankingService.GetRankingsAsync(race.Id);
             List<RaceTimePoint> raceTimePoints = (await RaceService.GetRaceTimePointsAsync(race.Id)).ToList();
+            List<RaceParticipantTimePoint> raceTimePointEvents = await TimingService.GetTimePointsForRaceAsync(race.Id);
+            foreach (RaceParticipantTimePoint timePointEvent in raceTimePointEvents)
+            {
+                timePointEvent.Race = race;
+                if (timePointEvent.RaceParticipant is not null)
+                    timePointEvent.RaceParticipant.Race = race;
+            }
+            TimelineTimePoints.AddRange(raceTimePointEvents);
 
-            foreach (RankingEntry rankingEntry in rankings.Where(re => re.SplitTimes.Any(s => s.Value.HasValue) && !re.SplitTimes.All(s => s.Value.HasValue)))
+            foreach (RankingEntry rankingEntry in rankings.Where(re =>
+                re.RaceParticipant.StartTime.HasValue &&
+                !re.RaceParticipant.FinishDateTimeUTC.HasValue &&
+                re.SplitTimes.Any(s => s.Value.HasValue) &&
+                !re.SplitTimes.All(s => s.Value.HasValue)))
             {
                 uint minOpenIndex = rankingEntry.SplitTimes.Where(s => !s.Value.HasValue).Min(s => s.Key);
 
@@ -184,12 +239,16 @@
         }
 
         UnassignedTimePoints = await TimingService.GetUnassignedTimePointsAsync();
+        TimelineTimePoints.AddRange(UnassignedTimePoints);
 
         StateHasChanged();
     }
 
     private void SelectTimePoint(RaceParticipantTimePoint tp)
     {
+        if (tp.RaceID.HasValue)
+            return;
+
         SelectedTimePoint = tp.Id == SelectedTimePoint?.Id ? null : tp;
     }
 

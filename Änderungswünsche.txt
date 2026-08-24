@@ -1,0 +1,9 @@
+Bugs:
+3. Die laufende Zwischenzeit wird in `RankingEntry.RunTime` bis zur aktuellen UTC-Zeit berechnet und durch die bestehende UI-Aktualisierung sekündlich neu dargestellt.
+4. RaceTimerApp.Web verwendet stabilen interaktiven Serverbetrieb statt `InteractiveAuto`, da der WebAssembly-Client keine RaceTimer-DI-/Repository-Konfiguration besitzt. Dadurch funktionieren Navigation und Aktionen wie „Neues Rennen“.
+5. `AppConfigService` lädt die Einstellungen jetzt über `SettingsService` und persistiert Änderungen. Beim Erzeugen des Dienstes wird eine gespeicherte Online-Konfiguration automatisch verbunden.
+
+Featurewünsche:
+1. Die Zeitpunkte laufender Rennen werden chronologisch auf einem Zeitstrahl dargestellt. Bereits zugeordnete und offene Zeitpunkte zeigen Rennen bzw. Teilnehmer; nur offene Punkte bleiben auswählbar.
+2. Die aktiven Teilnehmer werden bereits je laufendem Rennen geladen und bei mehreren Rennen mit dem Rennnamen gekennzeichnet.
+3. Für RaceTimerApp.Web werden ein eigenes Dockerfile und eine Compose-Konfiguration ergänzt. Web und API können gemeinsam oder getrennt betrieben werden; die Web-Port-/URL-Konfiguration erfolgt über ASP.NET-Core-Umgebungsvariablen.
