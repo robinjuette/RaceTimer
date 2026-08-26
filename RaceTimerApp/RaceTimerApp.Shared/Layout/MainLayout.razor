@@ -65,12 +65,19 @@
     {
         updateEndpoint = new(TimePointsChanged);
         await CheckRunningRaces();
-        if (_hasRunningRace)
+        _ = CheckHasUnassignedTimePointsAsync();
+        TimingService.RegisterForCallback(updateEndpoint);
+    }
+
+    protected override Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && _hasRunningRace &&
+            Navigation.Uri.Equals(Navigation.BaseUri, StringComparison.OrdinalIgnoreCase))
         {
             Navigation.NavigateTo("/overview");
         }
-        _ = CheckHasUnassignedTimePointsAsync();
-        TimingService.RegisterForCallback(updateEndpoint);
+
+        return Task.CompletedTask;
     }
 
     private void TimePointsChanged(RaceParticipantTimePoint? changed)

@@ -20,6 +20,7 @@ public class AppConfigService
     private readonly IServiceProvider? _serviceProvider;
     private readonly ConfiguredConnectionRepository _configuredRepository;
     private readonly SettingsService? _settingsService;
+    private Task? _initializationTask;
 
     public AppConfigService(
         ConfiguredConnectionRepository configuredRepository,
@@ -37,7 +38,6 @@ public class AppConfigService
         _settingsService = settingsService;
         _settings = _loadPersistence?.Invoke() ?? _settingsService?.GetSettings() ?? new AppSettings();
 
-        _ = InitFromSettingsAsync();
     }
 
     /// <summary>
@@ -51,6 +51,11 @@ public class AppConfigService
     public bool IsServerConnected => _signalRSync?.IsConnected ?? false;
 
     // ===== Konfiguration =====
+
+    public Task InitializeAsync()
+    {
+        return _initializationTask ??= InitFromSettingsAsync();
+    }
 
     private async Task InitFromSettingsAsync()
     {

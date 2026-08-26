@@ -10,51 +10,74 @@
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
 
-<div class="timing-container">
-    <div class="timing-left-column">
-        <!-- Offene Zeitpunkte -->
-        <div class="card mb-3">
+<div class="timing-page">
+    <div class="card mb-3">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Zeitstrahl</h5>
+            <div class="btn-group" role="group" aria-label="Zeitstrahl-Zoom">
+                <button class="btn btn-light btn-sm" @onclick="ZoomOut" disabled="@(_timelineZoom <= 0.5m)">−</button>
+                <span class="btn btn-light btn-sm disabled">@(_timelineZoom * 100)%</span>
+                <button class="btn btn-light btn-sm" @onclick="ZoomIn" disabled="@(_timelineZoom >= 4m)">+</button>
+            </div>
+        </div>
+        <div class="card-body">
+            @if (TimelineTimePoints.Any())
+            {
+                <div class="timing-timeline-scroll" id="timing-timeline-scroll">
+                    <div class="timing-timeline" style="width: @($"{TimelineWidthPx}px");">
+                        <div class="timing-timeline-axis"></div>
+                        <div class="timing-timeline-now" style="@($"left: {TimelinePositionPx(DateTime.UtcNow)}px")"><span>Jetzt</span></div>
+                        @foreach (var tp in TimelineTimePoints.OrderBy(tp => tp.TimePointUTC))
+                        {
+                            <div id="@TimelineElementId(tp)" class="timing-timeline-event @(tp.RaceID.HasValue ? "assigned" : "unassigned")"
+                            style="@($"left: {TimelinePositionPx(tp.TimePointUTC)}px")"
+                            title="@TimelineLabel(tp)">
+                                <span class="timing-timeline-marker"></span>
+                                <span class="timing-timeline-label">@tp.TimePointUTC.ToLocalTime().ToString("HH:mm:ss")</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info">Keine Zeitpunkte laufender Rennen</div>
+            }
+        </div>
+        <div class="timing-timeline-range">
+            <span>Betrachteter Zeitraum:</span>
+            <strong>@TimelineStartUtc.ToLocalTime().ToString("dd.MM.yyyy HH:mm:ss") – @TimelineEndUtc.ToLocalTime().ToString("dd.MM.yyyy HH:mm:ss")</strong>
+        </div>
+    </div>
+
+    <div class="timing-assignment-layout">
+        <div class="card mb-3 timing-open-timepoints">
             <div class="card-header bg-warning">
                 <h5 class="mb-0">Offene Zeitpunkte <span class="badge bg-danger">@UnassignedTimePoints.Count</span></h5>
             </div>
             <div class="card-body">
-                @if (TimelineTimePoints.Any())
+                @if (UnassignedTimePoints.Any())
                 {
-                    <div class="timing-timeline">
-                        @foreach (var tp in TimelineTimePoints.OrderBy(tp => tp.TimePointUTC))
+                    <div class="list-group">
+                        @foreach (var tp in UnassignedTimePoints.OrderBy(tp => tp.TimePointUTC))
                         {
-                            <div class="timing-timeline-item d-flex justify-content-between align-items-center"
-                                 @onclick="() => SelectTimePoint(tp)"
-                                 style="cursor: @(tp.RaceID.HasValue ? "default" : "pointer"); background-color: @(SelectedTimePoint?.Id == tp.Id ? "#e7f3ff" : "")">
-                                <span class="timing-timeline-marker"></span>
-                                <div>
-                                    <strong>@tp.TimePointUTC.ToLocalTime().ToString("HH:mm:ss")</strong>
-                                    <br />
-                                    <small>@(tp.Race?.Name ?? "Nicht zugeordnet")</small>
-                                    @if (tp.Participant is not null)
-                                    {
-                                        <small class="d-block">#@(tp.RaceParticipant?.ParticipantNr) @tp.Participant.DisplayName</small>
-                                    }
-                                    <small class="text-muted">Erfasst vor @((DateTime.UtcNow - tp.TimePointUTC).FormatShort())</small>
-                                </div>
-                                @if (!tp.RaceID.HasValue)
-                                {
-                                    <button class="btn btn-danger btn-sm" @onclick="() => DeleteTimePoint(tp.Id)">Löschen</button>
-                                }
-                            </div>
+                            <button class="list-group-item list-group-item-action @(SelectedTimePoint?.Id == tp.Id ? "active" : "")"
+                            @onclick="() => SelectOpenTimePoint(tp)">
+                                @tp.TimePointUTC.ToLocalTime().ToString("HH:mm:ss")
+                                <span class="text-muted ms-2">Erfasst vor @((DateTime.UtcNow - tp.TimePointUTC).FormatShort())</span>
+                            </button>
                         }
                     </div>
                 }
                 else
                 {
-                    <div class="alert alert-info">Keine offenen Zeitpunkte</div>
+                    <div class="alert alert-info mb-0">Keine offenen Zeitpunkte</div>
                 }
             </div>
         </div>
-    </div>
 
-    <!-- Teilnehmer zur Zuordnung -->
-    <div class="timing-right-column">
+        <!-- Teilnehmer zur Zuordnung -->
+        <div class="timing-right-column">
         <div class="card mb-3">
             <div class="card-header bg-info text-white">
                 <h5 class="mb-0">Aktive Teilnehmer</h5>
@@ -72,8 +95,8 @@
                             @foreach (FutureRaceParticipantTimePoint ftp in raceGroup)
                             {
                                 <div @onclick="() => SelectFTP(ftp)"
-                                     class="participant-item active"
-                                     style="cursor: pointer; margin:1%; background-color: @(SelectedFTP?.Race.Id == ftp.Race.Id && SelectedFTP?.RaceParticipant.ParticipantID == ftp.RaceParticipant.ParticipantID ? "#e7f3ff" : "#cccccc33")">
+                                class="participant-item active"
+                                style="cursor: pointer; margin:1%; background-color: @(SelectedFTP?.Race.Id == ftp.Race.Id && SelectedFTP?.RaceParticipant.ParticipantID == ftp.RaceParticipant.ParticipantID ? "#e7f3ff" : "#cccccc33")">
                                     <div style="display:flex; flex-direction:column;">
                                         <div style="display:flex; flex-direction:row;">
                                             <strong class="participant-number" style="align-self:center">#@ftp.RaceParticipant.ParticipantNr</strong>
@@ -81,6 +104,7 @@
                                                 <span class="participant-name">@ftp.RaceParticipant.Participant.DisplayName</span>
                                                 <span>@ftp.RaceTimePoint.DisplayName</span>
                                             </div>
+
                                         </div>
                                     </div>
                                 </div>
@@ -99,71 +123,176 @@
         {
             <div class="card">
                 <div class="card-body">
+                    <h6 class="card-title">Zuordnung prüfen</h6>
+                    <div class="timing-assignment-summary">
+                        <div><span class="text-muted">Zeitpunkt</span><strong>@SelectedTimePoint.TimePointUTC.ToLocalTime().ToString("HH:mm:ss")</strong></div>
+                        <div><span class="text-muted">Teilnehmer</span><strong>#@SelectedFTP.Value.RaceParticipant.ParticipantNr @SelectedFTP.Value.RaceParticipant.Participant.DisplayName</strong></div>
+                        <div><span class="text-muted">Fortschritt</span><strong>@SelectedFTP.Value.RaceTimePoint.DisplayName</strong></div>
+                    </div>
                     <button class="btn btn-success btn-assign-timepoint" @onclick="AssignTimePoint">
                         <span class="oi oi-check"></span> Zeitpunkt zuordnen
                     </button>
                 </div>
             </div>
         }
+
+    </div>
+    </div>
+
+    <div class="card mt-3">
+        <div class="card-header">
+            <h5 class="mb-0">Erfasste Zeitpunkte</h5>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-striped mb-0">
+                <thead><tr><th>Zeit</th><th>Rennen</th><th>Teilnehmer</th><th>Status</th><th></th></tr></thead>
+                <tbody>
+                    @foreach (var tp in TimelineTimePoints.OrderByDescending(tp => tp.TimePointUTC))
+                    {
+                        <tr>
+                            <td>@tp.TimePointUTC.ToLocalTime().ToString("HH:mm:ss")</td>
+                            <td>@(tp.Race?.Name ?? "Nicht zugeordnet")</td>
+                            <td>@(tp.Participant?.DisplayName ?? "-")</td>
+                            <td>@(tp.RaceID.HasValue ? "Zugeordnet" : "Offen")</td>
+                            <td>
+                                @if (!tp.RaceID.HasValue)
+                                {
+                                    <button class="btn btn-danger btn-sm" @onclick="() => DeleteTimePoint(tp.Id)">Löschen</button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 
 <style>
-.timing-container {
+    .timing-page {
+    min-width: 0;
+    }
+
+    .timing-assignment-layout {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-    margin-bottom: 20px;
-}
+    grid-template-columns: minmax(0, 1fr) minmax(320px, .8fr);
+    gap: 1rem;
+    align-items: start;
+    }
 
-.timing-left-column {
+    .timing-right-column {
     min-width: 0;
-}
+    }
 
-.timing-right-column {
-    min-width: 0;
-}
-
-.btn-assign-timepoint {
+    .btn-assign-timepoint {
     width: 100%;
     padding: 15px 20px;
     font-size: 1.1rem;
     font-weight: 600;
     border-radius: 6px;
     min-height: 50px;
-}
+    }
 
-.timing-timeline {
+    .timing-timeline-scroll {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 3rem 0 4rem;
+    scrollbar-width: thin;
+    }
+
+    .timing-timeline {
     position: relative;
-    padding-left: 1.5rem;
-}
+    height: 5rem;
+    min-width: 1200px;
+    }
 
-.timing-timeline::before {
-    content: "";
+    .timing-timeline-range {
+    display: flex;
+    justify-content: center;
+    gap: .5rem;
+    flex-wrap: wrap;
+    padding: .75rem 1rem 0;
+    color: #495057;
+    font-size: .9rem;
+    }
+
+    .timing-assignment-summary {
+    display: grid;
+    gap: .5rem;
+    margin-bottom: 1rem;
+    }
+
+    .timing-assignment-summary div {
+    display: flex;
+    flex-direction: column;
+    }
+
+    @@media (max-width: 768px) {
+    .timing-assignment-layout {
+    grid-template-columns: 1fr;
+    }
+    }
+
+    .timing-timeline-axis {
     position: absolute;
-    left: .45rem;
+    left: 0;
+    right: 0;
+    top: 2.4rem;
+    height: 3px;
+    background: #6c757d;
+    }
+
+    .timing-timeline-now {
+    position: absolute;
     top: 0;
-    bottom: 0;
-    width: 2px;
-    background: #ffc107;
-}
+    height: 5rem;
+    border-left: 2px dashed #dc3545;
+    }
 
-.timing-timeline-item {
-    position: relative;
-    min-height: 4rem;
-    padding: .75rem;
-    border-bottom: 1px solid #dee2e6;
-}
-
-.timing-timeline-marker {
+    .timing-timeline-now span {
     position: absolute;
-    left: -1.3rem;
-    width: .8rem;
-    height: .8rem;
+    top: -1.5rem;
+    transform: translateX(-50%);
+    color: #dc3545;
+    font-weight: 600;
+    }
+
+    .timing-timeline-event {
+    position: absolute;
+    top: 1.55rem;
+    transform: translateX(-50%);
+    z-index: 1;
+    }
+
+    .timing-timeline-event.unassigned {
+    cursor: pointer;
+    }
+
+    .timing-timeline-marker {
+    display: block;
+    width: 1.25rem;
+    height: 1.25rem;
     border-radius: 50%;
+    background: #198754;
+    border: 3px solid white;
+    box-shadow: 0 0 0 1px #198754;
+    }
+
+    .timing-timeline-event.unassigned .timing-timeline-marker {
     background: #ffc107;
-    border: 2px solid white;
-}
+    box-shadow: 0 0 0 1px #cc9a06;
+    }
+
+    .timing-timeline-label {
+    position: absolute;
+    top: 1.4rem;
+    left: 50%;
+    transform: translateX(-50%);
+    white-space: nowrap;
+    font-size: .75rem;
+    }
 </style>
 
 @code {
@@ -174,6 +303,20 @@
     private List<FutureRaceParticipantTimePoint> AvailableFTPs = [];
     private TimingServiceUpdateEndpoint? updateEndpoint;
     private bool _multipleRaces = false;
+    private decimal _timelineZoom = 1m;
+    private bool _timelineInitialized;
+
+    private DateTime TimelineStartUtc => TimelineTimePoints.Any()
+        ? TimelineTimePoints.Min(tp => tp.TimePointUTC).AddMinutes(-1)
+        : DateTime.UtcNow.AddMinutes(-1);
+
+    private DateTime TimelineEndUtc => TimelineTimePoints.Any()
+        ? (TimelineTimePoints.Max(tp => tp.TimePointUTC) > DateTime.UtcNow
+            ? TimelineTimePoints.Max(tp => tp.TimePointUTC)
+            : DateTime.UtcNow).AddMinutes(1)
+        : DateTime.UtcNow.AddMinutes(1);
+
+    private double TimelineWidthPx => Math.Max(1200, (TimelineEndUtc - TimelineStartUtc).TotalMinutes * 60 * (double)_timelineZoom);
 
     protected override async Task OnInitializedAsync()
     {
@@ -183,15 +326,57 @@
         _ = UIRefresh();
     }
 
-    
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !_timelineInitialized)
+        {
+            _timelineInitialized = true;
+            await JS.InvokeVoidAsync("raceTimerTimeline.scrollToCurrent", "timing-timeline-scroll");
+        }
+    }
+
+
     private async Task UIRefresh()
     {
         while (true)
         {
             await Task.Delay(1000);
-            StateHasChanged();
+            await InvokeAsync(StateHasChanged);
         }
     }
+
+    private async Task SelectOpenTimePoint(RaceParticipantTimePoint tp)
+    {
+        SelectTimePoint(tp);
+        await JS.InvokeVoidAsync("raceTimerTimeline.scrollToElement", "timing-timeline-scroll", TimelineElementId(tp));
+    }
+
+    private void ZoomIn()
+    {
+        _timelineZoom = Math.Min(4m, _timelineZoom + 0.5m);
+    }
+
+    private void ZoomOut()
+    {
+        _timelineZoom = Math.Max(0.5m, _timelineZoom - 0.5m);
+    }
+
+    private double TimelinePosition(DateTime timePointUtc)
+    {
+        double totalTicks = (TimelineEndUtc - TimelineStartUtc).Ticks;
+        return totalTicks <= 0 ? 0 : Math.Clamp((timePointUtc - TimelineStartUtc).Ticks / totalTicks * 100, 0, 100);
+    }
+
+    private double TimelinePositionPx(DateTime timePointUtc)
+    {
+        return TimelinePosition(timePointUtc) / 100 * TimelineWidthPx;
+    }
+
+    private string TimelineElementId(RaceParticipantTimePoint tp) => $"timing-event-{tp.Id:N}";
+
+    private string TimelineLabel(RaceParticipantTimePoint tp) =>
+        $"{tp.TimePointUTC.ToLocalTime():HH:mm:ss} - {tp.Race?.Name ?? "Nicht zugeordnet"}";
+
 
     private void TimingPoint_Changed(RaceParticipantTimePoint? changed)
     {
@@ -287,4 +472,4 @@
         public required RaceTimePoint RaceTimePoint { get; init; }
         public required Race Race { get; init; }
     }
-}
+    }

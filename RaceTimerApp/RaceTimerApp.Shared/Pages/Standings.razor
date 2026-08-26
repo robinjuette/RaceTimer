@@ -156,7 +156,7 @@
             CancellationTokenSource cancellationTokenSource = new();
             refreshCTS = cancellationTokenSource;
 
-            TimeSpan timeSpan = TimeSpan.FromSeconds(1);
+            TimeSpan timeSpan = TimeSpan.FromMilliseconds(100);
 
             while (DisplayedRaces.Any(r => r.RaceStatus == RaceStatus.Running) &&
                 !cancellationTokenSource.IsCancellationRequested)

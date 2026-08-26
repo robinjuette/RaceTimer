@@ -1,9 +1,18 @@
 Bugs:
 3. Die laufende Zwischenzeit wird in `RankingEntry.RunTime` bis zur aktuellen UTC-Zeit berechnet und durch die bestehende UI-Aktualisierung sekündlich neu dargestellt.
+ -> In der Übersicht und im Zwischenstand sollte auch die laufende Zeit angezeigt werden.
+Umsetzungsbeschreibung: Beim Laden der Rankings wird die Race-Referenz an die Teilnehmer gesetzt, damit `RunTime` den laufenden Rennstatus sicher erkennt. Übersicht und Zwischenstand rendern die laufende Zeit weiterhin sekündlich neu; die Übersicht nutzt dafür einen UI-sicheren Refresh-Aufruf.
 4. RaceTimerApp.Web verwendet stabilen interaktiven Serverbetrieb statt `InteractiveAuto`, da der WebAssembly-Client keine RaceTimer-DI-/Repository-Konfiguration besitzt. Dadurch funktionieren Navigation und Aktionen wie „Neues Rennen“.
+ -> folgender Fehler: "Microsoft.AspNetCore.Components.NavigationException" in Microsoft.AspNetCore.Components.Server.dll"
+Umsetzungsbeschreibung: Der automatische Redirect aus `MainLayout.OnInitializedAsync` wird aus dem SSR-/Prerender-Pfad entfernt. Er erfolgt nach dem ersten interaktiven Render ausschließlich beim Einstieg auf `/`; direkte Navigation zu anderen Seiten löst keinen unerwarteten Redirect mehr aus.
 5. `AppConfigService` lädt die Einstellungen jetzt über `SettingsService` und persistiert Änderungen. Beim Erzeugen des Dienstes wird eine gespeicherte Online-Konfiguration automatisch verbunden.
+ -> Wird noch immer erst ausgelöst wenn die Einstellungsseite geöffnet wird.
+Umsetzungsbeschreibung: Die Initialisierung wird nicht mehr nur implizit beim ersten Seitenzugriff gestartet. `MauiProgram` löst `AppConfigService` beim App-Aufbau auf und wartet die einmalige Initialisierung ab, sodass die gespeicherte Online-Verbindung vor dem Anzeigen der Benutzeroberfläche aktiviert wird.
 
 Featurewünsche:
 1. Die Zeitpunkte laufender Rennen werden chronologisch auf einem Zeitstrahl dargestellt. Bereits zugeordnete und offene Zeitpunkte zeigen Rennen bzw. Teilnehmer; nur offene Punkte bleiben auswählbar.
-2. Die aktiven Teilnehmer werden bereits je laufendem Rennen geladen und bei mehreren Rennen mit dem Rennnamen gekennzeichnet.
-3. Für RaceTimerApp.Web werden ein eigenes Dockerfile und eine Compose-Konfiguration ergänzt. Web und API können gemeinsam oder getrennt betrieben werden; die Web-Port-/URL-Konfiguration erfolgt über ASP.NET-Core-Umgebungsvariablen.
+ -> Zeitstrahl sollte horizontal statt vertikal verlaufen; Zeitpunkte müssen auch an dem Punkt im Zeitstrahl auftauchen wo sie aufgezeichnet wurden, nicht einfach nur chronologisch.
+ Zeitstrahl sollte horizontal scrollbar und zoombar sein; beim Öffnen der Seite sollte er auf den aktuellen Zeitpunkt gescrollt sein.
+ Unter dem Zeitstrahl sollten die offenen Zeitpunkte angezeigt werden, wenn man einen anklickt scrollt der Zeitstrahl dahin (falls der Zeitpunkt nicht im sichtbaren Bereich ist)
+ Unter Zeitstrahl und offenen Zeitpunkten liegt dann die Teilnehmerauswahl, und darunter dann die alte Tabelle mit Zeitpunkten.
+Umsetzungsbeschreibung: Die Zeiterfassung erhält eine horizontale, horizontal scrollbarere Timeline. Die X-Position jedes Ereignisses wird aus seinem tatsächlichen UTC-Aufzeichnungszeitpunkt innerhalb eines Zeitfensters berechnet; Zoom-Steuerung verändert die Zeitmaßstabbreite. Beim ersten interaktiven Render wird zur aktuellen Zeit gescrollt. Offene Zeitpunkte werden darunter separat als anklickbare Liste dargestellt und scrollen zum zugehörigen Timeline-Marker. Die Teilnehmerauswahl und eine vollständige Tabelle aller laufenden Rennzeitpunkte folgen darunter.

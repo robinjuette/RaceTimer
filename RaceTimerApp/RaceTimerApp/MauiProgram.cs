@@ -43,7 +43,13 @@ namespace RaceTimerApp
             builder.Logging.AddDebug();
 #endif
 
-            return builder.Build();
+            MauiApp app = builder.Build();
+            app.Services.GetRequiredService<AppConfigService>()
+                .InitializeAsync()
+                .GetAwaiter()
+                .GetResult();
+
+            return app;
         }
     }
 }

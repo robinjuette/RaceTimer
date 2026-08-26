@@ -72,6 +72,15 @@ public class RankingService(IRaceRepository raceRepository)
             return [];
         }
 
+        Race? race = await raceRepository.GetRaceAsync(raceId);
+        if (race is not null)
+        {
+            foreach (RaceParticipant raceParticipant in rps)
+            {
+                raceParticipant.Race = race;
+            }
+        }
+
         Dictionary<RaceParticipant, RankingEntry> rankingEntriesDict = new();
 
         foreach(RaceParticipant rp in rps)

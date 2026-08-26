@@ -228,8 +228,8 @@
     {
         while (true)
         {
-            await Task.Delay(1000);
-            StateHasChanged();
+            await Task.Delay(100);
+            await InvokeAsync(StateHasChanged);
         }
     }
 
