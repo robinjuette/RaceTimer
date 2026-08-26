@@ -7,6 +7,13 @@ WORKDIR /app
 EXPOSE 8080
 EXPOSE 8081
 
+USER root
+RUN apt-get update \
+	&& apt-get install -y --no-install-recommends curl \
+	&& rm -rf /var/lib/apt/lists/*
+RUN mkdir -p /data && chown -R $APP_UID:$APP_UID /data
+USER $APP_UID
+
 
 # Diese Stufe wird zum Erstellen des Dienstprojekts verwendet.
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build

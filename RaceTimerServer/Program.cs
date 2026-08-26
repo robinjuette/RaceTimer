@@ -2,11 +2,15 @@ using RaceTimer.Shared.Data;
 using RaceTimer.Shared.Services;
 using RaceTimerServer.Hubs;
 using RaceTimerServer.Services;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
+var databasePath = builder.Configuration["RaceTimer:DatabasePath"];
 
 // Add services to the container.
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+        options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
 
 // Add SignalR for real-time change notifications
 builder.Services.AddSignalR(options =>
@@ -16,7 +20,7 @@ builder.Services.AddSignalR(options =>
     options.ClientTimeoutInterval = TimeSpan.FromSeconds(30);
 });
 
-builder.Services.AddLocalRaceServices();
+builder.Services.AddLocalRaceServices(databasePath);
 builder.Services.AddTransient<IRaceRepository>(sp => sp.GetRequiredService<CoreRaceRepository>());
 
 // Add repository change notification service for SignalR broadcasting
@@ -46,7 +50,10 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-app.UseHttpsRedirection();
+if (builder.Configuration.GetValue("HttpsRedirection:Enabled", false))
+{
+    app.UseHttpsRedirection();
+}
 
 app.UseAuthorization();
 

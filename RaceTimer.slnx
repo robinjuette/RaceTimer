@@ -14,6 +14,9 @@
     <File Path="UI-Beschreibung RaceTimer.txt" />
     <File Path="Änderungswünsche.txt" />
   </Folder>
+  <Project Path="docker-compose.dcproj">
+    <Build />
+  </Project>
   <Project Path="RaceTimerApp/RaceTimerApp.Shared/RaceTimerApp.Shared.csproj" Id="723cb0af-46bf-4f44-86c7-b60dc087f462" />
   <Project Path="RaceTimerApp/RaceTimerApp.Web.Client/RaceTimerApp.Web.Client.csproj" Id="7954b435-1372-4b8f-a8cd-282b580c4555" />
   <Project Path="RaceTimerApp/RaceTimerApp.Web/RaceTimerApp.Web.csproj" Id="3d520806-32e8-46eb-8a43-3b5a6c958b60" />

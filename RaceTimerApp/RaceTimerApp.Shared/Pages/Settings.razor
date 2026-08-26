@@ -9,6 +9,8 @@
 </div>
 
 <div class="settings-container">
+    @if (!AppConfigService.IsHosted)
+    {
     <!-- Betriebsmodus -->
     <div class="card mb-4">
         <div class="card-header">
@@ -37,9 +39,10 @@
             </div>
         </div>
     </div>
+    }
 
     <!-- Server-Verbindung (nur im Online-Modus) -->
-    @if (AppConfigService.Settings.Mode == "Online")
+    @if (!AppConfigService.IsHosted && AppConfigService.Settings.Mode == "Online")
     {
         <div class="card mb-4">
             <div class="card-header">
@@ -122,6 +125,8 @@
         </div>
     </div>
 
+    @if (!AppConfigService.IsHosted)
+    {
     <!-- Save Button -->
     <div class="d-grid">
         <button class="btn btn-primary btn-lg" @onclick="SaveSettings">Einstellungen speichern</button>
@@ -132,6 +137,7 @@
         <div class="alert alert-@(saveSuccess ? "success" : "danger") mt-3">
             @saveMessage
         </div>
+    }
     }
 </div>
 

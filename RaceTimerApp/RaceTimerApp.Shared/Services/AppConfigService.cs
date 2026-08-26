@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using RaceTimer.Shared.Http;
 using RaceTimer.Shared.Services;
 using RaceTimerApp.Shared.Models;
@@ -20,6 +21,7 @@ public class AppConfigService
     private readonly IServiceProvider? _serviceProvider;
     private readonly ConfiguredConnectionRepository _configuredRepository;
     private readonly SettingsService? _settingsService;
+    private readonly HostedServerOptions? _hostedOptions;
     private Task? _initializationTask;
 
     public AppConfigService(
@@ -28,7 +30,8 @@ public class AppConfigService
         Func<AppSettings>? loadPersistence = null,
         ILogger<AppConfigService>? logger = null,
         IServiceProvider? serviceProvider = null,
-        SettingsService? settingsService = null)
+        SettingsService? settingsService = null,
+        IOptions<HostedServerOptions>? hostedOptions = null)
     {
         _savePersistence = savePersistence;
         _loadPersistence = loadPersistence;
@@ -36,7 +39,14 @@ public class AppConfigService
         _serviceProvider = serviceProvider;
         _configuredRepository = configuredRepository;
         _settingsService = settingsService;
+        _hostedOptions = hostedOptions?.Value.IsHosted == true ? hostedOptions.Value : null;
         _settings = _loadPersistence?.Invoke() ?? _settingsService?.GetSettings() ?? new AppSettings();
+
+        if (_hostedOptions is not null)
+        {
+            _settings.Mode = "Hosted";
+            _settings.ServerUrl = _hostedOptions.ServerUrl;
+        }
 
     }
 
@@ -44,6 +54,10 @@ public class AppConfigService
     /// Aktuelle App-Einstellungen abrufen
     /// </summary>
     public AppSettings Settings => _settings;
+
+    public bool IsHosted => _hostedOptions is not null;
+
+    public string? HostedServerUrl => _hostedOptions?.ServerUrl;
 
     /// <summary>
     /// Gibt an, ob die App mit einem Server verbunden ist
@@ -59,6 +73,12 @@ public class AppConfigService
 
     private async Task InitFromSettingsAsync()
     {
+        if (IsHosted)
+        {
+            await ConnectToServerAsync(_hostedOptions!.ServerUrl!);
+            return;
+        }
+
         if (_settings.Mode.Equals("Online"))
         {
             await ConnectToServerAsync(_settings.ServerUrl);
@@ -74,6 +94,20 @@ public class AppConfigService
     /// </summary>
     public void SaveSettings(AppSettings settings)
     {
+        if (IsHosted)
+        {
+            if (!string.Equals(settings.Mode, "Hosted", StringComparison.OrdinalIgnoreCase) ||
+                !string.Equals(settings.ServerUrl, _hostedOptions!.ServerUrl, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException("Hosted-Einstellungen können nicht geändert werden.");
+            }
+
+            settings.Mode = "Hosted";
+            settings.ServerUrl = _hostedOptions.ServerUrl;
+            _settings = settings;
+            return;
+        }
+
         _settings = settings;
         _savePersistence?.Invoke(settings);
         if (_settingsService is not null)
@@ -90,6 +124,9 @@ public class AppConfigService
     /// </summary>
     public async Task<bool> ConnectToServerAsync(string serverUrl)
     {
+        if (IsHosted && !string.Equals(serverUrl, _hostedOptions!.ServerUrl, StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException("Die Hosted-Serveradresse kann nicht geändert werden.");
+
         if (string.IsNullOrEmpty(serverUrl))
             return false;
 
@@ -152,6 +189,9 @@ public class AppConfigService
     /// </summary>
     public async Task DisconnectFromServerAsync()
     {
+        if (IsHosted)
+            throw new InvalidOperationException("Die Verbindung kann im Hosted-Modus nicht getrennt werden.");
+
         try
         {
             // Wenn ConfiguredConnectionRepository vorhanden, wechsle zurück zu lokal

@@ -1,25 +1,53 @@
 services:
-  racetimer-server:
+  server:
+    image: ${DOCKER_REGISTRY-}racetimerserver
     build:
       context: .
       dockerfile: RaceTimerServer/Dockerfile
     environment:
       ASPNETCORE_URLS: http://+:8080
+      RaceTimer__DatabasePath: /data/racetimer.db
     ports:
-      - "8081:8080"
+      - "${RACETIMER_SERVER_PORT:-8080}:8080"
     volumes:
-      - racetimer-server-data:/home/app/.local/share/RaceTimer
+      - racetimer-server-data:/data
+    networks:
+      - racetimer-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl --fail --silent http://127.0.0.1:8080/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
-  racetimer-web:
+  web:
+    image: ${DOCKER_REGISTRY-}racetimer-web
     build:
       context: .
       dockerfile: RaceTimerApp/RaceTimerApp.Web/Dockerfile
     environment:
       ASPNETCORE_URLS: http://+:8080
+      RaceTimer__Mode: Hosted
+      RaceTimer__ServerUrl: http://server:8080
     ports:
-      - "8080:8080"
+      - "${RACETIMER_WEB_PORT:-8088}:8080"
+    networks:
+      - racetimer-network
     depends_on:
-      - racetimer-server
+      server:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl --fail --silent http://127.0.0.1:8080/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+networks:
+  racetimer-network:
+    driver: bridge
 
 volumes:
   racetimer-server-data:

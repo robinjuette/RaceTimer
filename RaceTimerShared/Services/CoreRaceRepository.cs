@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using RaceTimer.Shared.Data;
 using RaceTimer.Shared.Models;
 using System.Diagnostics;
+using System.Threading;
 
 namespace RaceTimer.Shared.Services;
 
@@ -35,36 +36,35 @@ public class CoreRaceRepository : IRaceRepository, IRepositoryChangeNotifier
     }
     private readonly IDbContextFactory<RaceTimerDbContext> dbContextFactory;
 
-    private TaskCompletionSource? migrationCheckTCS;
+    private static readonly object migrationLock = new();
+    private static Task? migrationTask;
 
     public CoreRaceRepository(IDbContextFactory<RaceTimerDbContext> dbContextFactory)
     {
         this.dbContextFactory = dbContextFactory;
 
-        _ = CheckAndApplyMigrationsAsync();
     }
 
     private async Task CheckAndApplyMigrationsAsync()
     {
-        if (migrationCheckTCS?.Task.IsCompleted == true)
+        Task currentMigration;
+        lock (migrationLock)
         {
-            return;
-        }
-        if(migrationCheckTCS != null)
-        {
-            await migrationCheckTCS.Task;
+            migrationTask ??= ApplyMigrationsAsync();
+            currentMigration = migrationTask;
         }
 
-        migrationCheckTCS = new();
+        await currentMigration;
+    }
 
+    private async Task ApplyMigrationsAsync()
+    {
         using RaceTimerDbContext _db = await dbContextFactory.CreateDbContextAsync();
 
         if((await _db.Database.GetPendingMigrationsAsync()).Any())
         {
             await _db.Database.MigrateAsync();
         }
-
-        migrationCheckTCS.SetResult();
     }
 
     // Return changes since a given UTC timestamp for a specific race
