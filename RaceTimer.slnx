@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/Projektmappenelemente/">
     <File Path=".gitignore" />
+    <File Path="docs/docker-compose-rework-konzept.md" />
     <File Path="Feedback.txt" />
     <File Path="Konzept RaceTimer.docx" />
     <File Path="Konzept RaceTimer.odt" />
