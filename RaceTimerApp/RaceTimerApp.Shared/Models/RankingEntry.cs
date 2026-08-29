@@ -53,7 +53,7 @@ namespace RaceTimerApp.Shared.Models
             get
             {
                 long recordedTicks = SplitTimes.Values.Sum(v => v?.Ticks ?? 0) + PenaltyTimes.Values.Sum(v => v?.Ticks ?? 0);
-                if (!CompletelyFinished && RaceParticipant.Race?.RaceStatus == RaceStatus.Running)
+                if (!RaceParticipant.FinishDateTimeUTC.HasValue && RaceParticipant.Race?.RaceStatus == RaceStatus.Running)
                 {
                     DateTime? lastTimePoint = RaceParticipantTimePoints
                         .OrderByDescending(tp => tp.RTPIndex)

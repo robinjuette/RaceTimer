@@ -52,7 +52,7 @@
                 </div>
             }
 
-            <div class="race-content">
+            <div class="race-content @(GetNotStartedParticipants(race).Any() ? "wide-left" : "") @(GetFinishedParticipants(race).Any() ? "wide-right" : "")">
                 <!-- Linke Seite: Noch nicht gestartete Teilnehmer -->
                 <div class="side-panel left-panel">
                     <div class="panel-header">

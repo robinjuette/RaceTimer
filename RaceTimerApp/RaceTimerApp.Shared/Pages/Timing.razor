@@ -11,7 +11,7 @@
 @inject IJSRuntime JS
 
 <div class="timing-page">
-    <div class="card mb-3">
+    <!--div-- class="card mb-3">
         <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
             <h5 class="mb-0">Zeitstrahl</h5>
             <div class="btn-group" role="group" aria-label="Zeitstrahl-Zoom">
@@ -21,14 +21,14 @@
             </div>
         </div>
         <div class="card-body">
-            @if (TimelineTimePoints.Any())
-            {
+            //@if (TimelineTimePoints.Any())
+            /{
                 <div class="timing-timeline-scroll" id="timing-timeline-scroll">
                     <div class="timing-timeline" style="width: @($"{TimelineWidthPx}px");">
                         <div class="timing-timeline-axis"></div>
                         <div class="timing-timeline-now" style="@($"left: {TimelinePositionPx(DateTime.UtcNow)}px")"><span>Jetzt</span></div>
-                        @foreach (var tp in TimelineTimePoints.OrderBy(tp => tp.TimePointUTC))
-                        {
+                        //@foreach (var tp in TimelineTimePoints.OrderBy(tp => tp.TimePointUTC))
+                        /{
                             <div id="@TimelineElementId(tp)" class="timing-timeline-event @(tp.RaceID.HasValue ? "assigned" : "unassigned")"
                             style="@($"left: {TimelinePositionPx(tp.TimePointUTC)}px")"
                             title="@TimelineLabel(tp)">
@@ -37,7 +37,7 @@
                             </div>
                         }
                     </div>
-                </div>
+                </!--div>
             }
             else
             {
@@ -48,7 +48,7 @@
             <span>Betrachteter Zeitraum:</span>
             <strong>@TimelineStartUtc.ToLocalTime().ToString("dd.MM.yyyy HH:mm:ss") – @TimelineEndUtc.ToLocalTime().ToString("dd.MM.yyyy HH:mm:ss")</strong>
         </div>
-    </div>
+    </!--div-->
 
     <div class="timing-assignment-layout">
         <div class="card mb-3 timing-open-timepoints">
@@ -58,14 +58,17 @@
             <div class="card-body">
                 @if (UnassignedTimePoints.Any())
                 {
-                    <div class="list-group">
+                    <div class="timing-open-timepoint-cards">
                         @foreach (var tp in UnassignedTimePoints.OrderBy(tp => tp.TimePointUTC))
                         {
-                            <button class="list-group-item list-group-item-action @(SelectedTimePoint?.Id == tp.Id ? "active" : "")"
-                            @onclick="() => SelectOpenTimePoint(tp)">
-                                @tp.TimePointUTC.ToLocalTime().ToString("HH:mm:ss")
-                                <span class="text-muted ms-2">Erfasst vor @((DateTime.UtcNow - tp.TimePointUTC).FormatShort())</span>
-                            </button>
+                            <div class="timing-open-timepoint-card @(SelectedTimePoint?.Id == tp.Id ? "active" : "")"
+                                 @onclick="() => SelectOpenTimePoint(tp)">
+                                <div class="timing-open-timepoint-content">
+                                    <strong>@tp.TimePointUTC.ToLocalTime().ToString("HH:mm:ss")</strong>
+                                    <span>Erfasst vor @((DateTime.UtcNow - tp.TimePointUTC).FormatShort())</span>
+                                </div>
+                                <button class="btn btn-danger btn-sm" @onclick:stopPropagation="true" @onclick="() => DeleteTimePoint(tp.Id)">Löschen</button>
+                            </div>
                         }
                     </div>
                 }
@@ -92,7 +95,7 @@
                             {
                                 <h6 class="w-100 mt-2">@raceGroup.First().Race.Name</h6>
                             }
-                            @foreach (FutureRaceParticipantTimePoint ftp in raceGroup)
+                            @foreach (FutureRaceParticipantTimePoint ftp in raceGroup.OrderBy(ftp => ftp.RaceParticipant.ParticipantNr))
                             {
                                 <div @onclick="() => SelectFTP(ftp)"
                                 class="participant-item active"
@@ -119,24 +122,24 @@
             </div>
         </div>
 
-        @if (SelectedTimePoint is not null && SelectedFTP is not null)
-        {
-            <div class="card">
-                <div class="card-body">
-                    <h6 class="card-title">Zuordnung prüfen</h6>
-                    <div class="timing-assignment-summary">
-                        <div><span class="text-muted">Zeitpunkt</span><strong>@SelectedTimePoint.TimePointUTC.ToLocalTime().ToString("HH:mm:ss")</strong></div>
-                        <div><span class="text-muted">Teilnehmer</span><strong>#@SelectedFTP.Value.RaceParticipant.ParticipantNr @SelectedFTP.Value.RaceParticipant.Participant.DisplayName</strong></div>
-                        <div><span class="text-muted">Fortschritt</span><strong>@SelectedFTP.Value.RaceTimePoint.DisplayName</strong></div>
-                    </div>
-                    <button class="btn btn-success btn-assign-timepoint" @onclick="AssignTimePoint">
-                        <span class="oi oi-check"></span> Zeitpunkt zuordnen
-                    </button>
-                </div>
-            </div>
-        }
-
     </div>
+
+    @if (SelectedTimePoint is not null && SelectedFTP is not null)
+    {
+        <div class="card timing-assignment-card">
+            <div class="card-body">
+                <h6 class="card-title">Zuordnung prüfen</h6>
+                <div class="timing-assignment-summary">
+                    <div><span class="text-muted">Zeitpunkt</span><strong>@SelectedTimePoint.TimePointUTC.ToLocalTime().ToString("HH:mm:ss")</strong></div>
+                    <div><span class="text-muted">Teilnehmer</span><strong>#@SelectedFTP.Value.RaceParticipant.ParticipantNr @SelectedFTP.Value.RaceParticipant.Participant.DisplayName</strong></div>
+                    <div><span class="text-muted">Fortschritt</span><strong>@SelectedFTP.Value.RaceTimePoint.DisplayName</strong></div>
+                </div>
+                <button class="btn btn-success btn-assign-timepoint" @onclick="AssignTimePoint">
+                    <span class="oi oi-check"></span> Zeitpunkt zuordnen
+                </button>
+            </div>
+        </div>
+    }
     </div>
 
     <div class="card mt-3">
@@ -145,7 +148,7 @@
         </div>
         <div class="table-responsive">
             <table class="table table-striped mb-0">
-                <thead><tr><th>Zeit</th><th>Rennen</th><th>Teilnehmer</th><th>Status</th><th></th></tr></thead>
+                <thead><tr><th>Zeit</th><th>Rennen</th><th>Teilnehmer</th><th>Status</th></tr></thead>
                 <tbody>
                     @foreach (var tp in TimelineTimePoints.OrderByDescending(tp => tp.TimePointUTC))
                     {
@@ -154,12 +157,6 @@
                             <td>@(tp.Race?.Name ?? "Nicht zugeordnet")</td>
                             <td>@(tp.Participant?.DisplayName ?? "-")</td>
                             <td>@(tp.RaceID.HasValue ? "Zugeordnet" : "Offen")</td>
-                            <td>
-                                @if (!tp.RaceID.HasValue)
-                                {
-                                    <button class="btn btn-danger btn-sm" @onclick="() => DeleteTimePoint(tp.Id)">Löschen</button>
-                                }
-                            </td>
                         </tr>
                     }
                 </tbody>
@@ -182,6 +179,42 @@
 
     .timing-right-column {
     min-width: 0;
+    }
+
+    .timing-assignment-card {
+    grid-column: 1 / -1;
+    }
+
+    .timing-open-timepoint-cards {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: .75rem;
+    }
+
+    .timing-open-timepoint-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: .75rem 1rem;
+    border: 1px solid #dee2e6;
+    border-radius: .375rem;
+    background: white;
+    cursor: pointer;
+    }
+
+    .timing-open-timepoint-card:hover,
+    .timing-open-timepoint-card.active {
+    background: #e7f3ff;
+    border-color: #0d6efd;
+    }
+
+    .timing-open-timepoint-content {
+    display: flex;
+    flex-direction: column;
+    gap: .25rem;
     }
 
     .btn-assign-timepoint {

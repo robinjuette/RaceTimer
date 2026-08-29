@@ -159,6 +159,17 @@ body {
     padding: 15px;
     min-height: 300px;
 }
+.race-content.wide-left {
+    grid-template-columns: 250px 1fr 180px;
+}
+
+.race-content.wide-right {
+    grid-template-columns: 180px 1fr 250px;
+}
+
+.race-content.wide-left.wide-right {
+    grid-template-columns: 250px 1fr 250px;
+}
 
 @media (max-width: 1200px) {
     .race-content {
@@ -170,7 +181,10 @@ body {
 }
 
 @media (max-width: 768px) {
-    .race-content {
+    .race-content,
+    .race-content.wide-left,
+    .race-content.wide-right,
+    .race-content.wide-left.wide-right {
         grid-template-columns: 1fr;
         gap: 15px;
         min-height: auto;
