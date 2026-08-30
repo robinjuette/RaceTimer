@@ -60,6 +60,8 @@ if (authEnabled)
             options.SetEndSessionEndpointUris("connect/logout");
             options.AllowAuthorizationCodeFlow().RequireProofKeyForCodeExchange();
             options.AllowRefreshTokenFlow();
+             options.SetAccessTokenLifetime(TimeSpan.FromMinutes(10));
+             options.SetRefreshTokenLifetime(TimeSpan.FromDays(14));
             options.RegisterScopes(OpenIddictConstants.Scopes.OpenId, OpenIddictConstants.Scopes.Profile, OpenIddictConstants.Scopes.OfflineAccess, "racetimer.read", "racetimer.manage");
             if (builder.Environment.IsDevelopment())
             {

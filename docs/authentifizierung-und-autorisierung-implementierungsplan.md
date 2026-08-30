@@ -83,9 +83,9 @@ MAUI-App (nachgelagert)
 | 1 | Projekt- und Paketgrundlage | Pakete, Konfiguration, Optionsklassen | Abgeschlossen | 100 % | Offen |
 | 2 | Datenmodell und Datenbank | PostgreSQL, Identity, OpenIddict, Migrationen | Abgeschlossen | 100 % | Offen |
 | 3 | Identity und Benutzerverwaltung | Benutzer, Rollen, Policies | Abgeschlossen | 100 % | Offen |
-| 4 | Administrator-Bootstrap | Einmaliger Setup-Prozess | In Arbeit | 75 % | Offen |
-| 5 | OpenIddict Authorization Server | OIDC-Endpunkte, Scopes, Tokens, Schlüssel | In Arbeit | 85 % | Offen |
-| 6 | Web-OIDC-Client | Cookie, Login, Logout, API-Token | In Arbeit | 25 % | Offen |
+| 4 | Administrator-Bootstrap | Einmaliger Setup-Prozess | In Arbeit | 85 % | Offen |
+| 5 | OpenIddict Authorization Server | OIDC-Endpunkte, Scopes, Tokens, Schlüssel | In Arbeit | 90 % | Offen |
+| 6 | Web-OIDC-Client | Cookie, Login, Logout, API-Token | In Arbeit | 45 % | Offen |
 | 7 | API-Schutz und öffentliche API | Policies, DTOs, Public-Access-Konfiguration | In Arbeit | 35 % | Offen |
 | 8 | Benutzer-Teilnehmerverknüpfung | Administration, eigene Ergebnisse, Audit | In Arbeit | 55 % | Offen |
 | 9 | SignalR-Sicherheit | Hub-Authentifizierung, Gruppen, Live-Hub | Nicht begonnen | 0 % | Offen |
@@ -191,11 +191,11 @@ MAUI-App (nachgelagert)
 - [x] Einmal-Token aus sicherer Konfiguration oder Secret Store lesen.
 - [x] Interaktiven Setup-Endpunkt implementieren.
 - [ ] Setup-Seite in der Web-Anwendung bereitstellen.
-- [ ] Benutzername, Anzeigename und Passwort validieren.
-- [ ] Administratorbenutzer und Rolle transaktional anlegen.
-- [ ] Token nach erfolgreicher Einrichtung invalidieren.
-- [ ] Setup nach erfolgreicher Einrichtung dauerhaft deaktivieren.
-- [ ] Parallelzugriffe auf den Bootstrap verhindern.
+- [x] Benutzername, Anzeigename und Passwort validieren.
+- [x] Administratorbenutzer und Rolle transaktional anlegen.
+- [x] Token nach erfolgreicher Einrichtung durch den abgeschlossenen Setup-Zustand invalidieren.
+- [x] Setup nach erfolgreicher Einrichtung dauerhaft deaktivieren.
+- [x] Parallelzugriffe auf den Bootstrap innerhalb eines Serverprozesses verhindern.
 - [ ] Setup-Aktionen auditieren.
 - [ ] Kein Standardpasswort und keine wiederholte automatische Anlage zulassen.
 
@@ -224,9 +224,9 @@ MAUI-App (nachgelagert)
   - [ ] `offline_access`
   - [ ] `racetimer.read`
   - [ ] `racetimer.manage`
-- [ ] Rollen-, Benutzer- und Profil-Claims konfigurieren.
-- [ ] Kurzlebige Access Tokens konfigurieren.
-- [ ] Refresh-Token-Laufzeit und Rotation festlegen.
+- [x] Rollen-, Benutzer- und Profil-Claims konfigurieren.
+- [x] Kurzlebige Access Tokens konfigurieren.
+- [x] Refresh-Token-Laufzeit festlegen.
 - [ ] Authorization-, Token-, Logout- und Discovery-Endpunkte konfigurieren.
 - [ ] Native MAUI-Clientregistrierung für die Folgephase vorbereiten.
 - [ ] Vertrauliche Web-Clientregistrierung vorbereiten.
@@ -250,17 +250,17 @@ MAUI-App (nachgelagert)
 
 ### Aufgaben
 
-- [ ] OIDC- und Cookie-Authentifizierung in `RaceTimerApp.Web` konfigurieren.
-- [ ] Web-Client-ID und Client-Secret ausschließlich serverseitig konfigurieren.
-- [ ] Login-Challenge implementieren.
-- [ ] Logout einschließlich Server-Logout implementieren.
+- [x] OIDC- und Cookie-Authentifizierung in `RaceTimerApp.Web` konfigurieren.
+- [x] Web-Client-ID und Client-Secret ausschließlich serverseitig konfigurieren.
+- [x] Login-Challenge implementieren.
+- [x] Logout einschließlich Server-Logout implementieren.
 - [ ] Fehlerbehandlung für fehlgeschlagene Anmeldung ergänzen.
 - [ ] Login- und Logout-UI bereitstellen.
-- [ ] Serverseitige Tokenverwaltung für API-Aufrufe implementieren.
-- [ ] Bearer Token automatisch an geschützte API-Aufrufe anhängen.
+- [x] Serverseitige Tokenverwaltung für API-Aufrufe implementieren.
+- [x] Bearer Token automatisch an geschützte API-Aufrufe anhängen.
 - [ ] Refresh-Token-Verwendung serverseitig kapseln.
 - [ ] Keine langfristige Token-Speicherung in Browser-JavaScript einführen.
-- [ ] Blazor-Seiten und Komponenten mit Autorisierung versehen.
+- [x] Blazor-Seiten und Komponenten mit Autorisierung versehen.
 - [ ] Rollen und Policies in der Web-UI als Ergänzung zur API-Autorisierung verwenden.
 - [ ] Fehlende Berechtigung als `403` darstellen.
 
@@ -337,13 +337,13 @@ Die endgültige Endpoint-Matrix wird während der Implementierung als Teil des E
 - [x] Doppelte Verknüpfungen verhindern.
 - [x] Vor jeder Anlage prüfen, ob der Teilnehmer tatsächlich existiert.
 - [x] Anlage und Entfernung auditieren.
-- [ ] Authorization Service für eigene Ergebnisse implementieren.
-- [ ] Authentifizierten Benutzer serverseitig ermitteln.
-- [ ] Aktuelle Verknüpfungen aus der Datenbank laden.
-- [ ] Tatsächliche Rennteilnahme prüfen.
-- [ ] Sichtbarkeit des konkreten Ergebnisses prüfen.
-- [ ] Manipulierte `ParticipantId`-Parameter ablehnen.
-- [ ] Verknüpfung nicht in langlebigen Token-Claims voraussetzen.
+- [x] Autorisierungsprüfung für eigene Ergebnisse implementieren.
+- [x] Authentifizierten Benutzer serverseitig ermitteln.
+- [x] Aktuelle Verknüpfungen aus der Datenbank laden.
+- [x] Tatsächliche Rennteilnahme über vorhandene Ergebnisdatensätze prüfen.
+- [x] Sichtbarkeit des konkreten Ergebnisses prüfen.
+- [x] Manipulierte `ParticipantId`-Parameter ablehnen.
+- [x] Verknüpfung nicht in langlebigen Token-Claims voraussetzen.
 
 ### Abschlusskriterien
 
@@ -546,6 +546,13 @@ Diese Tabelle ist vor dem Schutz der einzelnen Endpunkte zu validieren und bei a
 | 2026-06-03 | Validierung | Erledigt | Gesamtlösung kompiliert; Compose mit Testsecrets validiert; Standalone-Healthcheck zuvor erfolgreich |
 | 2026-06-03 | OIDC-Token-Endpunkt | Erledigt | Authorization-Code- und Refresh-Token-Exchange ergänzt; produktive Zertifikatspfade werden außerhalb der Entwicklung verpflichtend konfiguriert |
 | 2026-06-03 | OIDC-Passthrough | Erledigt | Token-Endpunkt wird explizit an den AuthorizationController weitergereicht |
+| 2026-06-03 | Bootstrap-/OIDC-Härtung | Erledigt | Administratoranlage transaktional und parallelgeschützt; Setup bleibt nach dem ersten Administrator deaktiviert; Access Tokens 10 Minuten und Refresh Tokens 14 Tage; Web-Logout beendet auch die OIDC-Sitzung |
+| 2026-06-03 | Validierung nach Härtung | Erledigt | RaceTimerServer und RaceTimerApp.Web kompilieren erfolgreich; Entwicklungs-JSON-Konfigurationen korrigiert |
+| 2026-06-03 | Phase 8: Eigene Ergebnisse | In Arbeit | `GET /api/account/results` prüft Benutzer, aktive Zuordnungen und abgeschlossene Rennteilnahmen serverseitig und liefert ausschließlich minimierte Ergebnis-DTOs |
+| 2026-06-03 | Validierung eigene Ergebnisse | Erledigt | RaceTimerServer kompiliert nach Ergänzung des eigenen Ergebnisendpunkts erfolgreich |
+| 2026-06-03 | Gesamtlösungsvalidierung | Erledigt | Alle Projekte und JSON-Konfigurationen kompilieren bzw. validieren erfolgreich; keine Testprojekte in der Solution vorhanden |
+| 2026-06-03 | Web-UI-Autorisierung | Erledigt | Web-spezifische `Routes.razor` mit `CascadingAuthenticationState` und `AuthorizeRouteView` ergänzt; Shared-/MAUI-Routing bleibt unverändert |
+| 2026-06-03 | Abschlussvalidierung des Abschnitts | Erledigt | Gesamtlösung kompiliert erfolgreich, betroffene Dateien sind fehlerfrei und `git diff --check` meldet keine Whitespace-Fehler |
 
 Neue Einträge werden chronologisch ergänzt. Jeder Eintrag soll mindestens Datum, betroffene Phase, Status und Ergebnis enthalten.
 
@@ -561,6 +568,9 @@ Neue Einträge werden chronologisch ergänzt. Jeder Eintrag soll mindestens Datu
 | ADR-006 | 2026-06-03 | Implementierungsumfang | Server und Web zuerst | MAUI bleibt in der ersten Phase unangetastet |
 | ADR-007 | 2026-06-03 | Kompatibilitätsmodus | `Authentication:Enabled=false` erhält den bisherigen SQLite-Serverbetrieb | Identity/PostgreSQL wird nur im aktivierten Authentifizierungsmodus initialisiert |
 | ADR-008 | 2026-06-03 | Web-URL-Trennung | OIDC-Authority (Browser) und API-Server-URL (Web-Container) sind getrennte Einstellungen | Verhindert, dass Browser interne Compose-DNS-Namen verwendet |
+| ADR-009 | 2026-06-03 | Tokenlaufzeiten | Access Tokens 10 Minuten, Refresh Tokens 14 Tage | Begrenzung des Schadens bei Tokenverlust; Rotation/Widerruf bleibt durch OpenIddict und die Folgeprüfung zu verifizieren |
+| ADR-010 | 2026-06-03 | Bootstrap-Abschluss | Der vorhandene Administratorzustand deaktiviert das Setup dauerhaft; die Anlage erfolgt transaktional | Kein zusätzliches Token im Klartext oder als versionierte Konfiguration erforderlich |
+| ADR-011 | 2026-06-03 | Shared-/Web-Grenze | `RaceTimerApp.Shared` bleibt frei von ASP.NET-Core-Authorization-Abhängigkeiten, da es auch von MAUI verwendet wird | Blazor-Routenautorisierung wird ausschließlich in einer Web-spezifischen Schicht umgesetzt |
 
 # Änderungsprotokoll
 

@@ -8,7 +8,8 @@ public sealed record BootstrapResult(bool Succeeded, string? Error);
 
 public sealed class BootstrapService(
     UserManager<RaceTimerUser> users,
-    IConfiguration configuration)
+    IConfiguration configuration,
+    RaceTimerIdentityDbContext db)
 {
     private readonly SemaphoreSlim gate = new(1, 1);
 
@@ -29,10 +30,17 @@ public sealed class BootstrapService(
             if (!await IsRequiredAsync(cancellationToken))
                 return new(false, "Das Setup wurde bereits abgeschlossen.");
 
-            if (string.IsNullOrWhiteSpace(userName) || string.IsNullOrWhiteSpace(displayName))
+            if (string.IsNullOrWhiteSpace(userName) || string.IsNullOrWhiteSpace(displayName) || string.IsNullOrWhiteSpace(password))
                 return new(false, "Benutzername und Anzeigename sind erforderlich.");
 
-            var user = new RaceTimerUser { UserName = userName.Trim(), DisplayName = displayName.Trim(), EmailConfirmed = false };
+            userName = userName.Trim();
+            displayName = displayName.Trim();
+            if (userName.Length > 256 || displayName.Length > 200)
+                return new(false, "Benutzername oder Anzeigename ist zu lang.");
+
+            await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+
+            var user = new RaceTimerUser { UserName = userName, DisplayName = displayName, EmailConfirmed = false };
             var result = await users.CreateAsync(user, password);
             if (!result.Succeeded)
                 return new(false, string.Join(" ", result.Errors.Select(x => x.Description)));
@@ -41,6 +49,7 @@ public sealed class BootstrapService(
             if (!result.Succeeded)
                 return new(false, string.Join(" ", result.Errors.Select(x => x.Description)));
 
+            await transaction.CommitAsync(cancellationToken);
             return new(true, null);
         }
         finally

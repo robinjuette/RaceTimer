@@ -28,6 +28,7 @@ public sealed class AuthorizationController(
 
         var principal = await ClaimsPrincipalFactory.CreateAsync(users, user);
         principal.SetScopes(request.GetScopes());
+        principal.SetResources("racetimer-api");
         return SignIn(principal, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
     }
 
@@ -48,6 +49,7 @@ public sealed class AuthorizationController(
 
         var principal = await ClaimsPrincipalFactory.CreateAsync(users, user);
         principal.SetScopes(result.Principal?.GetScopes() ?? request.GetScopes());
+        principal.SetResources("racetimer-api");
         return SignIn(principal, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
     }
 

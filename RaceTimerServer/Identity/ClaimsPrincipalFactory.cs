@@ -18,7 +18,6 @@ public static class ClaimsPrincipalFactory
             identity.AddClaim(OpenIddictConstants.Claims.Role, role);
 
         var principal = new ClaimsPrincipal(identity);
-        principal.SetScopes(OpenIddictConstants.Scopes.OpenId, OpenIddictConstants.Scopes.Profile, OpenIddictConstants.Scopes.OfflineAccess, "racetimer.read", "racetimer.manage");
         principal.SetResources("racetimer-api");
         return principal;
     }
