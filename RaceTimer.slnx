@@ -21,7 +21,7 @@
   <Project Path="RaceTimerApp/RaceTimerApp.Web.Client/RaceTimerApp.Web.Client.csproj" Id="7954b435-1372-4b8f-a8cd-282b580c4555" />
   <Project Path="RaceTimerApp/RaceTimerApp.Web/RaceTimerApp.Web.csproj" Id="3d520806-32e8-46eb-8a43-3b5a6c958b60" />
   <Project Path="RaceTimerApp/RaceTimerApp/RaceTimerApp.csproj" Id="c279739e-3134-4935-b5b2-cc173434c994">
-    <Deploy Solution="Debug|*" />
+    <Deploy />
   </Project>
   <Project Path="RaceTimerServer/RaceTimerServer.csproj" Id="88931781-e3df-45ce-9e9e-7e2fc068cb92" />
   <Project Path="RaceTimerShared/RaceTimerShared.csproj" />
