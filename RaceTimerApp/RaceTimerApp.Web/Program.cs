@@ -3,6 +3,10 @@ using RaceTimerApp.Shared.Services;
 using RaceTimer.Shared.Http;
 using RaceTimer.Shared.Services;
 using RaceTimerApp.Shared.Models;
+using RaceTimerApp.Web.Authentication;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,6 +16,39 @@ if (hostedOptions.IsHosted && !Uri.TryCreate(hostedOptions.ServerUrl, UriKind.Ab
     throw new InvalidOperationException("RaceTimer:ServerUrl muss im Hosted-Modus eine gültige absolute URL sein.");
 }
 builder.Services.Configure<HostedServerOptions>(builder.Configuration.GetSection("RaceTimer"));
+var oidcAuthority = builder.Configuration["Authentication:Authority"];
+var oidcEnabled = hostedOptions.IsHosted && Uri.TryCreate(oidcAuthority, UriKind.Absolute, out _);
+
+builder.Services.AddHttpContextAccessor();
+if (oidcEnabled)
+{
+    builder.Services.AddAuthentication(options =>
+    {
+        options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme = OpenIdConnectDefaults.AuthenticationScheme;
+    }).AddCookie(options => options.LoginPath = "/account/login")
+      .AddOpenIdConnect(options =>
+      {
+          options.Authority = oidcAuthority!;
+          options.ClientId = builder.Configuration["Authentication:ClientId"] ?? "racetimer-web";
+          options.ClientSecret = builder.Configuration["Authentication:ClientSecret"];
+          options.ResponseType = "code";
+          options.UsePkce = true;
+          options.SaveTokens = true;
+          options.GetClaimsFromUserInfoEndpoint = true;
+          options.Scope.Add("openid");
+          options.Scope.Add("profile");
+          options.Scope.Add("offline_access");
+          options.Scope.Add("racetimer.read");
+          options.Scope.Add("racetimer.manage");
+          options.RequireHttpsMetadata = builder.Environment.IsProduction();
+      });
+    builder.Services.AddCascadingAuthenticationState();
+}
+else
+{
+    builder.Services.AddAuthentication().AddCookie();
+}
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
@@ -20,6 +57,9 @@ builder.Services.AddRazorComponents()
 // Register RaceTimer services
 builder.Services.AddLocalRaceServices();
 builder.Services.AddServerRaceServices();
+builder.Services.AddTransient<AccessTokenHandler>();
+builder.Services.AddHttpClient<IRaceTimerApiClient, RaceTimerApiClient>()
+    .AddHttpMessageHandler<AccessTokenHandler>();
 builder.Services.AddConfiguredConnectionRepository();
 builder.Services.AddScoped<IRaceRepository>(serviceProvider =>
 {
@@ -61,6 +101,17 @@ if (builder.Configuration.GetValue("HttpsRedirection:Enabled", false))
 }
 
 app.UseAntiforgery();
+
+app.UseAuthentication();
+app.UseAuthorization();
+
+app.MapGet("/account/login", (HttpContext context) =>
+    Results.Challenge(new AuthenticationProperties { RedirectUri = "/" }, [OpenIdConnectDefaults.AuthenticationScheme]));
+app.MapGet("/account/logout", async (HttpContext context) =>
+{
+    await context.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+    return Results.Redirect("/");
+});
 
 app.MapStaticAssets();
 app.MapGet("/health", () => Results.Ok(new { status = "healthy" }));

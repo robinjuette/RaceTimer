@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.AspNetCore.Authorization;
 using RaceTimer.Shared.Services;
+using RaceTimerServer.Configuration;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -47,6 +49,7 @@ public class RaceTimerHub : Hub
     /// Client ruft diese Methode auf, um sich für Änderungen eines Rennens zu abonnieren.
     /// </summary>
     /// <param name="raceId">Die ID des Rennens, das überwacht werden soll</param>
+    [Authorize(Policy = AuthorizationPolicies.CanViewAllResults)]
     public async Task SubscribeToRaceChanges(Guid raceId)
     {
         var groupName = GetRaceGroupName(raceId);
@@ -58,6 +61,7 @@ public class RaceTimerHub : Hub
     /// Client ruft diese Methode auf, um ein Rennabonnement zu beenden.
     /// </summary>
     /// <param name="raceId">Die ID des Rennens</param>
+    [Authorize(Policy = AuthorizationPolicies.CanViewAllResults)]
     public async Task UnsubscribeFromRaceChanges(Guid raceId)
     {
         var groupName = GetRaceGroupName(raceId);
@@ -68,6 +72,7 @@ public class RaceTimerHub : Hub
     /// <summary>
     /// Interne Methode: Server ruft diese auf, um eine Änderung an alle Clients zu broadcasten.
     /// </summary>
+    [Authorize(Policy = AuthorizationPolicies.CanManageRaces)]
     public async Task BroadcastRaceChange(Guid raceId, RepositoryChangedEventArgs change)
     {
         var groupName = GetRaceGroupName(raceId);
@@ -78,6 +83,7 @@ public class RaceTimerHub : Hub
     /// <summary>
     /// Interne Methode: Server ruft diese auf, um globale (nicht-rennspezifische) Änderungen zu broadcasten.
     /// </summary>
+    [Authorize(Policy = AuthorizationPolicies.CanManageRaces)]
     public async Task BroadcastGlobalChange(RepositoryChangedEventArgs change)
     {
         await Clients.All.SendAsync("GlobalChanged", change);

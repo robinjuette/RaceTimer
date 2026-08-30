@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using RaceTimer.Shared.Models;
 using RaceTimer.Shared.Services;
 using RaceTimerServer.Controllers.Requests;
+using RaceTimerServer.Configuration;
 
 namespace RaceTimerServer.Controllers;
 
@@ -66,6 +68,7 @@ public class RaceTimerController : ControllerBase
     /// Creates a new race
     /// </summary>
     [HttpPost("races")]
+    [Authorize(Policy = AuthorizationPolicies.CanManageRaces)]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<ActionResult<Race>> CreateRace([FromBody] CreateRaceRequest request)
@@ -82,6 +85,7 @@ public class RaceTimerController : ControllerBase
     /// Updates an existing race
     /// </summary>
     [HttpPut("races/{id}")]
+    [Authorize(Policy = AuthorizationPolicies.CanManageRaces)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -96,6 +100,7 @@ public class RaceTimerController : ControllerBase
     /// Deletes a race
     /// </summary>
     [HttpDelete("races/{id}")]
+    [Authorize(Policy = AuthorizationPolicies.CanManageRaces)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteRace(Guid id)
@@ -109,6 +114,7 @@ public class RaceTimerController : ControllerBase
     /// Starts a race with the given participants
     /// </summary>
     [HttpPost("races/{id}/start")]
+    [Authorize(Policy = AuthorizationPolicies.CanManageRaces)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -125,6 +131,7 @@ public class RaceTimerController : ControllerBase
     /// Finishes a race
     /// </summary>
     [HttpPost("races/{id}/finish")]
+    [Authorize(Policy = AuthorizationPolicies.CanManageRaces)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<bool>> FinishRace(Guid id)
@@ -165,6 +172,7 @@ public class RaceTimerController : ControllerBase
     /// Creates a new participant
     /// </summary>
     [HttpPost("participants")]
+    [Authorize(Policy = AuthorizationPolicies.CanManageParticipants)]
     [ProducesResponseType(StatusCodes.Status201Created)]
     public async Task<ActionResult<Participant>> CreateParticipant([FromBody] CreateParticipantRequest request)
     {
@@ -180,6 +188,7 @@ public class RaceTimerController : ControllerBase
     /// Updates a participant
     /// </summary>
     [HttpPut("participants/{id}")]
+    [Authorize(Policy = AuthorizationPolicies.CanManageParticipants)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> UpdateParticipant(Guid id, [FromBody] Participant participant)
@@ -193,6 +202,7 @@ public class RaceTimerController : ControllerBase
     /// Deletes a participant
     /// </summary>
     [HttpDelete("participants/{id}")]
+    [Authorize(Policy = AuthorizationPolicies.CanManageParticipants)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteParticipant(Guid id)
@@ -221,6 +231,7 @@ public class RaceTimerController : ControllerBase
     /// Assigns a participant to a race
     /// </summary>
     [HttpPost("races/{raceId}/participants/{participantId}")]
+    [Authorize(Policy = AuthorizationPolicies.CanManageParticipants)]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<RaceParticipant>> AssignParticipantToRace(Guid raceId, Guid participantId)
@@ -233,6 +244,7 @@ public class RaceTimerController : ControllerBase
     /// Removes a participant from a race
     /// </summary>
     [HttpDelete("races/{raceId}/participants/{participantId}")]
+    [Authorize(Policy = AuthorizationPolicies.CanManageParticipants)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> RemoveParticipantFromRace(Guid raceId, Guid participantId)
@@ -262,6 +274,7 @@ public class RaceTimerController : ControllerBase
     /// Creates a new time point for a race
     /// </summary>
     [HttpPost("races/{raceId}/timepoint")]
+    [Authorize(Policy = AuthorizationPolicies.CanManageRaces)]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<RaceTimePoint>> CreateRaceTimePoint(Guid raceId, [FromBody] CreateTimePointRequest request)
@@ -275,6 +288,7 @@ public class RaceTimerController : ControllerBase
     /// Updates time points for a race
     /// </summary>
     [HttpPut("races/{raceId}/timepoints")]
+    [Authorize(Policy = AuthorizationPolicies.CanManageRaces)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateRaceTimePoints(Guid raceId, [FromBody] List<RaceTimePoint> timePoints)
@@ -288,6 +302,7 @@ public class RaceTimerController : ControllerBase
     /// Deletes a time point
     /// </summary>
     [HttpDelete("races/{raceId}/timepoints/{timePointId}")]
+    [Authorize(Policy = AuthorizationPolicies.CanManageRaces)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteRaceTimePoint(Guid raceId, Guid timePointId)
@@ -301,6 +316,7 @@ public class RaceTimerController : ControllerBase
     /// Copies time points from one race to another
     /// </summary>
     [HttpPost("races/{raceIdCopyFrom}/timepoints/copy-to/{raceIdCopyTo}")]
+    [Authorize(Policy = AuthorizationPolicies.CanManageRaces)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<bool>> CopyTimePoints(Guid raceIdCopyFrom, Guid raceIdCopyTo)

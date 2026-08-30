@@ -64,7 +64,7 @@ public interface IRaceTimerApiClient
 /// Implementation of IRaceTimerApiClient using a standard HttpClient.
 /// This class provides a wrapper around REST API calls with proper error handling and serialization.
 /// </summary>
-internal class RaceTimerApiClient : IRaceTimerApiClient
+public class RaceTimerApiClient : IRaceTimerApiClient
 {
     private readonly HttpClient _http;
     private const string BasePath = "api/racetimer";
