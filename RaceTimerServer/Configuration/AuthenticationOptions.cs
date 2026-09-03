@@ -12,6 +12,7 @@ public sealed class AuthenticationOptions
     public string? SigningCertificatePath { get; set; }
     public string? EncryptionCertificatePath { get; set; }
     public string? CertificatePassword { get; set; }
+    public bool RequireHttps { get; set; } = true;
 }
 
 public sealed class PublicAccessOptions

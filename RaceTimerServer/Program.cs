@@ -14,6 +14,11 @@ var builder = WebApplication.CreateBuilder(args);
 var databasePath = builder.Configuration["RaceTimer:DatabasePath"];
 var authOptions = builder.Configuration.GetSection("Authentication").Get<AuthenticationOptions>() ?? new();
 var authEnabled = authOptions.Enabled;
+if (authEnabled && !builder.Environment.IsDevelopment() && authOptions.RequireHttps &&
+    (!Uri.TryCreate(authOptions.Issuer, UriKind.Absolute, out var issuerUri) || issuerUri.Scheme != Uri.UriSchemeHttps))
+{
+    throw new InvalidOperationException("Authentication:Issuer muss außerhalb der Entwicklung HTTPS verwenden.");
+}
 builder.Services.Configure<PublicAccessOptions>(builder.Configuration.GetSection("PublicAccess"));
 
 // Add services to the container.
@@ -110,6 +115,15 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 var app = builder.Build();
+
+if (!app.Environment.IsDevelopment())
+{
+    app.UseForwardedHeaders(new ForwardedHeadersOptions
+    {
+        ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor |
+            Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto
+    });
+}
 
 if (authEnabled)
 {

@@ -13,6 +13,7 @@ namespace RaceTimerServer.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
+[Authorize(Policy = AuthorizationPolicies.CanViewAllResults)]
 public class RaceTimerController : ControllerBase
 {
     private readonly IRaceRepository _repo;

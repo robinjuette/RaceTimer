@@ -37,4 +37,4 @@ docker compose down
 
 ## Sicherheitsgrenzen
 
-Die erste Ausbaustufe nutzt unverschlüsseltes HTTP und keine Authentifizierung. Sie ist ausschließlich für ein vertrauenswürdiges lokales Netzwerk vorgesehen. Vor einer Veröffentlichung sind TLS-Terminierung, Forwarded Headers, Origins, Authentifizierung, Autorisierung, Secrets und Rate Limiting umzusetzen.
+Die Entwicklungsvariante nutzt unverschlüsseltes HTTP. Für eine Veröffentlichung muss `RACETIMER_SERVER_ISSUER` auf eine HTTPS-URL gesetzt und TLS an einem Reverse Proxy terminiert werden. Der Server verarbeitet außerhalb der Entwicklung `X-Forwarded-For` und `X-Forwarded-Proto`; der Proxy darf diese Header nur selbst setzen. Zertifikatspfade für OpenIddict werden über `Authentication__SigningCertificatePath` und `Authentication__EncryptionCertificatePath` aus einem Secret-Mount bereitgestellt.

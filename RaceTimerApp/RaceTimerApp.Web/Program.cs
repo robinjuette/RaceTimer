@@ -19,6 +19,14 @@ builder.Services.Configure<HostedServerOptions>(builder.Configuration.GetSection
 var oidcAuthority = builder.Configuration["Authentication:Authority"];
 var oidcEnabled = hostedOptions.IsHosted && Uri.TryCreate(oidcAuthority, UriKind.Absolute, out _);
 
+if (hostedOptions.IsHosted)
+{
+    builder.Services.AddHttpClient("RaceTimerServer", client =>
+    {
+        client.BaseAddress = new Uri(hostedOptions.ServerUrl!);
+    });
+}
+
 builder.Services.AddHttpContextAccessor();
 if (oidcEnabled)
 {
@@ -42,6 +50,18 @@ if (oidcEnabled)
           options.Scope.Add("racetimer.read");
           options.Scope.Add("racetimer.manage");
           options.RequireHttpsMetadata = builder.Environment.IsProduction();
+           options.Events.OnRemoteFailure = context =>
+           {
+               context.Response.Redirect("/account/error");
+               context.HandleResponse();
+               return Task.CompletedTask;
+           };
+           options.Events.OnAccessDenied = context =>
+           {
+               context.Response.Redirect("/account/forbidden");
+               context.HandleResponse();
+               return Task.CompletedTask;
+           };
       });
     builder.Services.AddCascadingAuthenticationState();
 }

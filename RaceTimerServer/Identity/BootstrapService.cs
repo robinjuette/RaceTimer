@@ -9,7 +9,8 @@ public sealed record BootstrapResult(bool Succeeded, string? Error);
 public sealed class BootstrapService(
     UserManager<RaceTimerUser> users,
     IConfiguration configuration,
-    RaceTimerIdentityDbContext db)
+    RaceTimerIdentityDbContext db,
+    ILogger<BootstrapService> logger)
 {
     private readonly SemaphoreSlim gate = new(1, 1);
 
@@ -25,10 +26,16 @@ public sealed class BootstrapService(
         {
             var expected = configuration.GetSection("Authentication").Get<AuthenticationOptions>()?.BootstrapToken;
             if (string.IsNullOrWhiteSpace(expected) || !System.Security.Cryptography.CryptographicOperations.FixedTimeEquals(System.Text.Encoding.UTF8.GetBytes(expected), System.Text.Encoding.UTF8.GetBytes(token)))
+            {
+                logger.LogWarning("Administrator-Setup mit ungültigem Token abgewiesen.");
                 return new(false, "Ungültiges Setup-Token.");
+            }
 
             if (!await IsRequiredAsync(cancellationToken))
+            {
+                logger.LogInformation("Administrator-Setup abgewiesen, da bereits ein Administrator existiert.");
                 return new(false, "Das Setup wurde bereits abgeschlossen.");
+            }
 
             if (string.IsNullOrWhiteSpace(userName) || string.IsNullOrWhiteSpace(displayName) || string.IsNullOrWhiteSpace(password))
                 return new(false, "Benutzername und Anzeigename sind erforderlich.");
@@ -50,6 +57,7 @@ public sealed class BootstrapService(
                 return new(false, string.Join(" ", result.Errors.Select(x => x.Description)));
 
             await transaction.CommitAsync(cancellationToken);
+            logger.LogInformation("Administrator-Setup erfolgreich abgeschlossen.");
             return new(true, null);
         }
         finally

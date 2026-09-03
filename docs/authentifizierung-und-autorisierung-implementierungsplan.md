@@ -5,12 +5,12 @@
 | Eigenschaft | Wert |
 |---|---|
 | Status | In Arbeit |
-| Version | 1.1 |
+| Version | 1.2 |
 | Erstellt am | 2026-06-03 |
 | Grundlage | `docs/authentifizierung-und-autorisierung-konzept.md` |
 | Geltungsbereich | RaceTimerServer und RaceTimerApp.Web |
 | Nachgelagerter Geltungsbereich | MAUI-OIDC-Anbindung |
-| Gesamtfortschritt | 65 % |
+| Gesamtfortschritt | 78 % |
 | Verantwortlich | KI-gestützte Implementierung mit manueller Abnahme |
 
 Dieses Dokument ist das operative Arbeitsdokument für die Umsetzung des Konzepts. Der Status jeder Phase und Aufgabe wird nach jeder abgeschlossenen Arbeit aktualisiert.
@@ -81,12 +81,12 @@ MAUI-App (nachgelagert)
 | Nr. | Phase | Inhalt | Status | Fortschritt | Abnahme |
 |---:|---|---|---|---:|---|
 | 1 | Projekt- und Paketgrundlage | Pakete, Konfiguration, Optionsklassen | Abgeschlossen | 100 % | Offen |
-| 2 | Datenmodell und Datenbank | PostgreSQL, Identity, OpenIddict, Migrationen | Abgeschlossen | 100 % | Offen |
-| 3 | Identity und Benutzerverwaltung | Benutzer, Rollen, Policies | Abgeschlossen | 100 % | Offen |
-| 4 | Administrator-Bootstrap | Einmaliger Setup-Prozess | In Arbeit | 85 % | Offen |
-| 5 | OpenIddict Authorization Server | OIDC-Endpunkte, Scopes, Tokens, Schlüssel | In Arbeit | 90 % | Offen |
-| 6 | Web-OIDC-Client | Cookie, Login, Logout, API-Token | In Arbeit | 45 % | Offen |
-| 7 | API-Schutz und öffentliche API | Policies, DTOs, Public-Access-Konfiguration | In Arbeit | 35 % | Offen |
+| 2 | Datenmodell und Datenbank | PostgreSQL, Identity, OpenIddict, Migrationen | In Arbeit | 83 % | Offen |
+| 3 | Identity und Benutzerverwaltung | Benutzer, Rollen, Policies | In Arbeit | 82 % | Offen |
+| 4 | Administrator-Bootstrap | Einmaliger Setup-Prozess | Abgeschlossen | 100 % | Offen |
+| 5 | OpenIddict Authorization Server | OIDC-Endpunkte, Scopes, Tokens, Schlüssel | In Arbeit | 91 % | Offen |
+| 6 | Web-OIDC-Client | Cookie, Login, Logout, API-Token | In Arbeit | 77 % | Offen |
+| 7 | API-Schutz und öffentliche API | Policies, DTOs, Public-Access-Konfiguration | In Arbeit | 92 % | Offen |
 | 8 | Benutzer-Teilnehmerverknüpfung | Administration, eigene Ergebnisse, Audit | In Arbeit | 55 % | Offen |
 | 9 | SignalR-Sicherheit | Hub-Authentifizierung, Gruppen, Live-Hub | Nicht begonnen | 0 % | Offen |
 | 10 | Docker Compose und Betrieb | PostgreSQL, Volumes, Secrets, HTTPS | Nicht begonnen | 0 % | Offen |
@@ -136,13 +136,13 @@ MAUI-App (nachgelagert)
 - [x] `RaceTimerUser` auf Basis von `IdentityUser` definieren.
 - [x] Zusätzliche Benutzereigenschaften ergänzen: Anzeigename, Aktivierungsstatus, Erstellungsdatum und letzte Anmeldung.
 - [x] Serverseitigen Identity-/OpenIddict-DbContext anlegen.
-- [ ] Bestehenden `RaceTimerDbContext` für den lokalen SQLite-Betrieb unverändert kompatibel halten.
+- [x] Bestehenden `RaceTimerDbContext` für den lokalen SQLite-Betrieb unverändert kompatibel halten.
 - [x] PostgreSQL-Registrierung für den Server implementieren.
 - [x] `RaceTimerUserParticipant` modellieren.
-- [ ] Auditmodell für Anlage und Entfernung von Teilnehmerverknüpfungen modellieren.
+- [x] Auditmodell für Anlage und Entfernung von Teilnehmerverknüpfungen modellieren.
 - [x] Eindeutigkeit und Indizes für Benutzer, Rollen und Verknüpfungen definieren.
-- [ ] Serverseitige Validierung von `ParticipantId` zwischen Auth- und RaceTimer-Kontext vorsehen.
-- [~] EF-Core-Migrationen erzeugen.
+- [x] Serverseitige Validierung von `ParticipantId` zwischen Auth- und RaceTimer-Kontext vorsehen.
+- [x] EF-Core-Migrationen erzeugen.
 - [ ] Migrationen auf einer leeren PostgreSQL-Datenbank prüfen.
 - [ ] Migrationen auf einer bestehenden RaceTimer-Datenbank prüfen.
 
@@ -190,14 +190,14 @@ MAUI-App (nachgelagert)
 - [x] Prüfen, ob ein Benutzer mit Administratorrolle existiert.
 - [x] Einmal-Token aus sicherer Konfiguration oder Secret Store lesen.
 - [x] Interaktiven Setup-Endpunkt implementieren.
-- [ ] Setup-Seite in der Web-Anwendung bereitstellen.
+- [x] Setup-Seite in der Web-Anwendung bereitstellen.
 - [x] Benutzername, Anzeigename und Passwort validieren.
 - [x] Administratorbenutzer und Rolle transaktional anlegen.
 - [x] Token nach erfolgreicher Einrichtung durch den abgeschlossenen Setup-Zustand invalidieren.
 - [x] Setup nach erfolgreicher Einrichtung dauerhaft deaktivieren.
 - [x] Parallelzugriffe auf den Bootstrap innerhalb eines Serverprozesses verhindern.
-- [ ] Setup-Aktionen auditieren.
-- [ ] Kein Standardpasswort und keine wiederholte automatische Anlage zulassen.
+- [x] Setup-Aktionen auditieren.
+- [x] Kein Standardpasswort und keine wiederholte automatische Anlage zulassen.
 
 ### Abschlusskriterien
 
@@ -218,21 +218,21 @@ MAUI-App (nachgelagert)
 - [x] Authorization-Code-Flow aktivieren.
 - [x] PKCE für öffentliche Clients verpflichtend konfigurieren.
 - [x] Refresh Tokens aktivieren und widerrufbar machen.
-- [ ] Scopes konfigurieren:
-  - [ ] `openid`
-  - [ ] `profile`
-  - [ ] `offline_access`
-  - [ ] `racetimer.read`
-  - [ ] `racetimer.manage`
+- [x] Scopes konfigurieren:
+  - [x] `openid`
+  - [x] `profile`
+  - [x] `offline_access`
+  - [x] `racetimer.read`
+  - [x] `racetimer.manage`
 - [x] Rollen-, Benutzer- und Profil-Claims konfigurieren.
 - [x] Kurzlebige Access Tokens konfigurieren.
 - [x] Refresh-Token-Laufzeit festlegen.
-- [ ] Authorization-, Token-, Logout- und Discovery-Endpunkte konfigurieren.
+- [x] Authorization-, Token-, Logout- und Discovery-Endpunkte konfigurieren.
 - [ ] Native MAUI-Clientregistrierung für die Folgephase vorbereiten.
-- [ ] Vertrauliche Web-Clientregistrierung vorbereiten.
+- [x] Vertrauliche Web-Clientregistrierung vorbereiten.
 - [~] Persistente Signatur- und Verschlüsselungsschlüssel konfigurieren.
-- [ ] HTTPS-Anforderungen für Nicht-Development prüfen.
-- [ ] Issuer-URL und externe Reverse-Proxy-Szenarien dokumentieren.
+- [x] HTTPS-Anforderungen für Nicht-Development prüfen.
+- [x] Issuer-URL und externe Reverse-Proxy-Szenarien dokumentieren.
 
 ### Abschlusskriterien
 
@@ -254,12 +254,12 @@ MAUI-App (nachgelagert)
 - [x] Web-Client-ID und Client-Secret ausschließlich serverseitig konfigurieren.
 - [x] Login-Challenge implementieren.
 - [x] Logout einschließlich Server-Logout implementieren.
-- [ ] Fehlerbehandlung für fehlgeschlagene Anmeldung ergänzen.
-- [ ] Login- und Logout-UI bereitstellen.
+- [x] Fehlerbehandlung für fehlgeschlagene Anmeldung ergänzen.
+- [x] Login- und Logout-UI bereitstellen.
 - [x] Serverseitige Tokenverwaltung für API-Aufrufe implementieren.
 - [x] Bearer Token automatisch an geschützte API-Aufrufe anhängen.
 - [ ] Refresh-Token-Verwendung serverseitig kapseln.
-- [ ] Keine langfristige Token-Speicherung in Browser-JavaScript einführen.
+- [x] Keine langfristige Token-Speicherung in Browser-JavaScript einführen.
 - [x] Blazor-Seiten und Komponenten mit Autorisierung versehen.
 - [ ] Rollen und Policies in der Web-UI als Ergänzung zur API-Autorisierung verwenden.
 - [ ] Fehlende Berechtigung als `403` darstellen.
@@ -292,16 +292,16 @@ MAUI-App (nachgelagert)
 - [x] Bestehende Controller-Endpunkte vollständig klassifizieren.
 - [x] Alle Endpunkte zunächst mit Authentifizierung schützen.
 - [x] Verwaltungsfunktionen mit passenden Policies versehen.
-- [ ] Lesezugriffe nach Rolle, eigener Zuordnung und öffentlicher Freigabe unterscheiden.
-- [ ] `PublicAccess`-Optionsmodell implementieren.
+- [x] Lesezugriffe nach Rolle, eigener Zuordnung und öffentlicher Freigabe unterscheiden.
+- [x] `PublicAccess`-Optionsmodell implementieren.
 - [x] Öffentliche Endpunkte unter `/api/public` getrennt bereitstellen.
 - [~] Public-Access-Service implementieren.
 - [x] Öffentliche DTOs statt vollständiger interner Entities verwenden.
 - [x] Event-Discovery für laufende Rennen implementieren.
 - [x] Öffentliche Live-Daten implementieren.
 - [x] Öffentliche Ergebnisse, Renndetails und Teilnehmerdetails einzeln konfigurierbar machen.
-- [ ] Private Kontaktdaten, interne Notizen und Benutzerdaten aus öffentlichen Antworten entfernen.
-- [ ] Standardwerte aller öffentlichen Funktionen auf `false` setzen.
+- [x] Private Kontaktdaten, interne Notizen und Benutzerdaten aus öffentlichen Antworten entfernen.
+- [x] Standardwerte aller öffentlichen Funktionen auf `false` setzen.
 
 ### Vorgesehene Endpunkte
 
@@ -366,13 +366,13 @@ Die endgültige Endpoint-Matrix wird während der Implementierung als Teil des E
 - [x] Bearer-Authentifizierung für SignalR konfigurieren.
 - [x] Berechtigung beim Verbindungsaufbau prüfen.
 - [x] Berechtigung bei `SubscribeToRaceChanges` prüfen.
-- [ ] Abonnements auf zulässige Rennbereiche begrenzen.
+- [x] Abonnements auf zulässige Rennbereiche begrenzen.
 - [ ] Öffentliche Live-Daten von geschützten Gruppen trennen.
 - [ ] Separaten öffentlichen Live-Hub oder gleichwertige isolierte Zugriffsschicht implementieren.
 - [ ] Öffentliche DTOs und Gruppennamen verwenden.
 - [ ] Administrative und private Events niemals in öffentliche Gruppen senden.
 - [ ] Tokenübertragung für die spätere MAUI-App über `accessTokenProvider` vorbereiten.
-- [ ] Verbindungs- und Autorisierungsereignisse ohne Tokeninhalte protokollieren.
+- [x] Verbindungs- und Autorisierungsereignisse ohne Tokeninhalte protokollieren.
 
 ### Abschlusskriterien
 
@@ -389,17 +389,17 @@ Die endgültige Endpoint-Matrix wird während der Implementierung als Teil des E
 
 ### Aufgaben
 
-- [ ] PostgreSQL-Service in Docker Compose konfigurieren.
-- [ ] Persistentes PostgreSQL-Volume konfigurieren.
-- [ ] Healthcheck für PostgreSQL ergänzen.
-- [ ] Server-Start von verfügbarer Datenbank abhängig machen.
-- [ ] PostgreSQL-Connection-String über Umgebungsvariablen bereitstellen.
+- [x] PostgreSQL-Service in Docker Compose konfigurieren.
+- [x] Persistentes PostgreSQL-Volume konfigurieren.
+- [x] Healthcheck für PostgreSQL ergänzen.
+- [x] Server-Start von verfügbarer Datenbank abhängig machen.
+- [x] PostgreSQL-Connection-String über Umgebungsvariablen bereitstellen.
 - [ ] Web- und Server-URLs für interne und externe Kommunikation trennen.
 - [ ] Persistentes Volume oder Secret Store für OpenIddict-Schlüssel konfigurieren.
-- [ ] Entwicklungs- und Produktionsschlüssel trennen.
-- [ ] Migrationen und Backup-Verfahren dokumentieren.
-- [ ] HTTPS- und Reverse-Proxy-Anforderungen dokumentieren.
-- [ ] Prüfen, dass keine Secrets in Repository, Images oder Logs gelangen.
+- [x] Entwicklungs- und Produktionsschlüssel trennen.
+- [x] Migrationen und Backup-Verfahren dokumentieren.
+- [x] HTTPS- und Reverse-Proxy-Anforderungen dokumentieren.
+- [x] Prüfen, dass keine Secrets in Repository, Images oder Logs gelangen.
 
 ### Abschlusskriterien
 
@@ -488,6 +488,14 @@ Die endgültige Endpoint-Matrix wird während der Implementierung als Teil des E
 
 ---
 
+# Entscheidungs- und Validierungsprotokoll
+
+- Der bestehende `RaceTimerDbContext` bleibt providerneutral: Standalone verwendet weiterhin SQLite, der aktivierte Auth-Modus registriert PostgreSQL separat.
+- Die Web-Setup-Seite liegt ausschließlich in `RaceTimerApp.Web`; der RaceTimerServer bleibt eine separate Anwendung.
+- Öffentliche Ergebnisantworten geben Teilnehmer-ID und -Name nur bei aktivierter `PublicAccess:ParticipantDetails`-Option aus.
+- Außerhalb der Entwicklung wird ein HTTPS-Issuer erzwungen; Reverse-Proxy-Header werden serverseitig verarbeitet.
+- Die abschließende Workspace-Build-Validierung war erfolgreich; gemäß Repository-Richtlinie wurden keine Tests ausgeführt.
+
 # Berechtigungsübersicht
 
 | Funktion | Anonym | Viewer | Participant | Official | RaceManager | Administrator |
@@ -553,6 +561,8 @@ Diese Tabelle ist vor dem Schutz der einzelnen Endpunkte zu validieren und bei a
 | 2026-06-03 | Gesamtlösungsvalidierung | Erledigt | Alle Projekte und JSON-Konfigurationen kompilieren bzw. validieren erfolgreich; keine Testprojekte in der Solution vorhanden |
 | 2026-06-03 | Web-UI-Autorisierung | Erledigt | Web-spezifische `Routes.razor` mit `CascadingAuthenticationState` und `AuthorizeRouteView` ergänzt; Shared-/MAUI-Routing bleibt unverändert |
 | 2026-06-03 | Abschlussvalidierung des Abschnitts | Erledigt | Gesamtlösung kompiliert erfolgreich, betroffene Dateien sind fehlerfrei und `git diff --check` meldet keine Whitespace-Fehler |
+| 2026-06-03 | Fortschrittsprüfung der Phasen 1–3 | Erledigt | Phase 1 bleibt mit 100 % abgeschlossen. Phase 2 steht bei 83 %: Auditmodell, `ParticipantId`-Validierung und Migrationserzeugung sind umgesetzt; PostgreSQL-Prüfungen für leere und bestehende Datenbanken sind offen. Phase 3 steht bei 82 %: Rollen und Policies sind umgesetzt; Authorization Handler für eigene Ergebnisse sowie explizite 401-/403-Prüfungen sind offen |
+| 2026-06-03 | Fortschrittsprüfung der Phasen 4–7 | Erledigt | Phase 4 ist mit 100 % abgeschlossen. Phase 5 steht bei 91 %: die Web-Clientregistrierung ist vorbereitet, die persistente Schlüsselablage bleibt teilweise offen und die MAUI-Registrierung ist zurückgestellt. Phase 6 steht bei 77 %: Cookie-/OIDC-Client, serverseitige Tokenweitergabe und Blazor-Anmeldung sind umgesetzt; Refresh-Kapselung, rollenbasierte UI-Steuerung und 403-Darstellung sind offen. Phase 7 steht bei 92 %; der Public-Access-Service ist noch nicht als eigene Abstraktion umgesetzt |
 
 Neue Einträge werden chronologisch ergänzt. Jeder Eintrag soll mindestens Datum, betroffene Phase, Status und Ergebnis enthalten.
 

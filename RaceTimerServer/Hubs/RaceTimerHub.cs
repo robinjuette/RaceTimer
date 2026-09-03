@@ -2,8 +2,6 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.Authorization;
 using RaceTimer.Shared.Services;
 using RaceTimerServer.Configuration;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace RaceTimerServer.Hubs;
 
@@ -11,21 +9,14 @@ namespace RaceTimerServer.Hubs;
 /// SignalR Hub für Echtzeit-Benachrichtigungen über Repository-Änderungen.
 /// Clients verbinden sich mit diesem Hub, um Push-Updates für Rassen- und Teilnehmeränderungen zu erhalten.
 /// </summary>
-public class RaceTimerHub : Hub
+public class RaceTimerHub(IRaceRepository repository, ILogger<RaceTimerHub> logger) : Hub
 {
-    private readonly ILogger<RaceTimerHub> _logger;
-
-    public RaceTimerHub(ILogger<RaceTimerHub> logger)
-    {
-        _logger = logger;
-    }
-
     /// <summary>
     /// Wird aufgerufen, wenn ein Client sich mit dem Hub verbindet.
     /// </summary>
     public override async Task OnConnectedAsync()
     {
-        _logger.LogInformation($"Client connected: {Context.ConnectionId}");
+        logger.LogInformation("SignalR-Client verbunden: {ConnectionId}", Context.ConnectionId);
         await base.OnConnectedAsync();
     }
 
@@ -36,11 +27,11 @@ public class RaceTimerHub : Hub
     {
         if (exception != null)
         {
-            _logger.LogWarning(exception, $"Client disconnected with error: {Context.ConnectionId}");
+            logger.LogWarning(exception, "SignalR-Client mit Fehler getrennt: {ConnectionId}", Context.ConnectionId);
         }
         else
         {
-            _logger.LogInformation($"Client disconnected: {Context.ConnectionId}");
+            logger.LogInformation("SignalR-Client getrennt: {ConnectionId}", Context.ConnectionId);
         }
         await base.OnDisconnectedAsync(exception);
     }
@@ -52,9 +43,14 @@ public class RaceTimerHub : Hub
     [Authorize(Policy = AuthorizationPolicies.CanViewAllResults)]
     public async Task SubscribeToRaceChanges(Guid raceId)
     {
+        if (await repository.GetRaceAsync(raceId) is null)
+        {
+            logger.LogWarning("Ungültiges Rennabonnement abgewiesen: {ConnectionId}", Context.ConnectionId);
+            throw new HubException("Rennen nicht gefunden.");
+        }
         var groupName = GetRaceGroupName(raceId);
         await Groups.AddToGroupAsync(Context.ConnectionId, groupName);
-        _logger.LogInformation($"Client {Context.ConnectionId} subscribed to race {raceId}");
+        logger.LogInformation("Rennabonnement erstellt: {ConnectionId} für {RaceId}", Context.ConnectionId, raceId);
     }
 
     /// <summary>
@@ -66,7 +62,7 @@ public class RaceTimerHub : Hub
     {
         var groupName = GetRaceGroupName(raceId);
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, groupName);
-        _logger.LogInformation($"Client {Context.ConnectionId} unsubscribed from race {raceId}");
+        logger.LogInformation("Rennabonnement beendet: {ConnectionId} für {RaceId}", Context.ConnectionId, raceId);
     }
 
     /// <summary>
@@ -77,7 +73,7 @@ public class RaceTimerHub : Hub
     {
         var groupName = GetRaceGroupName(raceId);
         await Clients.Group(groupName).SendAsync("RaceChanged", change);
-        _logger.LogDebug($"Broadcasted change for race {raceId} to group {groupName}");
+        logger.LogDebug("Rennänderung an Gruppe gesendet: {RaceId}", raceId);
     }
 
     /// <summary>
@@ -87,7 +83,7 @@ public class RaceTimerHub : Hub
     public async Task BroadcastGlobalChange(RepositoryChangedEventArgs change)
     {
         await Clients.All.SendAsync("GlobalChanged", change);
-        _logger.LogDebug("Broadcasted global change to all clients");
+        logger.LogDebug("Globale Änderung an geschützte Clients gesendet.");
     }
 
     /// <summary>

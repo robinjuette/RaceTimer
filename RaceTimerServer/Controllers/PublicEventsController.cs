@@ -48,8 +48,8 @@ public sealed class PublicEventsController(
 
         var points = await repository.GetRaceParticipantTimePointsForRaceAsync(id);
         return Ok(points.Select(point => new PublicResultDto(
-            point.ParticipantID,
-            point.Participant?.DisplayName,
+            options.Value.ParticipantDetails ? point.ParticipantID : null,
+            options.Value.ParticipantDetails ? point.Participant?.DisplayName : null,
             point.GetEffectiveTimePoint(),
             point.PenaltyTime)));
     }

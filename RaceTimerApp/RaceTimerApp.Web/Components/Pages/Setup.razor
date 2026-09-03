@@ -1,0 +1,72 @@
+@page "/setup"
+@rendermode InteractiveServer
+@using System.Net.Http.Json
+@inject IHttpClientFactory HttpClientFactory
+
+<PageTitle>Administrator einrichten</PageTitle>
+
+<h1>Administrator einrichten</h1>
+<p>Diese Einrichtung ist nur möglich, solange noch kein Administrator vorhanden ist.</p>
+
+<EditForm Model="_request" OnValidSubmit="CreateAdministrator">
+    <div class="mb-3">
+        <label class="form-label" for="token">Einmal-Token</label>
+        <InputText id="token" type="password" class="form-control" @bind-Value="_request.Token" />
+    </div>
+    <div class="mb-3">
+        <label class="form-label" for="userName">Benutzername</label>
+        <InputText id="userName" class="form-control" @bind-Value="_request.UserName" />
+    </div>
+    <div class="mb-3">
+        <label class="form-label" for="displayName">Anzeigename</label>
+        <InputText id="displayName" class="form-control" @bind-Value="_request.DisplayName" />
+    </div>
+    <div class="mb-3">
+        <label class="form-label" for="password">Passwort</label>
+        <InputText id="password" type="password" class="form-control" @bind-Value="_request.Password" />
+    </div>
+    <button class="btn btn-primary" type="submit" disabled="@_busy">Administrator anlegen</button>
+</EditForm>
+
+@if (_message is not null)
+{
+    <p class="mt-3">@_message</p>
+}
+
+@code {
+    private readonly SetupRequest _request = new();
+    private bool _busy;
+    private string? _message;
+
+    private async Task CreateAdministrator()
+    {
+        _busy = true;
+        _message = null;
+        try
+        {
+            var client = HttpClientFactory.CreateClient("RaceTimerServer");
+            var response = await client.PostAsJsonAsync("api/setup/administrator", _request);
+            _message = response.IsSuccessStatusCode
+                ? "Administrator wurde angelegt. Die Anmeldung ist jetzt möglich."
+                : "Administrator konnte nicht angelegt werden.";
+        }
+        catch (HttpRequestException)
+        {
+            _message = "Der RaceTimerServer ist nicht erreichbar.";
+        }
+        finally
+        {
+            _busy = false;
+            _request.Token = string.Empty;
+            _request.Password = string.Empty;
+        }
+    }
+
+    private sealed class SetupRequest
+    {
+        public string Token { get; set; } = string.Empty;
+        public string UserName { get; set; } = string.Empty;
+        public string DisplayName { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
+    }
+}

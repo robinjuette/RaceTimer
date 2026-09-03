@@ -3,7 +3,7 @@
 ## Projektrichtlinien
 - Bei Änderungswünschen sollen die Punkte strikt einzeln und in der Reihenfolge der Datei bearbeitet werden: jeden Punkt zuerst analysieren, eine erforderliche kurze Umsetzungsbeschreibung dokumentieren und anschließend nur diesen Punkt implementieren, bevor der nächste Punkt begonnen wird.
 - Wenn eine bereits umgesetzte Änderung nicht korrekt funktioniert, soll die Analyse auf dem realen aktuellen Workspace-Zustand basieren und die Ursache gezielt behoben werden, statt die bisherige Implementierung nur zu erweitern.
-- Für dieses Repository gibt es keine Testprojekte; bei künftigen Änderungen keine Tests ausführen, sondern die Build-Validierung verwenden.
+- Für dieses Repository gibt es keine Testprojekte; bei künftigen Änderungen keine Tests ausführen, sondern die Build-Validierung verwenden. Authentifizierungsänderungen sollen strikt in der Reihenfolge des Implementierungsplans umgesetzt, nach jedem abgeschlossenen Punkt im Plan dokumentiert und ohne Testausführung ausschließlich per Build validiert werden.
 
 ## Anwendungshinweise
-- Die Web-Version von RaceTimer ist immer eine separate Anwendung und niemals im RaceTimerServer enthalten; standardmäßig läuft sie im selben Docker-Compose als eigener Container.
+- Die Web-Version von RaceTimer ist immer eine separate Anwendung und niemals im RaceTimerServer enthalten; standardmäßig läuft sie im selben Docker-Compose als eigener Container. RaceTimerApp.Web bleibt eine separate Anwendung vom RaceTimerServer.

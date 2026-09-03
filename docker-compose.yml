@@ -9,7 +9,7 @@ services:
       RaceTimer__DatabasePath: /data/racetimer.db
       Authentication__Enabled: "true"
       Authentication__ConnectionString: Host=db;Database=racetimer;Username=racetimer;Password=${RACETIMER_DB_PASSWORD:?RACETIMER_DB_PASSWORD must be set}
-      Authentication__Issuer: http://localhost:${RACETIMER_SERVER_PORT:-8080}/
+      Authentication__Issuer: ${RACETIMER_SERVER_ISSUER:-http://localhost:${RACETIMER_SERVER_PORT:-8080}/}
       Authentication__BootstrapToken: ${RACETIMER_BOOTSTRAP_TOKEN:?RACETIMER_BOOTSTRAP_TOKEN must be set}
       Authentication__WebClientSecret: ${RACETIMER_WEB_CLIENT_SECRET:?RACETIMER_WEB_CLIENT_SECRET must be set}
     ports:
